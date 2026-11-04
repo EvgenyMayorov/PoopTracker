@@ -61,6 +61,25 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
   })
 
+  // Вспомогательная функция для отправки уведомлений
+  const showNotification = async (title: string, options: NotificationOptions) => {
+    try {
+      // Проверяем, есть ли Service Worker registration (PWA режим)
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        const registration = await navigator.serviceWorker.ready
+        await registration.showNotification(title, options)
+        console.log('[Notification] Отправлено через ServiceWorker')
+      } else {
+        // Fallback для обычного браузера
+        new Notification(title, options)
+        console.log('[Notification] Отправлено через Notification API')
+      }
+    } catch (error: any) {
+      console.error('[Notification] Ошибка отправки:', error)
+      throw error
+    }
+  }
+
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
     const { data } = await supabase
@@ -371,10 +390,22 @@ export function MainScreen({ profile, onLogout }: Props) {
               
               // Показываем браузерное уведомление
               if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(t(lang, 'notification'), {
-                  body: t(lang, 'friendPooped').replace('{name}', friendProfile.username),
-                  icon: './icon-light.svg'
-                })
+                try {
+                  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    const registration = await navigator.serviceWorker.ready
+                    await registration.showNotification(t(lang, 'notification'), {
+                      body: t(lang, 'friendPooped').replace('{name}', friendProfile.username),
+                      icon: './icon-light.svg'
+                    })
+                  } else {
+                    new Notification(t(lang, 'notification'), {
+                      body: t(lang, 'friendPooped').replace('{name}', friendProfile.username),
+                      icon: './icon-light.svg'
+                    })
+                  }
+                } catch (error) {
+                  console.error('[Notification] Ошибка отправки уведомления другу:', error)
+                }
               }
             }
           }
@@ -533,7 +564,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     if (Notification.permission === 'granted') {
       console.log('[Notification] Отправка уведомления...')
       try {
-        new Notification(t(lang, 'testNotification'), {
+        await showNotification(t(lang, 'testNotification'), {
           body: t(lang, 'testNotificationText'),
           icon: './icon-light.svg'
         })
@@ -552,7 +583,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         console.log('[Notification] Результат запроса:', permission)
         
         if (permission === 'granted') {
-          new Notification(t(lang, 'testNotification'), {
+          await showNotification(t(lang, 'testNotification'), {
             body: t(lang, 'testNotificationText'),
             icon: './icon-light.svg'
           })
