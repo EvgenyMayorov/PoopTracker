@@ -458,14 +458,23 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Обработка кнопки "У меня вышло!"
   const handlePoop = async () => {
+    console.log('[HandlePoop] Создание нового события...')
+    
     const { data, error } = await supabase
       .from('events')
       .insert({ user_id: profile.id })
       .select()
       .single()
     
+    if (error) {
+      console.error('[HandlePoop] Ошибка создания события:', error)
+      return
+    }
+    
     if (data) {
+      console.log('[HandlePoop] Событие создано:', data)
       setCurrentEventId(data.id)
+      console.log('[HandlePoop] currentEventId установлен:', data.id)
       setShowBristolModal(true)
       setSelectedType(null)
     }
@@ -474,16 +483,28 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Сохранение типа стула по Бристольской шкале (автоматически при выборе)
   const handleBristolSelect = async (type: number) => {
+    console.log('[BristolSelect] Выбран тип:', type, 'для события:', currentEventId)
+    
     if (currentEventId) {
-      await supabase
+      const { data, error } = await supabase
         .from('events')
         .update({ bristol_type: type })
         .eq('id', currentEventId)
+        .select()
+      
+      if (error) {
+        console.error('[BristolSelect] Ошибка обновления:', error)
+      } else {
+        console.log('[BristolSelect] Успешно обновлено:', data)
+      }
       
       // Обновляем список событий
       fetchEvents()
       fetchFriendsEvents()
+    } else {
+      console.error('[BristolSelect] currentEventId не установлен!')
     }
+    
     setShowBristolModal(false)
     setCurrentEventId(null)
     setSelectedType(null)
