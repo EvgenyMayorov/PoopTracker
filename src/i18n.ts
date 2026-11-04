@@ -119,6 +119,16 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Записано!',
     // Language selector
     selectLanguage: 'Выберите язык',
+    // Week chart
+    weekChart: 'За последние 7 дней',
+    // Notification settings
+    notificationSettings: 'Настройки уведомлений',
+    notifFriendPooped: 'У друга вышло',
+    notifFriendReaction: 'Друг поставил реакцию',
+    notifFriendComment: 'Друг оставил комментарий',
+    notifFriendFollowed: 'Друг подписался на меня',
+    testNotification: 'Тестовое уведомление',
+    testNotificationText: 'Проверяем работу уведомлений',
   },
   en: {
     tabHome: 'Home',
@@ -220,6 +230,16 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Recorded!',
     // Language selector
     selectLanguage: 'Select language',
+    // Week chart
+    weekChart: 'Last 7 days',
+    // Notification settings
+    notificationSettings: 'Notification settings',
+    notifFriendPooped: 'Friend pooped',
+    notifFriendReaction: 'Friend reacted',
+    notifFriendComment: 'Friend commented',
+    notifFriendFollowed: 'Friend followed me',
+    testNotification: 'Test notification',
+    testNotificationText: 'Testing notifications',
   },
   zh: {
     tabHome: '首页',
@@ -321,6 +341,16 @@ const translations: Record<Lang, Dict> = {
     successMessage: '已记录！',
     // Language selector
     selectLanguage: '选择语言',
+    // Week chart
+    weekChart: '最近7天',
+    // Notification settings
+    notificationSettings: '通知设置',
+    notifFriendPooped: '朋友拉了',
+    notifFriendReaction: '朋友反应了',
+    notifFriendComment: '朋友评论了',
+    notifFriendFollowed: '朋友关注了我',
+    testNotification: '测试通知',
+    testNotificationText: '测试通知功能',
   },
   de: {
     tabHome: 'Start',
@@ -422,6 +452,16 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Aufgezeichnet!',
     // Language selector
     selectLanguage: 'Sprache auswählen',
+    // Week chart
+    weekChart: 'Letzte 7 Tage',
+    // Notification settings
+    notificationSettings: 'Benachrichtigungseinstellungen',
+    notifFriendPooped: 'Freund hat gekotet',
+    notifFriendReaction: 'Freund hat reagiert',
+    notifFriendComment: 'Freund hat kommentiert',
+    notifFriendFollowed: 'Freund folgt mir',
+    testNotification: 'Testbenachrichtigung',
+    testNotificationText: 'Benachrichtigungen testen',
   },
   es: {
     tabHome: 'Inicio',
@@ -523,6 +563,16 @@ const translations: Record<Lang, Dict> = {
     successMessage: '¡Registrado!',
     // Language selector
     selectLanguage: 'Seleccionar idioma',
+    // Week chart
+    weekChart: 'Últimos 7 días',
+    // Notification settings
+    notificationSettings: 'Configuración de notificaciones',
+    notifFriendPooped: 'Amigo cagó',
+    notifFriendReaction: 'Amigo reaccionó',
+    notifFriendComment: 'Amigo comentó',
+    notifFriendFollowed: 'Amigo me siguió',
+    testNotification: 'Notificación de prueba',
+    testNotificationText: 'Probando notificaciones',
   },
 }
 

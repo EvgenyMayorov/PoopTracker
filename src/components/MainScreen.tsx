@@ -51,6 +51,15 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
   const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
   const [newComment, setNewComment] = useState<Record<string, string>>({})
+  const [notifSettings, setNotifSettings] = useState(() => {
+    const saved = localStorage.getItem('poop_notif_settings')
+    return saved ? JSON.parse(saved) : {
+      friendPooped: true,
+      friendReaction: true,
+      friendComment: true,
+      friendFollowed: true
+    }
+  })
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -503,6 +512,34 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
   }
 
+  // Обновить настройки уведомлений
+  const handleNotifSettingChange = (key: string, value: boolean) => {
+    const newSettings = { ...notifSettings, [key]: value }
+    setNotifSettings(newSettings)
+    localStorage.setItem('poop_notif_settings', JSON.stringify(newSettings))
+  }
+
+  // Отправить тестовое уведомление
+  const handleTestNotification = () => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(t(lang, 'testNotification'), {
+          body: t(lang, 'testNotificationText'),
+          icon: '💩'
+        })
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification(t(lang, 'testNotification'), {
+              body: t(lang, 'testNotificationText'),
+              icon: '💩'
+            })
+          }
+        })
+      }
+    }
+  }
+
   // Статистика
   const todayCount = events.filter(e => 
     new Date(e.created_at).toDateString() === new Date().toDateString()
@@ -510,6 +547,29 @@ export function MainScreen({ profile, onLogout }: Props) {
   const weekCount = events.filter(e => 
     new Date(e.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   ).length
+
+  // Данные для графика за последние 7 дней
+  const weekData = (() => {
+    const data = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      const dayStart = new Date(date.setHours(0, 0, 0, 0))
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999))
+      const count = events.filter(e => {
+        const eventDate = new Date(e.created_at)
+        return eventDate >= dayStart && eventDate <= dayEnd
+      }).length
+      data.push({
+        day: date.toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'short' }),
+        count,
+        isToday: i === 0
+      })
+    }
+    return data
+  })()
+  const maxCount = Math.max(...weekData.map(d => d.count), 1)
 
   // Функция форматирования времени
   const formatTimeAgo = (dateString: string): string => {
@@ -877,6 +937,54 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
       </div>
 
+      {/* График за последние 7 дней */}
+      <div className={`mb-6 p-4 rounded-2xl ${
+        theme === 'light' 
+          ? 'bg-white border-2 border-gray-200' 
+          : 'bg-white/5 border border-white/10'
+      }`}>
+        <h3 className={`text-sm font-semibold mb-4 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          📊 {t(lang, 'weekChart')}
+        </h3>
+        <div className="flex items-end justify-between gap-2 h-32">
+          {weekData.map((day, index) => (
+            <div key={index} className="flex-1 flex flex-col items-center gap-2">
+              <div className="w-full flex flex-col justify-end h-20">
+                <div 
+                  className={`w-full rounded-t-lg transition-all duration-500 ${
+                    day.isToday
+                      ? 'bg-gradient-to-t from-cyan-500 to-fuchsia-500'
+                      : theme === 'light'
+                        ? 'bg-gradient-to-t from-blue-300 to-blue-400'
+                        : 'bg-gradient-to-t from-purple-500/50 to-fuchsia-500/50'
+                  }`}
+                  style={{ 
+                    height: `${day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 5}%`,
+                    minHeight: day.count > 0 ? '8px' : '4px'
+                  }}
+                />
+              </div>
+              <div className={`text-xs font-medium ${
+                day.isToday
+                  ? theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'
+                  : theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+              }`}>
+                {day.day}
+              </div>
+              <div className={`text-xs ${
+                day.count > 0
+                  ? theme === 'light' ? 'text-gray-800' : 'text-white'
+                  : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {day.count}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Уведомления */}
       {notifications.length > 0 && (
         <div className="mt-6">
@@ -985,21 +1093,33 @@ export function MainScreen({ profile, onLogout }: Props) {
   // Вкладка Настройки
   const SettingsTab = () => (
     <div className="p-4">
-      <h2 className="text-xl font-bold text-white mb-6">{t(lang, 'settings')}</h2>
+      <h2 className={`text-xl font-bold mb-6 ${
+        theme === 'light' ? 'text-gray-800' : 'text-white'
+      }`}>{t(lang, 'settings')}</h2>
 
       {/* Профиль */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
           👤 {t(lang, 'account')}
         </h3>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className={`rounded-xl p-4 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
           {editingUsername ? (
             <div className="space-y-3">
               <input
                 type="text"
                 value={tempUsername}
                 onChange={e => setTempUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-blue-500/30 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400 ${
+                  theme === 'light'
+                    ? 'bg-gray-50 border-2 border-gray-200 text-gray-800'
+                    : 'bg-white/5 border border-blue-500/30 text-white'
+                }`}
               />
               <div className="flex gap-2">
                 <button
@@ -1013,7 +1133,11 @@ export function MainScreen({ profile, onLogout }: Props) {
                     setEditingUsername(false)
                     setTempUsername(profile.username)
                   }}
-                  className="flex-1 py-2 bg-gray-500/20 border border-gray-500/30 rounded-lg text-gray-300 font-semibold"
+                  className={`flex-1 py-2 rounded-lg font-semibold ${
+                    theme === 'light'
+                      ? 'bg-gray-100 text-gray-700'
+                      : 'bg-gray-500/20 border border-gray-500/30 text-gray-300'
+                  }`}
                 >
                   {t(lang, 'cancel')}
                 </button>
@@ -1022,12 +1146,20 @@ export function MainScreen({ profile, onLogout }: Props) {
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-white font-semibold">{profile.username}</div>
-                <div className="text-xs text-gray-500">{profile.id.substring(0, 8)}...</div>
+                <div className={`font-semibold ${
+                  theme === 'light' ? 'text-gray-800' : 'text-white'
+                }`}>{profile.username}</div>
+                <div className={`text-xs ${
+                  theme === 'light' ? 'text-gray-500' : 'text-gray-500'
+                }`}>{profile.id.substring(0, 8)}...</div>
               </div>
               <button
                 onClick={() => setEditingUsername(true)}
-                className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-semibold"
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  theme === 'light'
+                    ? 'bg-blue-50 border-2 border-blue-200 text-blue-600'
+                    : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                }`}
               >
                 {t(lang, 'editProfile')}
               </button>
@@ -1102,17 +1234,23 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {/* Статистика */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
           📊 {t(lang, 'stats')}
         </h3>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+        <div className={`rounded-xl p-4 space-y-2 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
           <div className="flex justify-between">
-            <span className="text-gray-400">{t(lang, 'totalEvents')}</span>
-            <span className="text-white font-semibold">{events.length}</span>
+            <span className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>{t(lang, 'totalEvents')}</span>
+            <span className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{events.length}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">{t(lang, 'dailyRecord')}</span>
-            <span className="text-white font-semibold">
+            <span className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>{t(lang, 'dailyRecord')}</span>
+            <span className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
               {(() => {
                 const dayMap: Record<string, number> = {}
                 events.forEach(e => {
@@ -1126,16 +1264,98 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
       </div>
 
+      {/* Настройки уведомлений */}
+      <div className="mb-6">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          🔔 {t(lang, 'notificationSettings')}
+        </h3>
+        <div className={`rounded-xl p-4 space-y-3 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
+          {/* Чекбокс: У друга вышло */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendPooped}
+              onChange={(e) => handleNotifSettingChange('friendPooped', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              💩 {t(lang, 'notifFriendPooped')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг поставил реакцию */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendReaction}
+              onChange={(e) => handleNotifSettingChange('friendReaction', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              👍 {t(lang, 'notifFriendReaction')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг оставил комментарий */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendComment}
+              onChange={(e) => handleNotifSettingChange('friendComment', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              💬 {t(lang, 'notifFriendComment')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг подписался на меня */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendFollowed}
+              onChange={(e) => handleNotifSettingChange('friendFollowed', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              👥 {t(lang, 'notifFriendFollowed')}
+            </span>
+          </label>
+
+          {/* Кнопка тестового уведомления */}
+          <button
+            onClick={handleTestNotification}
+            className={`w-full mt-3 py-3 rounded-xl font-semibold transition-all ${
+              theme === 'light'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
+                : 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white hover:from-cyan-600 hover:to-fuchsia-600'
+            }`}
+          >
+            🔔 {t(lang, 'testNotification')}
+          </button>
+        </div>
+      </div>
+
       {/* Памятка по PWA */}
       <div className="mb-6">
         <button
           onClick={() => setShowPWAGuide(true)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-left hover:bg-white/10 transition-colors"
+          className={`w-full rounded-xl p-4 text-left transition-colors ${
+            theme === 'light'
+              ? 'bg-white border-2 border-gray-200 hover:bg-gray-50'
+              : 'bg-white/5 border border-white/10 hover:bg-white/10'
+          }`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-white font-semibold">{t(lang, 'pwaSettingsTitle')}</div>
-              <div className="text-gray-400 text-sm">{t(lang, 'pwaSettingsDesc')}</div>
+              <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{t(lang, 'pwaSettingsTitle')}</div>
+              <div className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'pwaSettingsDesc')}</div>
             </div>
             <span className="text-2xl">📲</span>
           </div>
@@ -1145,7 +1365,11 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Выход */}
       <button
         onClick={onLogout}
-        className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 font-semibold"
+        className={`w-full py-3 rounded-xl font-semibold ${
+          theme === 'light'
+            ? 'bg-red-50 border-2 border-red-200 text-red-600'
+            : 'bg-red-500/20 border border-red-500/30 text-red-400'
+        }`}
       >
         {t(lang, 'logout')}
       </button>
@@ -1184,7 +1408,9 @@ export function MainScreen({ profile, onLogout }: Props) {
               activeTab === 'home' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
-            <span className="text-xl">🏠</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
             <span className="text-[10px] font-semibold">{t(lang, 'tabHome')}</span>
           </button>
           <button
@@ -1193,7 +1419,9 @@ export function MainScreen({ profile, onLogout }: Props) {
               activeTab === 'people' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
-            <span className="text-xl">👥</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
             <span className="text-[10px] font-semibold">{t(lang, 'tabPeople')}</span>
           </button>
           <button
@@ -1202,7 +1430,9 @@ export function MainScreen({ profile, onLogout }: Props) {
               activeTab === 'feed' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
-            <span className="text-xl">📰</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
             <span className="text-[10px] font-semibold">{t(lang, 'tabFeed')}</span>
           </button>
           <button
@@ -1211,7 +1441,10 @@ export function MainScreen({ profile, onLogout }: Props) {
               activeTab === 'settings' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
-            <span className="text-xl">⚙️</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
             <span className="text-[10px] font-semibold">{t(lang, 'tabSettings')}</span>
           </button>
         </div>
@@ -1220,7 +1453,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Модальное окно Бристольской шкалы */}
       {showBristolModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-5 w-full max-w-sm">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white text-center mb-1">
               {t(lang, 'bristolTitle')}
             </h2>
@@ -1228,20 +1461,20 @@ export function MainScreen({ profile, onLogout }: Props) {
               {t(lang, 'bristolSubtitle')}
             </p>
 
-            {/* Компактная сетка кнопок */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* Вертикальный список с подробными описаниями */}
+            <div className="space-y-2 mb-3">
               {[1, 2, 3, 4, 5, 6, 7].map(type => (
                 <button
                   key={type}
                   onClick={() => handleBristolSelect(type)}
-                  className={`p-2 rounded-xl border-2 transition-all active:scale-95 ${
+                  className={`w-full p-3 rounded-xl border-2 transition-all active:scale-98 text-left ${
                     type <= 2 ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20' :
                     type === 3 || type === 4 ? 'border-green-500/30 bg-green-500/10 hover:bg-green-500/20' :
                     'border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20'
                   }`}
                 >
-                  <div className="flex flex-col items-center">
-                    <div className="text-2xl mb-1">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl flex-shrink-0">
                       {type === 1 && '⚫'}
                       {type === 2 && '🟫'}
                       {type === 3 && '🟤'}
@@ -1250,15 +1483,22 @@ export function MainScreen({ profile, onLogout }: Props) {
                       {type === 6 && '🟠'}
                       {type === 7 && '🔵'}
                     </div>
-                    <div className="text-white font-bold text-xs">
-                      {t(lang, `bristolType${type}`)}
-                    </div>
-                    <div className={`text-[10px] mt-0.5 ${
-                      type <= 2 ? 'text-red-400' :
-                      type === 3 || type === 4 ? 'text-green-400' :
-                      'text-orange-400'
-                    }`}>
-                      {t(lang, `bristolLabel${type}`)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-white font-bold text-sm">
+                          {t(lang, `bristolType${type}`)}
+                        </span>
+                        <span className={`text-xs font-semibold ${
+                          type <= 2 ? 'text-red-400' :
+                          type === 3 || type === 4 ? 'text-green-400' :
+                          'text-orange-400'
+                        }`}>
+                          {t(lang, `bristolLabel${type}`)}
+                        </span>
+                      </div>
+                      <div className="text-gray-300 text-xs leading-relaxed">
+                        {t(lang, `bristolDesc${type}`)}
+                      </div>
                     </div>
                   </div>
                 </button>
