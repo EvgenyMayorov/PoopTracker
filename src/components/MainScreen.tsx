@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
 import { Lang, LANG_NAMES, LANG_FLAGS, t } from '../i18n'
 import { PWAInstallBanner } from './PWAInstallBanner'
+import { SuccessAnimation } from './SuccessAnimation'
 
 type Props = {
   profile: Profile
@@ -42,6 +43,14 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<number | null>(null)
   const [showPWAGuide, setShowPWAGuide] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => 
+    (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
+  )
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<string | null>(null)
+  const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
+  const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
+  const [newComment, setNewComment] = useState<Record<string, string>>({})
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -141,8 +150,167 @@ export function MainScreen({ profile, onLogout }: Props) {
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) setFriendsEvents(data)
+    if (data) {
+      setFriendsEvents(data)
+      // Загружаем реакции и комментарии для каждого события
+      data.forEach(event => {
+        fetchReactions(event.id)
+        fetchComments(event.id)
+      })
+    }
   }, [following])
+
+  // Загрузка реакций для события
+  const fetchReactions = async (eventId: string) => {
+    const { data } = await supabase
+      .from('reactions')
+      .select('*')
+      .eq('event_id', eventId)
+    
+    if (data) {
+      const reactionCounts = {
+        thumbs_up: data.filter(r => r.reaction_type === 'thumbs_up').length,
+        heart: data.filter(r => r.reaction_type === 'heart').length,
+        poop: data.filter(r => r.reaction_type === 'poop').length,
+        userReaction: data.find(r => r.user_id === profile.id)?.reaction_type,
+      }
+      setReactions(prev => ({ ...prev, [eventId]: reactionCounts }))
+    }
+  }
+
+  // Загрузка комментариев для события
+  const fetchComments = async (eventId: string) => {
+    const { data } = await supabase
+      .from('comments')
+      .select('*, profiles(username)')
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: true })
+    
+    if (data) {
+      setComments(prev => ({
+        ...prev,
+        [eventId]: data.map(c => ({
+          id: c.id,
+          user_id: c.user_id,
+          username: c.profiles?.username || 'Unknown',
+          text: c.comment_text,
+          created_at: c.created_at,
+        }))
+      }))
+    }
+  }
+
+  // Добавить реакцию
+  const handleReaction = async (eventId: string, reactionType: 'thumbs_up' | 'heart' | 'poop') => {
+    const currentReaction = reactions[eventId]?.userReaction
+    
+    if (currentReaction === reactionType) {
+      // Удалить реакцию
+      await supabase
+        .from('reactions')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', profile.id)
+    } else {
+      if (currentReaction) {
+        // Изменить реакцию
+        await supabase
+          .from('reactions')
+          .update({ reaction_type: reactionType })
+          .eq('event_id', eventId)
+          .eq('user_id', profile.id)
+      } else {
+        // Добавить новую реакцию
+        await supabase
+          .from('reactions')
+          .insert({
+            event_id: eventId,
+            user_id: profile.id,
+            reaction_type: reactionType,
+          })
+        
+        // Создать уведомление для владельца события
+        const { data: event } = await supabase
+          .from('events')
+          .select('user_id')
+          .eq('id', eventId)
+          .single()
+        
+        if (event && event.user_id !== profile.id) {
+          await supabase.from('notifications').insert({
+            user_id: event.user_id,
+            friend_id: profile.id,
+            friend_username: profile.username,
+            notification_type: 'reaction',
+            event_id: eventId,
+            reaction_type: reactionType,
+          })
+        }
+      }
+    }
+    
+    fetchReactions(eventId)
+  }
+
+  // Добавить комментарий
+  const handleAddComment = async (eventId: string) => {
+    const text = newComment[eventId]?.trim()
+    if (!text) return
+    
+    await supabase
+      .from('comments')
+      .insert({
+        event_id: eventId,
+        user_id: profile.id,
+        comment_text: text,
+      })
+    
+    // Создать уведомление для владельца события
+    const { data: event } = await supabase
+      .from('events')
+      .select('user_id')
+      .eq('id', eventId)
+      .single()
+    
+    if (event && event.user_id !== profile.id) {
+      await supabase.from('notifications').insert({
+        user_id: event.user_id,
+        friend_id: profile.id,
+        friend_username: profile.username,
+        notification_type: 'comment',
+        event_id: eventId,
+        comment_text: text,
+      })
+    }
+    
+    setNewComment(prev => ({ ...prev, [eventId]: '' }))
+    fetchComments(eventId)
+  }
+
+  // Удалить событие
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm(t(lang, 'deleteConfirm'))) return
+    
+    await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId)
+      .eq('user_id', profile.id)
+    
+    fetchEvents()
+  }
+
+  // Изменить тип по шкале Бристольской формы
+  const handleEditBristolType = async (eventId: string, newType: number) => {
+    await supabase
+      .from('events')
+      .update({ bristol_type: newType })
+      .eq('id', eventId)
+      .eq('user_id', profile.id)
+    
+    setEditingEventId(null)
+    fetchEvents()
+  }
 
   useEffect(() => {
     fetchEvents()
@@ -237,6 +405,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     setShowBristolModal(false)
     setCurrentEventId(null)
     setSelectedType(null)
+    setShowSuccess(true)
   }
 
   // Пропустить выбор типа
@@ -627,31 +796,68 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
       </div>
 
-      {/* Язык */}
+      {/* Тема */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          🎨 {t(lang, 'theme')}
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setTheme('light')
+              localStorage.setItem('poop_theme', 'light')
+            }}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+              theme === 'light'
+                ? 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-lg'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            ☀️ {t(lang, 'themeLight')}
+          </button>
+          <button
+            onClick={() => {
+              setTheme('dark')
+              localStorage.setItem('poop_theme', 'dark')
+            }}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+              theme === 'dark'
+                ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg'
+                : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+          >
+            🌙 {t(lang, 'themeDark')}
+          </button>
+        </div>
+      </div>
+
+      {/* Язык - выпадающий список */}
+      <div className="mb-6">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
           🌐 {t(lang, 'language')}
         </h3>
-        <div className="space-y-2">
+        <select
+          value={lang}
+          onChange={(e) => {
+            setLang(e.target.value as Lang)
+            localStorage.setItem('poop_lang', e.target.value)
+          }}
+          className={`w-full p-3 rounded-xl font-medium transition-all ${
+            theme === 'light'
+              ? 'bg-white border-2 border-blue-300 text-gray-800'
+              : 'bg-white/5 border-2 border-white/10 text-gray-300'
+          }`}
+        >
           {(Object.keys(LANG_NAMES) as Lang[]).map(l => (
-            <button
-              key={l}
-              onClick={() => {
-                setLang(l)
-                localStorage.setItem('poop_lang', l)
-              }}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
-                lang === l
-                  ? 'bg-blue-500/20 border-2 border-blue-500 text-blue-400'
-                  : 'bg-white/5 border-2 border-transparent text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              <span className="text-xl">{LANG_FLAGS[l]}</span>
-              <span className="flex-1 text-left font-medium">{LANG_NAMES[l]}</span>
-              {lang === l && <span>✓</span>}
-            </button>
+            <option key={l} value={l} className="bg-slate-900">
+              {LANG_FLAGS[l]} {LANG_NAMES[l]}
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Статистика */}
@@ -707,7 +913,11 @@ export function MainScreen({ profile, onLogout }: Props) {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex flex-col">
+    <div className={`min-h-screen flex flex-col ${
+      theme === 'light' 
+        ? 'bg-gradient-to-br from-blue-50 via-white to-cyan-50' 
+        : 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950'
+    }`}>
       {/* Контент */}
       <div className="flex-1 overflow-y-auto pb-20">
         {activeTab === 'home' && <HomeTab />}
@@ -716,8 +926,17 @@ export function MainScreen({ profile, onLogout }: Props) {
         {activeTab === 'settings' && <SettingsTab />}
       </div>
 
+      {/* Анимация успеха */}
+      {showSuccess && (
+        <SuccessAnimation lang={lang} onComplete={() => setShowSuccess(false)} />
+      )}
+
       {/* Нижняя навигация */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
+      <div className={`fixed bottom-0 left-0 right-0 backdrop-blur-xl border-t ${
+        theme === 'light'
+          ? 'bg-white/95 border-blue-200'
+          : 'bg-slate-900/95 border-white/10'
+      }`}>
         <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
           <button
             onClick={() => setActiveTab('home')}
