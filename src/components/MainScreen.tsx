@@ -696,7 +696,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                         {event.profiles?.username || 'Unknown'}
                       </div>
-                      <div className="text-fuchsia-400 text-sm">
+                      <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-fuchsia-400'}`}>
                         {t(lang, 'friendPooped').replace('{name}', event.profiles?.username || '')}
                       </div>
                       {event.bristol_type && (
@@ -705,7 +705,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                           event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
                           'text-orange-400'
                         }`}>
-                          {t(lang, `bristolType${event.bristol_type}`)} • {t(lang, `bristolLabel${event.bristol_type}`)}
+                          {t(lang, `bristolLabel${event.bristol_type}`)} - {t(lang, `bristolDesc${event.bristol_type}`)}
                         </div>
                       )}
                     </div>
@@ -819,14 +819,14 @@ export function MainScreen({ profile, onLogout }: Props) {
                     </div>
                     <div className="flex-1">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.username}</div>
-                      <div className="text-cyan-400 text-sm">{t(lang, 'poopButton')}</div>
+                      <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>{t(lang, 'poopButton')}</div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 ${
                           event.bristol_type <= 2 ? 'text-red-400' :
                           event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
                           'text-orange-400'
                         }`}>
-                          {t(lang, `bristolType${event.bristol_type}`)} • {t(lang, `bristolLabel${event.bristol_type}`)}
+                          {t(lang, `bristolLabel${event.bristol_type}`)} - {t(lang, `bristolDesc${event.bristol_type}`)}
                         </div>
                       )}
                     </div>
@@ -966,9 +966,9 @@ export function MainScreen({ profile, onLogout }: Props) {
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
           <div className="flex flex-col items-center justify-center h-full">
-            <span className="text-6xl transition-transform duration-200 group-active:scale-125">
-              💩
-            </span>
+            <svg className="w-20 h-20 text-white transition-transform duration-200 group-active:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2C10.5 2 9.5 3 9.5 4.5C9.5 5.5 10 6.2 10.5 6.7C9 6.9 8 8 8 9.5C8 10.5 8.5 11.2 9 11.7C7.5 11.9 6.5 13 6.5 14.5C6.5 16.5 8 18 10 18H14C16 18 17.5 16.5 17.5 14.5C17.5 13 16.5 11.9 15 11.7C15.5 11.2 16 10.5 16 9.5C16 8 15 6.9 13.5 6.7C14 6.2 14.5 5.5 14.5 4.5C14.5 3 13.5 2 12 2Z" />
+            </svg>
             <span className="text-sm font-bold mt-2 text-white px-4 text-center leading-tight">
               {t(lang, 'poopButton')}
             </span>
