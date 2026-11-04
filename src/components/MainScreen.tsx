@@ -458,51 +458,109 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Обработка кнопки "У меня вышло!"
   const handlePoop = async () => {
-    console.log('[HandlePoop] Создание нового события...')
+    console.log('[HandlePoop] === НАЧАЛО СОЗДАНИЯ СОБЫТИЯ ===')
+    console.log('[HandlePoop] profile.id:', profile.id)
     
-    const { data, error } = await supabase
-      .from('events')
-      .insert({ user_id: profile.id })
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('[HandlePoop] Ошибка создания события:', error)
-      return
+    try {
+      console.log('[HandlePoop] Отправка запроса на создание события...')
+      
+      const { data, error } = await supabase
+        .from('events')
+        .insert({ user_id: profile.id })
+        .select()
+        .single()
+      
+      console.log('[HandlePoop] Ответ от Supabase:')
+      console.log('[HandlePoop] - data:', data)
+      console.log('[HandlePoop] - error:', error)
+      
+      if (error) {
+        console.error('[HandlePoop] ❌ Ошибка создания события:', error)
+        console.error('[HandlePoop] Код ошибки:', error.code)
+        console.error('[HandlePoop] Сообщение:', error.message)
+        alert(`Ошибка создания события: ${error.message}`)
+        return
+      }
+      
+      if (data) {
+        console.log('[HandlePoop] ✅ Событие успешно создано!')
+        console.log('[HandlePoop] ID события:', data.id)
+        console.log('[HandlePoop] Тип ID:', typeof data.id)
+        
+        setCurrentEventId(data.id)
+        console.log('[HandlePoop] currentEventId установлен в state:', data.id)
+        
+        // Небольшая задержка для гарантии обновления state
+        setTimeout(() => {
+          console.log('[HandlePoop] Открытие модального окна выбора типа...')
+          setShowBristolModal(true)
+          setSelectedType(null)
+        }, 100)
+      } else {
+        console.error('[HandlePoop] ❌ Данные не возвращены после создания события')
+        alert('Ошибка: событие создано, но данные не возвращены')
+      }
+      
+      await fetchEvents()
+      
+    } catch (err) {
+      console.error('[HandlePoop] ❌ Исключение:', err)
+      alert(`Ошибка: ${err}`)
     }
     
-    if (data) {
-      console.log('[HandlePoop] Событие создано:', data)
-      setCurrentEventId(data.id)
-      console.log('[HandlePoop] currentEventId установлен:', data.id)
-      setShowBristolModal(true)
-      setSelectedType(null)
-    }
-    fetchEvents()
+    console.log('[HandlePoop] === КОНЕЦ СОЗДАНИЯ СОБЫТИЯ ===')
   }
 
   // Сохранение типа стула по Бристольской шкале (автоматически при выборе)
   const handleBristolSelect = async (type: number) => {
-    console.log('[BristolSelect] Выбран тип:', type, 'для события:', currentEventId)
+    console.log('[BristolSelect] === НАЧАЛО СОХРАНЕНИЯ ТИПА ===')
+    console.log('[BristolSelect] Выбран тип:', type)
+    console.log('[BristolSelect] currentEventId:', currentEventId)
+    console.log('[BristolSelect] Тип currentEventId:', typeof currentEventId)
     
-    if (currentEventId) {
+    if (!currentEventId) {
+      console.error('[BristolSelect] ❌ ОШИБКА: currentEventId не установлен!')
+      alert('Ошибка: не удалось сохранить тип. currentEventId не установлен.')
+      return
+    }
+    
+    try {
+      console.log('[BristolSelect] Отправка запроса на обновление...')
+      console.log('[BristolSelect] Запрос: UPDATE events SET bristol_type =', type, 'WHERE id =', currentEventId)
+      
       const { data, error } = await supabase
         .from('events')
         .update({ bristol_type: type })
         .eq('id', currentEventId)
         .select()
       
+      console.log('[BristolSelect] Ответ от Supabase:')
+      console.log('[BristolSelect] - data:', data)
+      console.log('[BristolSelect] - error:', error)
+      
       if (error) {
-        console.error('[BristolSelect] Ошибка обновления:', error)
+        console.error('[BristolSelect] ❌ Ошибка обновления:', error)
+        console.error('[BristolSelect] Код ошибки:', error.code)
+        console.error('[BristolSelect] Сообщение:', error.message)
+        console.error('[BristolSelect] Детали:', error.details)
+        console.error('[BristolSelect] Подсказка:', error.hint)
+        alert(`Ошибка сохранения: ${error.message}`)
+      } else if (data && data.length > 0) {
+        console.log('[BristolSelect] ✅ Успешно обновлено!')
+        console.log('[BristolSelect] Обновлённая запись:', data[0])
       } else {
-        console.log('[BristolSelect] Успешно обновлено:', data)
+        console.warn('[BristolSelect] ⚠️ Обновление выполнено, но данные не возвращены')
+        console.warn('[BristolSelect] Это может означать, что запись не найдена или RLS блокирует обновление')
       }
       
       // Обновляем список событий
-      fetchEvents()
-      fetchFriendsEvents()
-    } else {
-      console.error('[BristolSelect] currentEventId не установлен!')
+      console.log('[BristolSelect] Обновление списка событий...')
+      await fetchEvents()
+      await fetchFriendsEvents()
+      
+    } catch (err) {
+      console.error('[BristolSelect] ❌ Исключение:', err)
+      alert(`Ошибка: ${err}`)
     }
     
     setShowBristolModal(false)
@@ -514,6 +572,8 @@ export function MainScreen({ profile, onLogout }: Props) {
     if (!editingEventId) {
       setShowSuccess(true)
     }
+    
+    console.log('[BristolSelect] === КОНЕЦ СОХРАНЕНИЯ ТИПА ===')
   }
 
   // Пропустить выбор типа
