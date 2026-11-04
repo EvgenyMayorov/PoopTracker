@@ -89,6 +89,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       .limit(50)
     
     if (data) {
+      console.log('[FetchEvents] Загруженные события:', data)
       setEvents(data)
       // Загружаем реакции и комментарии для каждого события
       data.forEach(event => {
@@ -967,7 +968,9 @@ export function MainScreen({ profile, onLogout }: Props) {
           <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
           <div className="flex flex-col items-center justify-center h-full">
             <svg className="w-20 h-20 text-white transition-transform duration-200 group-active:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2C10.5 2 9.5 3 9.5 4.5C9.5 5.5 10 6.2 10.5 6.7C9 6.9 8 8 8 9.5C8 10.5 8.5 11.2 9 11.7C7.5 11.9 6.5 13 6.5 14.5C6.5 16.5 8 18 10 18H14C16 18 17.5 16.5 17.5 14.5C17.5 13 16.5 11.9 15 11.7C15.5 11.2 16 10.5 16 9.5C16 8 15 6.9 13.5 6.7C14 6.2 14.5 5.5 14.5 4.5C14.5 3 13.5 2 12 2Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2C11 2 10 2.5 10 3.5C10 4 10.3 4.4 10.7 4.7C9.5 5 8.5 6 8.5 7.5C8.5 8.3 8.9 9 9.5 9.4C8.3 9.8 7.5 11 7.5 12.5C7.5 14.5 9 16 11 16H13C15 16 16.5 14.5 16.5 12.5C16.5 11 15.7 9.8 14.5 9.4C15.1 9 15.5 8.3 15.5 7.5C15.5 6 14.5 5 13.3 4.7C13.7 4.4 14 4 14 3.5C14 2.5 13 2 12 2Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12C9 12 9.5 11.5 10 11.5C10.5 11.5 11 12 11 12" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 12C13 12 13.5 11.5 14 11.5C14.5 11.5 15 12 15 12" />
             </svg>
             <span className="text-sm font-bold mt-2 text-white px-4 text-center leading-tight">
               {t(lang, 'poopButton')}
