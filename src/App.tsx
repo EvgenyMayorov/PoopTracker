@@ -100,7 +100,6 @@ function App() {
 
     setEvents(prev => [newEvent, ...prev])
 
-    // Spawn flying poop emojis
     const newEmojis = Array.from({ length: 8 }, (_, i) => ({
       id: Date.now() + i,
       x: Math.random() * 100,
@@ -109,7 +108,6 @@ function App() {
     setPoopEmojis(newEmojis)
     setTimeout(() => setPoopEmojis([]), 2000)
 
-    // Notify subscribers
     const newSubs = FAKE_SUBSCRIBERS.map(s => ({
       ...s,
       notified: false,
@@ -131,7 +129,6 @@ function App() {
       setCurrentReaction(REACTIONS[Math.floor(Math.random() * REACTIONS.length)])
     }, 1000)
 
-    // Check achievements
     const totalEvents = events.length + 1
     const achievement = ACHIEVEMENTS.find(a => a.threshold === totalEvents)
     if (achievement) {
@@ -147,7 +144,6 @@ function App() {
     }
   }
 
-  // Stats
   const todayCount = events.filter(e => {
     const today = new Date()
     const eventDate = new Date(e.timestamp)
@@ -177,23 +173,27 @@ function App() {
   const nextAchievement = ACHIEVEMENTS.find(a => events.length < a.threshold)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-900 via-yellow-900 to-amber-950 text-white relative overflow-hidden">
-      {/* Background floating poops */}
+    <div className="min-h-screen bg-white relative overflow-hidden">
+      {/* Subtle background pattern */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {[...Array(12)].map((_, i) => (
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-50/80 via-white to-indigo-50/60" />
+        {[...Array(10)].map((_, i) => (
           <div
             key={i}
-            className="absolute text-4xl opacity-10 animate-float"
+            className="absolute text-4xl opacity-[0.04] animate-float"
             style={{
-              left: `${(i * 8.3) % 100}%`,
-              top: `${(i * 13.7) % 100}%`,
-              animationDuration: `${5 + (i % 5)}s`,
+              left: `${(i * 10) % 100}%`,
+              top: `${(i * 13) % 100}%`,
+              animationDuration: `${6 + (i % 4)}s`,
               animationDelay: `${(i % 3)}s`,
             }}
           >
             💩
           </div>
         ))}
+        {/* Decorative blue blobs */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-blue-100/40 rounded-full blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl" />
       </div>
 
       {/* Flying poop emojis on click */}
@@ -213,14 +213,14 @@ function App() {
       {/* Achievement popup */}
       {showAchievement && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn"
           onClick={() => setShowAchievement(null)}
         >
-          <div className="bg-gradient-to-br from-yellow-400 to-amber-500 rounded-3xl p-8 text-center max-w-sm mx-4 animate-bounceIn shadow-2xl shadow-yellow-500/30">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 text-center max-w-sm mx-4 animate-bounceIn shadow-2xl shadow-blue-500/30">
             <div className="text-6xl mb-4">{showAchievement.emoji}</div>
-            <h2 className="text-2xl font-bold text-amber-950 mb-2">Достижение!</h2>
-            <h3 className="text-xl font-bold text-amber-900 mb-2">{showAchievement.title}</h3>
-            <p className="text-amber-800">{showAchievement.description}</p>
+            <h2 className="text-2xl font-bold text-white mb-2">Достижение!</h2>
+            <h3 className="text-xl font-bold text-blue-100 mb-2">{showAchievement.title}</h3>
+            <p className="text-blue-200">{showAchievement.description}</p>
           </div>
         </div>
       )}
@@ -228,12 +228,12 @@ function App() {
       {/* Notification bar */}
       {showNotif && (
         <div className="fixed top-4 left-4 right-4 z-40 animate-slideDown">
-          <div className="bg-green-500/90 backdrop-blur-lg rounded-2xl p-4 text-center shadow-xl shadow-green-500/20">
+          <div className="bg-blue-600 text-white rounded-2xl p-4 text-center shadow-xl shadow-blue-500/20">
             <p className="text-lg font-bold">
               ✅ Уведомление отправлено {FAKE_SUBSCRIBERS.length} подписчикам!
             </p>
             {currentReaction && (
-              <p className="text-sm text-green-100 mt-1">{currentReaction}</p>
+              <p className="text-sm text-blue-100 mt-1">{currentReaction}</p>
             )}
           </div>
         </div>
@@ -244,7 +244,9 @@ function App() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">💩 PoopTracker</h1>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              💩 <span>PoopTracker</span>
+            </h1>
             {editingName ? (
               <div className="flex items-center gap-2 mt-1">
                 <input
@@ -252,16 +254,16 @@ function App() {
                   value={tempName}
                   onChange={e => setTempName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSaveName()}
-                  className="bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-sm text-white w-32 focus:outline-none focus:border-amber-400"
+                  className="bg-gray-100 border border-blue-300 rounded-lg px-2 py-1 text-sm text-gray-800 w-32 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   autoFocus
                 />
-                <button onClick={handleSaveName} className="text-green-400 text-sm">✓</button>
-                <button onClick={() => setEditingName(false)} className="text-red-400 text-sm">✗</button>
+                <button onClick={handleSaveName} className="text-green-500 text-sm font-bold hover:text-green-600">✓</button>
+                <button onClick={() => setEditingName(false)} className="text-red-400 text-sm font-bold hover:text-red-500">✗</button>
               </div>
             ) : (
               <button
                 onClick={() => { setTempName(username); setEditingName(true) }}
-                className="text-amber-300 text-sm hover:text-amber-200 transition-colors"
+                className="text-blue-600 text-sm hover:text-blue-700 transition-colors font-medium"
               >
                 @{username} ✏️
               </button>
@@ -269,7 +271,7 @@ function App() {
           </div>
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="px-4 py-2 bg-white/10 rounded-xl text-sm hover:bg-white/20 transition-all"
+            className="px-4 py-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm hover:bg-blue-100 transition-all font-medium"
           >
             {showHistory ? '📊 Статистика' : '📋 История'}
           </button>
@@ -277,44 +279,44 @@ function App() {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-3 text-center">
-            <div className="text-2xl font-bold text-amber-300">{todayCount}</div>
-            <div className="text-xs text-gray-400">Сегодня</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="text-2xl font-bold text-blue-600">{todayCount}</div>
+            <div className="text-xs text-gray-500">Сегодня</div>
           </div>
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-3 text-center">
-            <div className="text-2xl font-bold text-amber-300">{weekCount}</div>
-            <div className="text-xs text-gray-400">За неделю</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="text-2xl font-bold text-blue-600">{weekCount}</div>
+            <div className="text-xs text-gray-500">За неделю</div>
           </div>
-          <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-3 text-center">
-            <div className="text-2xl font-bold text-amber-300">{avgInterval}</div>
-            <div className="text-xs text-gray-400">Ср. интервал</div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="text-2xl font-bold text-blue-600">{avgInterval}</div>
+            <div className="text-xs text-gray-500">Ср. интервал</div>
           </div>
         </div>
 
         {/* Achievement progress */}
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 mb-6">
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-6 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               {currentAchievement && (
                 <>
                   <span className="text-xl">{currentAchievement.emoji}</span>
-                  <span className="text-sm font-semibold">{currentAchievement.title}</span>
+                  <span className="text-sm font-semibold text-gray-800">{currentAchievement.title}</span>
                 </>
               )}
               {!currentAchievement && (
-                <span className="text-sm text-gray-400">Начни свой путь!</span>
+                <span className="text-sm text-gray-500">Начни свой путь!</span>
               )}
             </div>
             {nextAchievement && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 До «{nextAchievement.title}»: {nextAchievement.threshold - events.length}
               </span>
             )}
           </div>
           {nextAchievement && (
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-gray-100 rounded-full h-2">
               <div
-                className="bg-gradient-to-r from-amber-400 to-yellow-400 h-2 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, (events.length / nextAchievement.threshold) * 100)}%` }}
               />
             </div>
@@ -325,32 +327,32 @@ function App() {
         <div className="flex justify-center mb-8">
           <button
             onClick={handlePoop}
-            className="relative w-52 h-52 rounded-full bg-gradient-to-br from-amber-600 via-yellow-700 to-amber-800 shadow-2xl shadow-amber-900/50 border-4 border-amber-400/30 transition-all duration-200 hover:shadow-amber-500/30 hover:scale-105 active:scale-90 group"
+            className="relative w-52 h-52 rounded-full bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-2xl shadow-blue-500/30 border-4 border-blue-400/30 transition-all duration-200 hover:shadow-blue-500/50 hover:scale-105 active:scale-90 group"
           >
             <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
             <div className="flex flex-col items-center justify-center h-full">
               <span className="text-7xl transition-transform duration-200 group-hover:scale-110 group-active:scale-125">
                 💩
               </span>
-              <span className="text-sm font-bold mt-3 text-amber-100 group-active:text-yellow-300">
+              <span className="text-sm font-bold mt-3 text-white group-active:text-blue-200">
                 У МЕНЯ ВЫШЛО!
               </span>
             </div>
-            <div className="absolute inset-0 rounded-full border-2 border-amber-400/50 animate-ping" />
+            <div className="absolute inset-0 rounded-full border-2 border-blue-400/50 animate-ping" />
           </button>
         </div>
 
         {/* Total count */}
         <div className="text-center mb-6">
-          <span className="text-amber-300/60 text-sm">
-            Всего зафиксировано: <span className="font-bold text-amber-300">{events.length}</span> раз
+          <span className="text-gray-500 text-sm">
+            Всего зафиксировано: <span className="font-bold text-blue-600">{events.length}</span> раз
           </span>
         </div>
 
         {/* Subscribers feed */}
         {subscribers.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
               Уведомления подписчикам
             </h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -359,14 +361,14 @@ function App() {
                   key={sub.id}
                   className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-500 ${
                     sub.notified
-                      ? 'bg-green-500/10 border border-green-500/20'
-                      : 'bg-white/5 border border-white/5'
+                      ? 'bg-blue-50 border border-blue-200'
+                      : 'bg-gray-50 border border-gray-200'
                   }`}
                 >
                   <span className="text-2xl">{sub.avatar}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{sub.name}</div>
-                    <div className={`text-xs transition-all duration-300 ${sub.notified ? 'text-green-400' : 'text-gray-500'}`}>
+                    <div className="text-sm font-medium text-gray-800 truncate">{sub.name}</div>
+                    <div className={`text-xs transition-all duration-300 ${sub.notified ? 'text-blue-600' : 'text-gray-400'}`}>
                       {sub.notified
                         ? `✅ «У ${username} вышло!» — доставлено`
                         : '⏳ Отправка...'
@@ -382,27 +384,27 @@ function App() {
         {/* History / Stats */}
         {showHistory ? (
           <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
               📋 История событий
             </h3>
             {events.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-400">
                 <div className="text-4xl mb-2">🫥</div>
                 <p>Пока пусто. Самое время нажать кнопку!</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {events.map(event => (
-                  <div key={event.id} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center gap-3">
+                  <div key={event.id} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3 shadow-sm">
                     <span className="text-2xl">💩</span>
                     <div>
-                      <div className="text-sm font-medium">
+                      <div className="text-sm font-medium text-gray-800">
                         {new Date(event.timestamp).toLocaleDateString('ru-RU', {
                           day: 'numeric',
                           month: 'long',
                         })}
                       </div>
-                      <div className="text-xs text-gray-400">
+                      <div className="text-xs text-gray-500">
                         {new Date(event.timestamp).toLocaleTimeString('ru-RU', {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -421,7 +423,7 @@ function App() {
                     localStorage.removeItem('poop_events')
                   }
                 }}
-                className="w-full mt-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm hover:bg-red-500/20 transition-all"
+                className="w-full mt-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-500 text-sm hover:bg-red-100 transition-all font-medium"
               >
                 🗑️ Очистить историю
               </button>
@@ -429,34 +431,34 @@ function App() {
           </div>
         ) : (
           <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
               📊 Статистика
             </h3>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-4 shadow-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Всего событий</span>
-                <span className="font-bold text-amber-300">{events.length}</span>
+                <span className="text-gray-500">Всего событий</span>
+                <span className="font-bold text-blue-600">{events.length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Сегодня</span>
-                <span className="font-bold text-amber-300">{todayCount}</span>
+                <span className="text-gray-500">Сегодня</span>
+                <span className="font-bold text-blue-600">{todayCount}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">За неделю</span>
-                <span className="font-bold text-amber-300">{weekCount}</span>
+                <span className="text-gray-500">За неделю</span>
+                <span className="font-bold text-blue-600">{weekCount}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Средний интервал</span>
-                <span className="font-bold text-amber-300">{avgInterval}</span>
+                <span className="text-gray-500">Средний интервал</span>
+                <span className="font-bold text-blue-600">{avgInterval}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Подписчиков</span>
-                <span className="font-bold text-amber-300">{FAKE_SUBSCRIBERS.length}</span>
+                <span className="text-gray-500">Подписчиков</span>
+                <span className="font-bold text-blue-600">{FAKE_SUBSCRIBERS.length}</span>
               </div>
-              <div className="border-t border-white/10 pt-3">
+              <div className="border-t border-gray-200 pt-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Рекорд за день</span>
-                  <span className="font-bold text-amber-300">
+                  <span className="text-gray-500">Рекорд за день</span>
+                  <span className="font-bold text-blue-600">
                     {(() => {
                       const dayMap: Record<string, number> = {}
                       events.forEach(e => {
@@ -472,7 +474,7 @@ function App() {
           </div>
         )}
 
-        <div className="text-center mt-8 text-gray-600 text-xs">
+        <div className="text-center mt-8 text-gray-400 text-xs">
           <p>💩 PoopTracker v1.0 — ваши подписчики ждут</p>
         </div>
       </div>
