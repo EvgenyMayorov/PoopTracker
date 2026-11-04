@@ -13,8 +13,22 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  bristol_type INTEGER CHECK (bristol_type >= 1 AND bristol_type <= 7),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Если таблица events уже существует, добавляем поле bristol_type
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' 
+    AND table_name = 'events' 
+    AND column_name = 'bristol_type'
+  ) THEN
+    ALTER TABLE public.events ADD COLUMN bristol_type INTEGER CHECK (bristol_type >= 1 AND bristol_type <= 7);
+  END IF;
+END $$;
 
 -- 3. Создаём таблицу friends (подписки)
 CREATE TABLE IF NOT EXISTS public.friends (

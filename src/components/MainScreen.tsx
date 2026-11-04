@@ -37,6 +37,9 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [tempUsername, setTempUsername] = useState(profile.username)
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
   const [friendsEvents, setFriendsEvents] = useState<any[]>([])
+  const [showBristolModal, setShowBristolModal] = useState(false)
+  const [currentEventId, setCurrentEventId] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<number | null>(null)
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -207,8 +210,38 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Обработка кнопки "У меня вышло!"
   const handlePoop = async () => {
-    await supabase.from('events').insert({ user_id: profile.id })
+    const { data, error } = await supabase
+      .from('events')
+      .insert({ user_id: profile.id })
+      .select()
+      .single()
+    
+    if (data) {
+      setCurrentEventId(data.id)
+      setShowBristolModal(true)
+      setSelectedType(null)
+    }
     fetchEvents()
+  }
+
+  // Сохранение типа стула по Бристольской шкале
+  const handleBristolSave = async () => {
+    if (currentEventId && selectedType) {
+      await supabase
+        .from('events')
+        .update({ bristol_type: selectedType })
+        .eq('id', currentEventId)
+    }
+    setShowBristolModal(false)
+    setCurrentEventId(null)
+    setSelectedType(null)
+  }
+
+  // Пропустить выбор типа
+  const handleBristolSkip = () => {
+    setShowBristolModal(false)
+    setCurrentEventId(null)
+    setSelectedType(null)
   }
 
   // Поиск пользователей
@@ -333,6 +366,15 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className="text-fuchsia-400 text-sm">
                         {t(lang, 'friendPooped').replace('{name}', event.profiles?.username || '')}
                       </div>
+                      {event.bristol_type && (
+                        <div className={`text-xs mt-1 ${
+                          event.bristol_type <= 2 ? 'text-red-400' :
+                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
+                          'text-orange-400'
+                        }`}>
+                          {t(lang, `bristolType${event.bristol_type}`)} • {t(lang, `bristolLabel${event.bristol_type}`)}
+                        </div>
+                      )}
                     </div>
                     <div className="text-xs text-gray-500">
                       {formatTimeAgo(event.created_at)}
@@ -361,6 +403,15 @@ export function MainScreen({ profile, onLogout }: Props) {
                     <div className="flex-1">
                       <div className="text-white font-semibold">{profile.username}</div>
                       <div className="text-cyan-400 text-sm">{t(lang, 'poopButton')}</div>
+                      {event.bristol_type && (
+                        <div className={`text-xs mt-1 ${
+                          event.bristol_type <= 2 ? 'text-red-400' :
+                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
+                          'text-orange-400'
+                        }`}>
+                          {t(lang, `bristolType${event.bristol_type}`)} • {t(lang, `bristolLabel${event.bristol_type}`)}
+                        </div>
+                      )}
                     </div>
                     <div className="text-xs text-gray-500">
                       {formatTimeAgo(event.created_at)}
@@ -672,6 +723,81 @@ export function MainScreen({ profile, onLogout }: Props) {
           </button>
         </div>
       </div>
+
+      {/* Модальное окно Бристольской шкалы */}
+      {showBristolModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-white text-center mb-2">
+              {t(lang, 'bristolTitle')}
+            </h2>
+            <p className="text-cyan-400 text-sm text-center mb-6">
+              {t(lang, 'bristolSubtitle')}
+            </p>
+
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5, 6, 7].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedType(type)}
+                  className={`w-full p-4 rounded-2xl border-2 transition-all ${
+                    selectedType === type
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 border-cyan-400'
+                      : 'bg-white/5 border-white/10 hover:border-white/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
+                      type <= 2 ? 'bg-red-500/20' :
+                      type === 3 || type === 4 ? 'bg-green-500/20' :
+                      'bg-orange-500/20'
+                    }`}>
+                      {type === 1 && '⚫'}
+                      {type === 2 && '🟫'}
+                      {type === 3 && '🟤'}
+                      {type === 4 && '🟢'}
+                      {type === 5 && '🟡'}
+                      {type === 6 && '🟠'}
+                      {type === 7 && '🔵'}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="text-white font-semibold">
+                        {t(lang, `bristolType${type}`)}
+                      </div>
+                      <div className="text-gray-400 text-sm">
+                        {t(lang, `bristolDesc${type}`)}
+                      </div>
+                      <div className={`text-xs mt-1 ${
+                        type <= 2 ? 'text-red-400' :
+                        type === 3 || type === 4 ? 'text-green-400' :
+                        'text-orange-400'
+                      }`}>
+                        {t(lang, `bristolLabel${type}`)}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleBristolSkip}
+                className="flex-1 py-3 bg-white/5 border border-white/20 rounded-xl text-gray-300 font-semibold hover:bg-white/10"
+              >
+                {t(lang, 'bristolSkip')}
+              </button>
+              <button
+                onClick={handleBristolSave}
+                disabled={!selectedType}
+                className="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t(lang, 'bristolSave')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
