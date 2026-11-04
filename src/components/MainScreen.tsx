@@ -51,6 +51,15 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
   const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
   const [newComment, setNewComment] = useState<Record<string, string>>({})
+  const [notifSettings, setNotifSettings] = useState(() => {
+    const saved = localStorage.getItem('poop_notif_settings')
+    return saved ? JSON.parse(saved) : {
+      friendPooped: true,
+      friendReaction: true,
+      friendComment: true,
+      friendFollowed: true
+    }
+  })
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -500,6 +509,34 @@ export function MainScreen({ profile, onLogout }: Props) {
       setEditingUsername(false)
       // Перезагружаем страницу для обновления профиля
       window.location.reload()
+    }
+  }
+
+  // Обновить настройки уведомлений
+  const handleNotifSettingChange = (key: string, value: boolean) => {
+    const newSettings = { ...notifSettings, [key]: value }
+    setNotifSettings(newSettings)
+    localStorage.setItem('poop_notif_settings', JSON.stringify(newSettings))
+  }
+
+  // Отправить тестовое уведомление
+  const handleTestNotification = () => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(t(lang, 'testNotification'), {
+          body: t(lang, 'testNotificationText'),
+          icon: '💩'
+        })
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification(t(lang, 'testNotification'), {
+              body: t(lang, 'testNotificationText'),
+              icon: '💩'
+            })
+          }
+        })
+      }
     }
   }
 
@@ -1224,6 +1261,84 @@ export function MainScreen({ profile, onLogout }: Props) {
               })()}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* Настройки уведомлений */}
+      <div className="mb-6">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          🔔 {t(lang, 'notificationSettings')}
+        </h3>
+        <div className={`rounded-xl p-4 space-y-3 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
+          {/* Чекбокс: У друга вышло */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendPooped}
+              onChange={(e) => handleNotifSettingChange('friendPooped', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              💩 {t(lang, 'notifFriendPooped')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг поставил реакцию */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendReaction}
+              onChange={(e) => handleNotifSettingChange('friendReaction', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              👍 {t(lang, 'notifFriendReaction')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг оставил комментарий */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendComment}
+              onChange={(e) => handleNotifSettingChange('friendComment', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              💬 {t(lang, 'notifFriendComment')}
+            </span>
+          </label>
+
+          {/* Чекбокс: Друг подписался на меня */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notifSettings.friendFollowed}
+              onChange={(e) => handleNotifSettingChange('friendFollowed', e.target.checked)}
+              className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
+            />
+            <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+              👥 {t(lang, 'notifFriendFollowed')}
+            </span>
+          </label>
+
+          {/* Кнопка тестового уведомления */}
+          <button
+            onClick={handleTestNotification}
+            className={`w-full mt-3 py-3 rounded-xl font-semibold transition-all ${
+              theme === 'light'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600'
+                : 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white hover:from-cyan-600 hover:to-fuchsia-600'
+            }`}
+          >
+            🔔 {t(lang, 'testNotification')}
+          </button>
         </div>
       </div>
 
