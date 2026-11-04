@@ -119,6 +119,8 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Записано!',
     // Language selector
     selectLanguage: 'Выберите язык',
+    // Week chart
+    weekChart: 'За последние 7 дней',
   },
   en: {
     tabHome: 'Home',
@@ -220,6 +222,8 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Recorded!',
     // Language selector
     selectLanguage: 'Select language',
+    // Week chart
+    weekChart: 'Last 7 days',
   },
   zh: {
     tabHome: '首页',
@@ -321,6 +325,8 @@ const translations: Record<Lang, Dict> = {
     successMessage: '已记录！',
     // Language selector
     selectLanguage: '选择语言',
+    // Week chart
+    weekChart: '最近7天',
   },
   de: {
     tabHome: 'Start',
@@ -422,6 +428,8 @@ const translations: Record<Lang, Dict> = {
     successMessage: 'Aufgezeichnet!',
     // Language selector
     selectLanguage: 'Sprache auswählen',
+    // Week chart
+    weekChart: 'Letzte 7 Tage',
   },
   es: {
     tabHome: 'Inicio',
@@ -523,6 +531,8 @@ const translations: Record<Lang, Dict> = {
     successMessage: '¡Registrado!',
     // Language selector
     selectLanguage: 'Seleccionar idioma',
+    // Week chart
+    weekChart: 'Últimos 7 días',
   },
 }
 

@@ -511,6 +511,29 @@ export function MainScreen({ profile, onLogout }: Props) {
     new Date(e.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   ).length
 
+  // Данные для графика за последние 7 дней
+  const weekData = (() => {
+    const data = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      const dayStart = new Date(date.setHours(0, 0, 0, 0))
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999))
+      const count = events.filter(e => {
+        const eventDate = new Date(e.created_at)
+        return eventDate >= dayStart && eventDate <= dayEnd
+      }).length
+      data.push({
+        day: date.toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'short' }),
+        count,
+        isToday: i === 0
+      })
+    }
+    return data
+  })()
+  const maxCount = Math.max(...weekData.map(d => d.count), 1)
+
   // Функция форматирования времени
   const formatTimeAgo = (dateString: string): string => {
     const date = new Date(dateString)
@@ -874,6 +897,54 @@ export function MainScreen({ profile, onLogout }: Props) {
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
           💩 {t(lang, 'today')}
+        </div>
+      </div>
+
+      {/* График за последние 7 дней */}
+      <div className={`mb-6 p-4 rounded-2xl ${
+        theme === 'light' 
+          ? 'bg-white border-2 border-gray-200' 
+          : 'bg-white/5 border border-white/10'
+      }`}>
+        <h3 className={`text-sm font-semibold mb-4 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          📊 {t(lang, 'weekChart')}
+        </h3>
+        <div className="flex items-end justify-between gap-2 h-32">
+          {weekData.map((day, index) => (
+            <div key={index} className="flex-1 flex flex-col items-center gap-2">
+              <div className="w-full flex flex-col justify-end h-20">
+                <div 
+                  className={`w-full rounded-t-lg transition-all duration-500 ${
+                    day.isToday
+                      ? 'bg-gradient-to-t from-cyan-500 to-fuchsia-500'
+                      : theme === 'light'
+                        ? 'bg-gradient-to-t from-blue-300 to-blue-400'
+                        : 'bg-gradient-to-t from-purple-500/50 to-fuchsia-500/50'
+                  }`}
+                  style={{ 
+                    height: `${day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 5}%`,
+                    minHeight: day.count > 0 ? '8px' : '4px'
+                  }}
+                />
+              </div>
+              <div className={`text-xs font-medium ${
+                day.isToday
+                  ? theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'
+                  : theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+              }`}>
+                {day.day}
+              </div>
+              <div className={`text-xs ${
+                day.count > 0
+                  ? theme === 'light' ? 'text-gray-800' : 'text-white'
+                  : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {day.count}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
