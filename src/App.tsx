@@ -44,11 +44,45 @@ function App() {
     try {
       console.log('[PoopTracker] Проверка текущей сессии...')
       
+      // Сначала тестируем подключение к Supabase
+      const { error: testError } = await supabase.from('profiles').select('count').limit(1)
+      
+      if (testError) {
+        console.error('[PoopTracker] Ошибка подключения к Supabase:', testError)
+        
+        let errorMessage = 'Ошибка подключения к Supabase\n\n'
+        
+        if (testError.message.includes('JWT') || testError.message.includes('token') || testError.message.includes('Invalid API key')) {
+          errorMessage += '❌ Неправильный API ключ!\n\n'
+          errorMessage += 'Откройте Supabase Dashboard → Settings → API\n'
+          errorMessage += 'Скопируйте "anon public" key (начинается с eyJ...)\n'
+          errorMessage += 'Замените SUPABASE_ANON_KEY в src/lib/supabase.ts'
+        } else if (testError.code === '42P01' || testError.message?.includes('profiles')) {
+          errorMessage += '⚠️ Таблицы не созданы!\n\n'
+          errorMessage += 'Выполните SQL-скрипт из supabase-schema.sql\n'
+          errorMessage += 'в Supabase SQL Editor'
+        } else if (testError.message.includes('network') || testError.message.includes('fetch')) {
+          errorMessage += '🌐 Проблема с сетью\n\n'
+          errorMessage += 'Проверьте:\n'
+          errorMessage += '1. Интернет-соединение\n'
+          errorMessage += '2. URL проекта в supabase.ts\n'
+          errorMessage += '3. Проект существует в Supabase Dashboard'
+        } else {
+          errorMessage += 'Детали ошибки:\n' + testError.message
+        }
+        
+        setError(errorMessage)
+        setLoading(false)
+        return
+      }
+      
+      console.log('[PoopTracker] ✅ Подключение к Supabase успешно')
+      
       const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError) {
         console.error('[PoopTracker] Ошибка getSession:', sessionError)
-        setError('Ошибка подключения к Supabase: ' + sessionError.message)
+        setError('Ошибка получения сессии: ' + sessionError.message)
         setLoading(false)
         return
       }
@@ -64,7 +98,7 @@ function App() {
       }
     } catch (err: any) {
       console.error('[PoopTracker] Критическая ошибка checkSession:', err)
-      setError('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
+      setError('Критическая ошибка: ' + (err.message || 'Неизвестная ошибка'))
       setLoading(false)
     }
   }
