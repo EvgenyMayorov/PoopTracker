@@ -520,22 +520,51 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   // Отправить тестовое уведомление
-  const handleTestNotification = () => {
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
+  const handleTestNotification = async () => {
+    console.log('[Notification] Тест уведомления запущен')
+    
+    if (!('Notification' in window)) {
+      alert('Ваш браузер не поддерживает уведомления')
+      return
+    }
+
+    console.log('[Notification] Текущий статус:', Notification.permission)
+
+    if (Notification.permission === 'granted') {
+      console.log('[Notification] Отправка уведомления...')
+      try {
         new Notification(t(lang, 'testNotification'), {
           body: t(lang, 'testNotificationText'),
-          icon: '💩'
+          icon: '💩',
+          badge: '💩'
         })
-      } else if (Notification.permission !== 'denied') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            new Notification(t(lang, 'testNotification'), {
-              body: t(lang, 'testNotificationText'),
-              icon: '💩'
-            })
-          }
-        })
+        console.log('[Notification] Уведомление отправлено')
+      } catch (error: any) {
+        console.error('[Notification] Ошибка отправки:', error)
+        alert('Ошибка при отправке уведомления: ' + (error.message || 'Неизвестная ошибка'))
+      }
+    } else if (Notification.permission === 'denied') {
+      console.log('[Notification] Уведомления заблокированы пользователем')
+      alert('Уведомления заблокированы. Разрешите уведомления в настройках браузера.')
+    } else {
+      console.log('[Notification] Запрос разрешения...')
+      try {
+        const permission = await Notification.requestPermission()
+        console.log('[Notification] Результат запроса:', permission)
+        
+        if (permission === 'granted') {
+          new Notification(t(lang, 'testNotification'), {
+            body: t(lang, 'testNotificationText'),
+            icon: '💩',
+            badge: '💩'
+          })
+          console.log('[Notification] Уведомление отправлено после разрешения')
+        } else {
+          alert('Вы отклонили запрос на уведомления')
+        }
+      } catch (error: any) {
+        console.error('[Notification] Ошибка запроса разрешения:', error)
+        alert('Ошибка при запросе разрешения: ' + (error.message || 'Неизвестная ошибка'))
       }
     }
   }
