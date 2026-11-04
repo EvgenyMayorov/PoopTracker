@@ -373,7 +373,7 @@ export function MainScreen({ profile, onLogout }: Props) {
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification(t(lang, 'notification'), {
                   body: t(lang, 'friendPooped').replace('{name}', friendProfile.username),
-                  icon: '💩'
+                  icon: './icon-light.svg'
                 })
               }
             }
@@ -535,8 +535,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       try {
         new Notification(t(lang, 'testNotification'), {
           body: t(lang, 'testNotificationText'),
-          icon: '💩',
-          badge: '💩'
+          icon: './icon-light.svg'
         })
         console.log('[Notification] Уведомление отправлено')
       } catch (error: any) {
@@ -555,8 +554,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         if (permission === 'granted') {
           new Notification(t(lang, 'testNotification'), {
             body: t(lang, 'testNotificationText'),
-            icon: '💩',
-            badge: '💩'
+            icon: './icon-light.svg'
           })
           console.log('[Notification] Уведомление отправлено после разрешения')
         } else {
