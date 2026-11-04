@@ -43,16 +43,52 @@ export function AuthScreen() {
         console.log('[Auth] Регистрация успешна:', data)
 
         if (data.user) {
-          console.log('[Auth] Создание профиля...')
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ id: data.user.id, username: username.trim() })
+          console.log('[Auth] Создание профиля с retry-логикой...')
+          
+          // Retry-логика: до 4 попыток с задержкой 500мс
+          const MAX_RETRIES = 4
+          const RETRY_DELAY = 500
+          let profileCreated = false
+          let lastError = null
 
-          if (profileError) {
-            console.error('[Auth] Ошибка создания профиля:', profileError)
-            throw new Error(`Ошибка создания профиля: ${profileError.message}`)
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            console.log(`[Auth] Попытка ${attempt}/${MAX_RETRIES} создания профиля...`)
+            
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({ 
+                id: data.user.id, 
+                username: username.trim(),
+                updated_at: new Date().toISOString()
+              })
+
+            if (profileError) {
+              lastError = profileError
+              console.error(`[Auth] Ошибка создания профиля (попытка ${attempt}):`, profileError)
+              
+              // Если профиль уже существует (конфликт с триггером) - это нормально
+              if (profileError.code === '23505') {
+                console.log('[Auth] Профиль уже существует (создан триггером)')
+                profileCreated = true
+                break
+              }
+              
+              // Если это не последняя попытка - ждём
+              if (attempt < MAX_RETRIES) {
+                console.log(`[Auth] Ждём ${RETRY_DELAY}мс перед следующей попыткой...`)
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+              }
+            } else {
+              profileCreated = true
+              console.log(`[Auth] Профиль создан с попытки ${attempt}`)
+              break
+            }
           }
-          console.log('[Auth] Профиль создан')
+
+          if (!profileCreated) {
+            console.error('[Auth] Не удалось создать профиль после всех попыток:', lastError)
+            throw new Error(`Не удалось создать профиль: ${lastError?.message || 'Неизвестная ошибка'}`)
+          }
         }
 
         setMessage('✅ Регистрация успешна! Загрузка...')

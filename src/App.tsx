@@ -107,49 +107,88 @@ function App() {
     try {
       console.log('[PoopTracker] Запрос профиля для userId:', userId)
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle()
+      // Retry-логика: до 4 попыток с задержкой 500мс
+      const MAX_RETRIES = 4
+      const RETRY_DELAY = 500
+      let profile = null
+      let lastError = null
 
-      if (error) {
-        console.error('[PoopTracker] Ошибка fetchProfile:', error)
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        console.log(`[PoopTracker] Попытка ${attempt}/${MAX_RETRIES} загрузки профиля...`)
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle()
 
-        // Если таблицы не созданы - выходим и показываем предупреждение
-        if (error.code === '42P01' || error.message?.includes('profiles')) {
-          console.log('[PoopTracker] Таблицы не созданы. Выход из системы...')
+        if (error) {
+          lastError = error
+          console.error(`[PoopTracker] Ошибка fetchProfile (попытка ${attempt}):`, error)
+
+          // Если таблицы не созданы - нет смысла повторять
+          if (error.code === '42P01' || error.message?.includes('profiles')) {
+            console.log('[PoopTracker] Таблицы не созданы. Выход из системы...')
+            await supabase.auth.signOut()
+            setSession(null)
+            setProfile(null)
+            setWarning(
+              '⚠️ Таблица profiles не найдена!\n\n' +
+              'Выполните SQL-скрипт из файла supabase-schema.sql\n' +
+              'в Supabase SQL Editor.'
+            )
+            setLoading(false)
+            return
+          }
+        } else {
+          profile = data
+          if (profile) {
+            console.log(`[PoopTracker] Профиль загружен с попытки ${attempt}:`, profile.username)
+            break
+          }
+        }
+
+        // Если это не последняя попытка и профиль не найден - ждём
+        if (attempt < MAX_RETRIES && !profile) {
+          console.log(`[PoopTracker] Профиль не найден, ждём ${RETRY_DELAY}мс перед следующей попыткой...`)
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+        }
+      }
+
+      // Если после всех попыток профиль найден - используем его
+      if (profile) {
+        console.log('[PoopTracker] Профиль успешно загружен:', profile.username)
+        setProfile(profile)
+        setWarning(null)
+      } else {
+        // Fallback: создаём профиль автоматически
+        console.warn('[PoopTracker] Профиль не найден после всех попыток. Создаём автоматически...')
+        
+        const username = `user_${userId.substring(0, 8)}`
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: userId, 
+            username: username,
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('[PoopTracker] Ошибка создания fallback-профиля:', insertError)
+          setWarning(
+            '⚠️ Не удалось создать профиль автоматически.\n\n' +
+            'Попробуйте выйти и войти заново.'
+          )
           await supabase.auth.signOut()
           setSession(null)
           setProfile(null)
-          setWarning(
-            '⚠️ Таблица profiles не найдена!\n\n' +
-            'Выполните SQL-скрипт из файла supabase-schema.sql\n' +
-            'в Supabase SQL Editor.'
-          )
         } else {
-          setWarning('Ошибка загрузки профиля: ' + error.message)
+          console.log('[PoopTracker] Fallback-профиль создан:', newProfile)
+          setProfile(newProfile)
+          setWarning(null)
         }
-        setLoading(false)
-        return
-      }
-
-      if (data) {
-        console.log('[PoopTracker] Профиль загружен:', data.username)
-        setProfile(data)
-        setWarning(null) // Очищаем предупреждение если всё ок
-      } else {
-        console.warn('[PoopTracker] Профиль не найден для userId:', userId)
-        // Профиль не найден - выходим и показываем форму входа
-        console.log('[PoopTracker] Профиль не найден. Выход из системы...')
-        await supabase.auth.signOut()
-        setSession(null)
-        setProfile(null)
-        setWarning(
-          '⚠️ Профиль не найден!\n\n' +
-          'Ваш аккаунт создан, но профиль отсутствует.\n' +
-          'Зарегистрируйтесь заново или обратитесь к администратору.'
-        )
       }
     } catch (err: any) {
       console.error('[PoopTracker] Исключение в fetchProfile:', err)
