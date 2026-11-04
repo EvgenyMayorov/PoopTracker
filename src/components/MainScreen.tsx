@@ -60,7 +60,14 @@ export function MainScreen({ profile, onLogout }: Props) {
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) setEvents(data)
+    if (data) {
+      setEvents(data)
+      // Загружаем реакции и комментарии для каждого события
+      data.forEach(event => {
+        fetchReactions(event.id)
+        fetchComments(event.id)
+      })
+    }
   }, [])
 
   // Загрузка подписчиков
@@ -323,7 +330,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     fetchFriendsEvents()
   }, [fetchFriendsEvents])
 
-  // Realtime подписка на события друзей
+  // Realtime подписка на события друзей, реакции и комментарии
   useEffect(() => {
     const channel = supabase
       .channel('friends-events')
@@ -364,6 +371,30 @@ export function MainScreen({ profile, onLogout }: Props) {
           }
         }
       )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'reactions' },
+        (payload) => {
+          // Обновляем реакции для всех событий
+          if (payload.new && 'event_id' in payload.new) {
+            fetchReactions(payload.new.event_id as string)
+          }
+          if (payload.old && 'event_id' in payload.old) {
+            fetchReactions(payload.old.event_id as string)
+          }
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        (payload) => {
+          // Обновляем комментарии для всех событий
+          if (payload.new && 'event_id' in payload.new) {
+            fetchComments(payload.new.event_id as string)
+          }
+          if (payload.old && 'event_id' in payload.old) {
+            fetchComments(payload.old.event_id as string)
+          }
+        }
+      )
       .subscribe()
 
     return () => {
@@ -401,11 +432,20 @@ export function MainScreen({ profile, onLogout }: Props) {
         .from('events')
         .update({ bristol_type: type })
         .eq('id', currentEventId)
+      
+      // Обновляем список событий
+      fetchEvents()
+      fetchFriendsEvents()
     }
     setShowBristolModal(false)
     setCurrentEventId(null)
     setSelectedType(null)
-    setShowSuccess(true)
+    setEditingEventId(null)
+    
+    // Показываем анимацию успеха только для новых записей
+    if (!editingEventId) {
+      setShowSuccess(true)
+    }
   }
 
   // Пропустить выбор типа
@@ -519,19 +559,23 @@ export function MainScreen({ profile, onLogout }: Props) {
           {friendsEvents.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">👀</div>
-              <p className="text-gray-400 font-semibold">{t(lang, 'feedEmpty')}</p>
-              <p className="text-gray-500 text-sm mt-1">{t(lang, 'feedEmptyDesc')}</p>
+              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'feedEmpty')}</p>
+              <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{t(lang, 'feedEmptyDesc')}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {friendsEvents.map(event => (
-                <div key={event.id} className="bg-white/5 border border-fuchsia-500/20 rounded-xl p-4">
+                <div key={event.id} className={`rounded-xl p-4 ${
+                  theme === 'light'
+                    ? 'bg-white border-2 border-fuchsia-200'
+                    : 'bg-white/5 border border-fuchsia-500/20'
+                }`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
                       💩
                     </div>
                     <div className="flex-1">
-                      <div className="text-white font-semibold">
+                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                         {event.profiles?.username || 'Unknown'}
                       </div>
                       <div className="text-fuchsia-400 text-sm">
@@ -547,9 +591,89 @@ export function MainScreen({ profile, onLogout }: Props) {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
+                  </div>
+
+                  {/* Реакции */}
+                  <div className={`flex gap-2 mt-3 pt-3 border-t ${
+                    theme === 'light' ? 'border-gray-200' : 'border-white/10'
+                  }`}>
+                    <button
+                      onClick={() => handleReaction(event.id, 'thumbs_up')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'thumbs_up'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : theme === 'light'
+                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      👍 {reactions[event.id]?.thumbs_up || 0}
+                    </button>
+                    <button
+                      onClick={() => handleReaction(event.id, 'heart')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'heart'
+                          ? 'bg-red-500/20 text-red-400'
+                          : theme === 'light'
+                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      ❤️ {reactions[event.id]?.heart || 0}
+                    </button>
+                    <button
+                      onClick={() => handleReaction(event.id, 'poop')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'poop'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : theme === 'light'
+                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      💩 {reactions[event.id]?.poop || 0}
+                    </button>
+                  </div>
+
+                  {/* Комментарии */}
+                  {comments[event.id] && comments[event.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {comments[event.id].map(comment => (
+                        <div key={comment.id} className={`rounded-lg p-2 ${
+                          theme === 'light' ? 'bg-gray-50' : 'bg-white/5'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
+                            <span className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
+                          </div>
+                          <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Поле для добавления комментария */}
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={newComment[event.id] || ''}
+                      onChange={(e) => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
+                      placeholder={t(lang, 'commentPlaceholder')}
+                      className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 ${
+                        theme === 'light'
+                          ? 'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
+                          : 'bg-white/5 border border-white/10 text-white placeholder-gray-500'
+                      }`}
+                    />
+                    <button
+                      onClick={() => handleAddComment(event.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-lg text-white text-sm font-semibold hover:opacity-90"
+                    >
+                      {t(lang, 'commentSend')}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -561,18 +685,22 @@ export function MainScreen({ profile, onLogout }: Props) {
           {events.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
-              <p className="text-gray-400 font-semibold">{t(lang, 'myEventsEmpty')}</p>
+              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'myEventsEmpty')}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {events.map(event => (
-                <div key={event.id} className="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                <div key={event.id} className={`rounded-xl p-4 ${
+                  theme === 'light'
+                    ? 'bg-white border-2 border-cyan-200'
+                    : 'bg-white/5 border border-cyan-500/20'
+                }`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                       💩
                     </div>
                     <div className="flex-1">
-                      <div className="text-white font-semibold">{profile.username}</div>
+                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.username}</div>
                       <div className="text-cyan-400 text-sm">{t(lang, 'poopButton')}</div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 ${
@@ -584,13 +712,89 @@ export function MainScreen({ profile, onLogout }: Props) {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className={`mt-2 text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
                     {new Date(event.created_at).toLocaleString()}
                   </div>
+
+                  {/* Кнопки редактирования и удаления */}
+                  <div className={`flex gap-2 mt-3 pt-3 border-t ${
+                    theme === 'light' ? 'border-gray-200' : 'border-white/10'
+                  }`}>
+                    <button
+                      onClick={() => {
+                        setEditingEventId(event.id)
+                        setShowBristolModal(true)
+                        setCurrentEventId(event.id)
+                      }}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
+                        theme === 'light'
+                          ? 'bg-blue-50 border-2 border-blue-200 text-blue-600 hover:bg-blue-100'
+                          : 'bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:bg-blue-500/30'
+                      }`}
+                    >
+                      ✏️ {t(lang, 'editEvent')}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
+                        theme === 'light'
+                          ? 'bg-red-50 border-2 border-red-200 text-red-600 hover:bg-red-100'
+                          : 'bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30'
+                      }`}
+                    >
+                      🗑️ {t(lang, 'deleteEvent')}
+                    </button>
+                  </div>
+
+                  {/* Реакции от друзей */}
+                  {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
+                    <div className={`flex gap-2 mt-3 pt-3 border-t ${
+                      theme === 'light' ? 'border-gray-200' : 'border-white/10'
+                    }`}>
+                      {reactions[event.id].thumbs_up > 0 && (
+                        <span className={`px-2 py-1 rounded-lg text-xs ${
+                          theme === 'light' ? 'bg-blue-50 text-blue-600' : 'bg-blue-500/10 text-blue-400'
+                        }`}>
+                          👍 {reactions[event.id].thumbs_up}
+                        </span>
+                      )}
+                      {reactions[event.id].heart > 0 && (
+                        <span className={`px-2 py-1 rounded-lg text-xs ${
+                          theme === 'light' ? 'bg-red-50 text-red-600' : 'bg-red-500/10 text-red-400'
+                        }`}>
+                          ❤️ {reactions[event.id].heart}
+                        </span>
+                      )}
+                      {reactions[event.id].poop > 0 && (
+                        <span className={`px-2 py-1 rounded-lg text-xs ${
+                          theme === 'light' ? 'bg-amber-50 text-amber-600' : 'bg-amber-500/10 text-amber-400'
+                        }`}>
+                          💩 {reactions[event.id].poop}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Комментарии от друзей */}
+                  {comments[event.id] && comments[event.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {comments[event.id].map(comment => (
+                        <div key={comment.id} className={`rounded-lg p-2 ${
+                          theme === 'light' ? 'bg-gray-50' : 'bg-white/5'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
+                            <span className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
+                          </div>
+                          <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -610,17 +814,29 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {/* Статистика */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-white/5 border border-blue-500/20 rounded-xl p-3 text-center">
+        <div className={`rounded-xl p-3 text-center ${
+          theme === 'light' 
+            ? 'bg-white border-2 border-blue-200' 
+            : 'bg-white/5 border border-blue-500/20'
+        }`}>
           <div className="text-2xl font-bold text-blue-400">{todayCount}</div>
-          <div className="text-xs text-gray-400">{t(lang, 'today')}</div>
+          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'today')}</div>
         </div>
-        <div className="bg-white/5 border border-purple-500/20 rounded-xl p-3 text-center">
+        <div className={`rounded-xl p-3 text-center ${
+          theme === 'light' 
+            ? 'bg-white border-2 border-purple-200' 
+            : 'bg-white/5 border border-purple-500/20'
+        }`}>
           <div className="text-2xl font-bold text-purple-400">{weekCount}</div>
-          <div className="text-xs text-gray-400">{t(lang, 'week')}</div>
+          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'week')}</div>
         </div>
-        <div className="bg-white/5 border border-pink-500/20 rounded-xl p-3 text-center">
+        <div className={`rounded-xl p-3 text-center ${
+          theme === 'light' 
+            ? 'bg-white border-2 border-pink-200' 
+            : 'bg-white/5 border border-pink-500/20'
+        }`}>
           <div className="text-2xl font-bold text-pink-400">{events.length}</div>
-          <div className="text-xs text-gray-400">{t(lang, 'total')}</div>
+          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'total')}</div>
         </div>
       </div>
 
@@ -643,19 +859,43 @@ export function MainScreen({ profile, onLogout }: Props) {
         </button>
       </div>
 
+      {/* Статистика сегодня */}
+      <div className={`text-center mb-6 p-4 rounded-2xl ${
+        theme === 'light' 
+          ? 'bg-blue-50 border-2 border-blue-200' 
+          : 'bg-white/5 border border-white/10'
+      }`}>
+        <div className={`text-3xl font-bold ${
+          theme === 'light' ? 'text-blue-600' : 'text-cyan-400'
+        }`}>
+          {todayCount}
+        </div>
+        <div className={`text-sm ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
+          💩 {t(lang, 'today')}
+        </div>
+      </div>
+
       {/* Уведомления */}
       {notifications.length > 0 && (
         <div className="mt-6">
-          <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          <h3 className={`text-sm font-semibold mb-3 ${
+            theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+          }`}>
             🔔 {t(lang, 'notification')}
           </h3>
           <div className="space-y-2">
             {notifications.slice(0, 5).map(notif => (
-              <div key={notif.id} className="bg-white/5 border border-cyan-500/20 rounded-xl p-3">
-                <div className="text-sm text-white">
+              <div key={notif.id} className={`rounded-xl p-3 ${
+                theme === 'light'
+                  ? 'bg-white border-2 border-cyan-200'
+                  : 'bg-white/5 border border-cyan-500/20'
+              }`}>
+                <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                   💩 {t(lang, 'friendPooped').replace('{name}', notif.friend_username)}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className={`text-xs mt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
                   {new Date(notif.created_at).toLocaleString()}
                 </div>
               </div>
