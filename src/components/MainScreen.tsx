@@ -7,7 +7,8 @@ type Props = {
   onLogout: () => void
 }
 
-type Tab = 'home' | 'people' | 'settings'
+type Tab = 'home' | 'people' | 'feed' | 'settings'
+type FeedTab = 'friends' | 'my'
 
 interface Friend {
   id: string
@@ -34,6 +35,8 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
+  const [feedTab, setFeedTab] = useState<FeedTab>('friends')
+  const [friendsEvents, setFriendsEvents] = useState<any[]>([])
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -118,12 +121,34 @@ export function MainScreen({ profile, onLogout }: Props) {
     if (data) setNotifications(data)
   }, [profile.id])
 
+  // Загрузка событий друзей
+  const fetchFriendsEvents = useCallback(async () => {
+    if (following.length === 0) {
+      setFriendsEvents([])
+      return
+    }
+    
+    const friendIds = following.map(f => f.user_id)
+    const { data } = await supabase
+      .from('events')
+      .select('*, profiles(username)')
+      .in('user_id', friendIds)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    
+    if (data) setFriendsEvents(data)
+  }, [following])
+
   useEffect(() => {
     fetchEvents()
     fetchFollowers()
     fetchFollowing()
     fetchNotifications()
   }, [fetchEvents, fetchFollowers, fetchFollowing, fetchNotifications])
+
+  useEffect(() => {
+    fetchFriendsEvents()
+  }, [fetchFriendsEvents])
 
   // Realtime подписка на события друзей
   useEffect(() => {
@@ -241,6 +266,117 @@ export function MainScreen({ profile, onLogout }: Props) {
   const weekCount = events.filter(e => 
     new Date(e.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   ).length
+
+  // Функция форматирования времени
+  const formatTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMin = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMin < 1) return t(lang, 'justNow')
+    if (diffMin < 60) return t(lang, 'timeAgo').replace('{time}', `${diffMin} ${t(lang, 'minutes')}`)
+    if (diffHours < 24) return t(lang, 'timeAgo').replace('{time}', `${diffHours} ${t(lang, 'hours')}`)
+    return t(lang, 'timeAgo').replace('{time}', `${diffDays} ${t(lang, 'days')}`)
+  }
+
+  // Вкладка Лента
+  const FeedTab = () => (
+    <div className="p-4">
+      {/* Переключатель подвкладок */}
+      <div className="flex bg-white/5 rounded-xl p-1 mb-4">
+        <button
+          onClick={() => setFeedTab('friends')}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            feedTab === 'friends' 
+              ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white' 
+              : 'text-gray-400'
+          }`}
+        >
+          👥 {t(lang, 'feedFriends')}
+        </button>
+        <button
+          onClick={() => setFeedTab('my')}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            feedTab === 'my' 
+              ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white' 
+              : 'text-gray-400'
+          }`}
+        >
+          💩 {t(lang, 'feedMy')}
+        </button>
+      </div>
+
+      {/* Контент подвкладки */}
+      {feedTab === 'friends' ? (
+        <div>
+          {friendsEvents.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-5xl mb-3">👀</div>
+              <p className="text-gray-400 font-semibold">{t(lang, 'feedEmpty')}</p>
+              <p className="text-gray-500 text-sm mt-1">{t(lang, 'feedEmptyDesc')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {friendsEvents.map(event => (
+                <div key={event.id} className="bg-white/5 border border-fuchsia-500/20 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
+                      💩
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-white font-semibold">
+                        {event.profiles?.username || 'Unknown'}
+                      </div>
+                      <div className="text-fuchsia-400 text-sm">
+                        {t(lang, 'friendPooped').replace('{name}', event.profiles?.username || '')}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatTimeAgo(event.created_at)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          {events.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-5xl mb-3">💩</div>
+              <p className="text-gray-400 font-semibold">{t(lang, 'myEventsEmpty')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {events.map(event => (
+                <div key={event.id} className="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                      💩
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-white font-semibold">{profile.username}</div>
+                      <div className="text-cyan-400 text-sm">{t(lang, 'poopButton')}</div>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {formatTimeAgo(event.created_at)}
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    {new Date(event.created_at).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 
   // Главная вкладка
   const HomeTab = () => (
@@ -491,38 +627,48 @@ export function MainScreen({ profile, onLogout }: Props) {
       <div className="flex-1 overflow-y-auto pb-20">
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'people' && <PeopleTab />}
+        {activeTab === 'feed' && <FeedTab />}
         {activeTab === 'settings' && <SettingsTab />}
       </div>
 
       {/* Нижняя навигация */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
-        <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+        <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all flex-1 ${
               activeTab === 'home' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
             <span className="text-xl">🏠</span>
-            <span className="text-xs font-semibold">{t(lang, 'tabHome')}</span>
+            <span className="text-[10px] font-semibold">{t(lang, 'tabHome')}</span>
           </button>
           <button
             onClick={() => setActiveTab('people')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all flex-1 ${
               activeTab === 'people' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
             <span className="text-xl">👥</span>
-            <span className="text-xs font-semibold">{t(lang, 'tabPeople')}</span>
+            <span className="text-[10px] font-semibold">{t(lang, 'tabPeople')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('feed')}
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all flex-1 ${
+              activeTab === 'feed' ? 'text-cyan-400' : 'text-gray-500'
+            }`}
+          >
+            <span className="text-xl">📰</span>
+            <span className="text-[10px] font-semibold">{t(lang, 'tabFeed')}</span>
           </button>
           <button
             onClick={() => setActiveTab('settings')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all flex-1 ${
               activeTab === 'settings' ? 'text-cyan-400' : 'text-gray-500'
             }`}
           >
             <span className="text-xl">⚙️</span>
-            <span className="text-xs font-semibold">{t(lang, 'tabSettings')}</span>
+            <span className="text-[10px] font-semibold">{t(lang, 'tabSettings')}</span>
           </button>
         </div>
       </div>

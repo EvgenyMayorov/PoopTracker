@@ -1,0 +1,22 @@
+{
+  "name": "PoopTracker",
+  "short_name": "PoopTracker",
+  "description": "Отслеживай. Делись. Удивляй.",
+  "theme_color": "#1e1b4b",
+  "background_color": "#1e1b4b",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "./",
+  "start_url": "./",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["social", "lifestyle"],
+  "lang": "ru",
+  "dir": "ltr"
+}

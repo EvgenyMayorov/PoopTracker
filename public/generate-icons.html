@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор PWA иконок</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1b4b;
+            color: white;
+        }
+        .icon-preview {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .icon-box {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #06b6d4;
+            border-radius: 12px;
+        }
+        button {
+            background: linear-gradient(135deg, #06b6d4, #d946ef);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>💩 Генератор PWA иконок для PoopTracker</h1>
+    
+    <div class="instructions">
+        <h2>Инструкция:</h2>
+        <ol>
+            <li>Нажмите кнопку "Скачать иконку 192x192"</li>
+            <li>Сохраните файл как <code>icon-192.png</code> в папку <code>public/</code></li>
+            <li>Нажмите кнопку "Скачать иконку 512x512"</li>
+            <li>Сохраните файл как <code>icon-512.png</code> в папку <code>public/</code></li>
+            <li>Готово! PWA будет работать с PNG иконками</li>
+        </ol>
+    </div>
+
+    <div class="icon-preview">
+        <div class="icon-box">
+            <canvas id="canvas192" width="192" height="192"></canvas>
+            <p>192x192</p>
+            <button onclick="downloadIcon(192)">Скачать 192x192</button>
+        </div>
+        <div class="icon-box">
+            <canvas id="canvas512" width="512" height="512"></canvas>
+            <p>512x512</p>
+            <button onclick="downloadIcon(512)">Скачать 512x512</button>
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Фон
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#1e1b4b');
+            gradient.addColorStop(1, '#581c87');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Эмодзи 💩
+            ctx.font = `${size * 0.6}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('💩', size / 2, size / 2);
+            
+            // Текст
+            ctx.font = `bold ${size * 0.08}px Arial`;
+            ctx.fillStyle = '#06b6d4';
+            ctx.fillText('PoopTracker', size / 2, size * 0.85);
+        }
+
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            drawIcon(canvas, size);
+            
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon-${size}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        // Рисуем иконки при загрузке
+        window.onload = () => {
+            drawIcon(document.getElementById('canvas192'), 192);
+            drawIcon(document.getElementById('canvas512'), 512);
+        };
+    </script>
+</body>
+</html>
