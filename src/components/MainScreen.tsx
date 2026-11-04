@@ -226,12 +226,12 @@ export function MainScreen({ profile, onLogout }: Props) {
     fetchEvents()
   }
 
-  // Сохранение типа стула по Бристольской шкале
-  const handleBristolSave = async () => {
-    if (currentEventId && selectedType) {
+  // Сохранение типа стула по Бристольской шкале (автоматически при выборе)
+  const handleBristolSelect = async (type: number) => {
+    if (currentEventId) {
       await supabase
         .from('events')
-        .update({ bristol_type: selectedType })
+        .update({ bristol_type: type })
         .eq('id', currentEventId)
     }
     setShowBristolModal(false)
@@ -455,13 +455,24 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
       </div>
 
-      {/* Кнопка */}
-      <button
-        onClick={handlePoop}
-        className="w-full py-6 bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-purple-500 rounded-2xl text-white font-bold text-lg shadow-lg shadow-fuchsia-500/30 active:scale-95 transition-transform"
-      >
-        💩 {t(lang, 'poopButton')}
-      </button>
+      {/* Круглая кнопка */}
+      <div className="flex justify-center my-6">
+        <button
+          onClick={handlePoop}
+          className="relative w-48 h-48 rounded-full bg-gradient-to-br from-cyan-500 via-fuchsia-500 to-purple-500 shadow-2xl shadow-fuchsia-500/40 border-4 border-cyan-400/30 transition-all duration-200 hover:shadow-fuchsia-500/60 hover:scale-105 active:scale-90 group"
+        >
+          <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
+          <div className="flex flex-col items-center justify-center h-full">
+            <span className="text-6xl transition-transform duration-200 group-active:scale-125">
+              💩
+            </span>
+            <span className="text-sm font-bold mt-2 text-white px-4 text-center leading-tight">
+              {t(lang, 'poopButton')}
+            </span>
+          </div>
+          <div className="absolute inset-0 rounded-full border-2 border-cyan-400/50 animate-ping" />
+        </button>
+      </div>
 
       {/* Уведомления */}
       {notifications.length > 0 && (
@@ -750,31 +761,28 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Модальное окно Бристольской шкалы */}
       {showBristolModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white text-center mb-2">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-5 w-full max-w-sm">
+            <h2 className="text-xl font-bold text-white text-center mb-1">
               {t(lang, 'bristolTitle')}
             </h2>
-            <p className="text-cyan-400 text-sm text-center mb-6">
+            <p className="text-cyan-400 text-xs text-center mb-4">
               {t(lang, 'bristolSubtitle')}
             </p>
 
-            <div className="space-y-3">
+            {/* Компактная сетка кнопок */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
               {[1, 2, 3, 4, 5, 6, 7].map(type => (
                 <button
                   key={type}
-                  onClick={() => setSelectedType(type)}
-                  className={`w-full p-4 rounded-2xl border-2 transition-all ${
-                    selectedType === type
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 border-cyan-400'
-                      : 'bg-white/5 border-white/10 hover:border-white/30'
+                  onClick={() => handleBristolSelect(type)}
+                  className={`p-2 rounded-xl border-2 transition-all active:scale-95 ${
+                    type <= 2 ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20' :
+                    type === 3 || type === 4 ? 'border-green-500/30 bg-green-500/10 hover:bg-green-500/20' :
+                    'border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20'
                   }`}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${
-                      type <= 2 ? 'bg-red-500/20' :
-                      type === 3 || type === 4 ? 'bg-green-500/20' :
-                      'bg-orange-500/20'
-                    }`}>
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl mb-1">
                       {type === 1 && '⚫'}
                       {type === 2 && '🟫'}
                       {type === 3 && '🟤'}
@@ -783,41 +791,28 @@ export function MainScreen({ profile, onLogout }: Props) {
                       {type === 6 && '🟠'}
                       {type === 7 && '🔵'}
                     </div>
-                    <div className="flex-1 text-left">
-                      <div className="text-white font-semibold">
-                        {t(lang, `bristolType${type}`)}
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        {t(lang, `bristolDesc${type}`)}
-                      </div>
-                      <div className={`text-xs mt-1 ${
-                        type <= 2 ? 'text-red-400' :
-                        type === 3 || type === 4 ? 'text-green-400' :
-                        'text-orange-400'
-                      }`}>
-                        {t(lang, `bristolLabel${type}`)}
-                      </div>
+                    <div className="text-white font-bold text-xs">
+                      {t(lang, `bristolType${type}`)}
+                    </div>
+                    <div className={`text-[10px] mt-0.5 ${
+                      type <= 2 ? 'text-red-400' :
+                      type === 3 || type === 4 ? 'text-green-400' :
+                      'text-orange-400'
+                    }`}>
+                      {t(lang, `bristolLabel${type}`)}
                     </div>
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={handleBristolSkip}
-                className="flex-1 py-3 bg-white/5 border border-white/20 rounded-xl text-gray-300 font-semibold hover:bg-white/10"
-              >
-                {t(lang, 'bristolSkip')}
-              </button>
-              <button
-                onClick={handleBristolSave}
-                disabled={!selectedType}
-                className="flex-1 py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t(lang, 'bristolSave')}
-              </button>
-            </div>
+            {/* Кнопка пропустить */}
+            <button
+              onClick={handleBristolSkip}
+              className="w-full py-2 bg-white/5 border border-white/20 rounded-xl text-gray-400 text-sm font-semibold hover:bg-white/10"
+            >
+              {t(lang, 'bristolSkip')}
+            </button>
           </div>
         </div>
       )}
