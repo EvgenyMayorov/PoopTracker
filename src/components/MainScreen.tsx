@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
 import { Lang, LANG_NAMES, LANG_FLAGS, t } from '../i18n'
+import { PWAInstallBanner } from './PWAInstallBanner'
 
 type Props = {
   profile: Profile
@@ -40,6 +41,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [showBristolModal, setShowBristolModal] = useState(false)
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<number | null>(null)
+  const [showPWAGuide, setShowPWAGuide] = useState(false)
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
@@ -432,6 +434,11 @@ export function MainScreen({ profile, onLogout }: Props) {
   // Главная вкладка
   const HomeTab = () => (
     <div className="p-4">
+      {/* PWA Баннер */}
+      <div className="mb-4">
+        <PWAInstallBanner lang={lang} />
+      </div>
+
       {/* Статистика */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-white/5 border border-blue-500/20 rounded-xl p-3 text-center">
@@ -662,6 +669,22 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
       </div>
 
+      {/* Памятка по PWA */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowPWAGuide(true)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-left hover:bg-white/10 transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-white font-semibold">{t(lang, 'pwaSettingsTitle')}</div>
+              <div className="text-gray-400 text-sm">{t(lang, 'pwaSettingsDesc')}</div>
+            </div>
+            <span className="text-2xl">📲</span>
+          </div>
+        </button>
+      </div>
+
       {/* Выход */}
       <button
         onClick={onLogout}
@@ -795,6 +818,91 @@ export function MainScreen({ profile, onLogout }: Props) {
                 {t(lang, 'bristolSave')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка PWA инструкции */}
+      {showPWAGuide && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-white text-center mb-6">
+              {t(lang, 'pwaGuideTitle')}
+            </h2>
+
+            {/* Android инструкция */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-cyan-400 mb-3">
+                {t(lang, 'pwaAndroidTitle')}
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 font-bold flex-shrink-0">
+                    1
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaAndroidStep1')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 font-bold flex-shrink-0">
+                    2
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaAndroidStep2')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 font-bold flex-shrink-0">
+                    3
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaAndroidStep3')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-cyan-500/20 rounded-full flex items-center justify-center text-cyan-400 font-bold flex-shrink-0">
+                    4
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaAndroidStep4')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* iOS инструкция */}
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-fuchsia-400 mb-3">
+                {t(lang, 'pwaIOSTitle')}
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-fuchsia-500/20 rounded-full flex items-center justify-center text-fuchsia-400 font-bold flex-shrink-0">
+                    1
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaIOSStep1')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-fuchsia-500/20 rounded-full flex items-center justify-center text-fuchsia-400 font-bold flex-shrink-0">
+                    2
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaIOSStep2')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-fuchsia-500/20 rounded-full flex items-center justify-center text-fuchsia-400 font-bold flex-shrink-0">
+                    3
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaIOSStep3')}</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-fuchsia-500/20 rounded-full flex items-center justify-center text-fuchsia-400 font-bold flex-shrink-0">
+                    4
+                  </div>
+                  <p className="text-gray-300 text-sm pt-1">{t(lang, 'pwaIOSStep4')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Кнопка закрытия */}
+            <button
+              onClick={() => setShowPWAGuide(false)}
+              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-xl text-white font-semibold hover:opacity-90 transition-opacity"
+            >
+              {t(lang, 'pwaClose')}
+            </button>
           </div>
         </div>
       )}
