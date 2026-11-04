@@ -7,7 +7,7 @@ function App() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('[PoopTracker] Запуск приложения...')
@@ -44,11 +44,45 @@ function App() {
     try {
       console.log('[PoopTracker] Проверка текущей сессии...')
       
+      // Сначала тестируем подключение к Supabase
+      const { error: testError } = await supabase.from('profiles').select('count').limit(1)
+      
+      if (testError) {
+        console.error('[PoopTracker] Ошибка подключения к Supabase:', testError)
+        
+        let warningMessage = ''
+        
+        if (testError.message.includes('JWT') || testError.message.includes('token') || testError.message.includes('Invalid API key')) {
+          warningMessage = '❌ Неправильный API ключ!\n\nОткройте Supabase Dashboard → Settings → API\nСкопируйте "anon public" key (начинается с eyJ...)\nЗамените SUPABASE_ANON_KEY в src/lib/supabase.ts'
+        } else if (testError.code === '42P01' || testError.message?.includes('profiles')) {
+          warningMessage = '⚠️ Таблицы не созданы в базе данных!\n\nВыполните SQL-скрипт из файла supabase-schema.sql\nв Supabase SQL Editor, затем вернитесь сюда.'
+        } else if (testError.message.includes('network') || testError.message.includes('fetch')) {
+          warningMessage = '🌐 Проблема с сетью\n\nПроверьте:\n1. Интернет-соединение\n2. URL проекта в supabase.ts\n3. Проект существует в Supabase Dashboard'
+        } else {
+          warningMessage = 'Ошибка подключения:\n' + testError.message
+        }
+        
+        // Если есть сессия, но таблицы не созданы - выходим
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        if (currentSession) {
+          console.log('[PoopTracker] Сессия найдена, но таблицы не созданы. Выход...')
+          await supabase.auth.signOut()
+          setSession(null)
+          setProfile(null)
+        }
+        
+        setWarning(warningMessage)
+        setLoading(false)
+        return
+      }
+      
+      console.log('[PoopTracker] ✅ Подключение к Supabase успешно')
+      
       const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError) {
         console.error('[PoopTracker] Ошибка getSession:', sessionError)
-        setError('Ошибка подключения к Supabase: ' + sessionError.message)
+        setWarning('Ошибка получения сессии: ' + sessionError.message)
         setLoading(false)
         return
       }
@@ -64,7 +98,7 @@ function App() {
       }
     } catch (err: any) {
       console.error('[PoopTracker] Критическая ошибка checkSession:', err)
-      setError('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
+      setWarning('Критическая ошибка: ' + (err.message || 'Неизвестная ошибка'))
       setLoading(false)
     }
   }
@@ -82,13 +116,19 @@ function App() {
       if (error) {
         console.error('[PoopTracker] Ошибка fetchProfile:', error)
 
+        // Если таблицы не созданы - выходим и показываем предупреждение
         if (error.code === '42P01' || error.message?.includes('profiles')) {
-          setError(
+          console.log('[PoopTracker] Таблицы не созданы. Выход из системы...')
+          await supabase.auth.signOut()
+          setSession(null)
+          setProfile(null)
+          setWarning(
             '⚠️ Таблица profiles не найдена!\n\n' +
-            'Выполните SQL-скрипт из файла supabase-schema.sql в Supabase SQL Editor.'
+            'Выполните SQL-скрипт из файла supabase-schema.sql\n' +
+            'в Supabase SQL Editor.'
           )
         } else {
-          setError('Ошибка загрузки профиля: ' + error.message)
+          setWarning('Ошибка загрузки профиля: ' + error.message)
         }
         setLoading(false)
         return
@@ -97,17 +137,23 @@ function App() {
       if (data) {
         console.log('[PoopTracker] Профиль загружен:', data.username)
         setProfile(data)
+        setWarning(null) // Очищаем предупреждение если всё ок
       } else {
         console.warn('[PoopTracker] Профиль не найден для userId:', userId)
-        setError(
+        // Профиль не найден - выходим и показываем форму входа
+        console.log('[PoopTracker] Профиль не найден. Выход из системы...')
+        await supabase.auth.signOut()
+        setSession(null)
+        setProfile(null)
+        setWarning(
           '⚠️ Профиль не найден!\n\n' +
-          'Возможно, таблицы в Supabase не созданы. ' +
-          'Выполните SQL-скрипт из файла supabase-schema.sql.'
+          'Ваш аккаунт создан, но профиль отсутствует.\n' +
+          'Зарегистрируйтесь заново или обратитесь к администратору.'
         )
       }
     } catch (err: any) {
       console.error('[PoopTracker] Исключение в fetchProfile:', err)
-      setError('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
+      setWarning('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
     } finally {
       setLoading(false)
     }
@@ -119,11 +165,15 @@ function App() {
       await supabase.auth.signOut()
       setSession(null)
       setProfile(null)
-      setError(null)
+      setWarning(null)
       console.log('[PoopTracker] Выход выполнен')
     } catch (err: any) {
       console.error('[PoopTracker] Ошибка выхода:', err)
     }
+  }
+
+  const dismissWarning = () => {
+    setWarning(null)
   }
 
   // Экран загрузки
@@ -139,49 +189,31 @@ function App() {
     )
   }
 
-  // Экран ошибки
-  if (error) {
+  // Экран авторизации (нет сессии или нет профиля)
+  if (!session || !profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border-2 border-red-500/30 rounded-3xl p-8 text-center">
-          <div className="text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-red-400 mb-4">Ошибка подключения</h2>
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6 text-left">
-            <p className="text-red-300 text-sm whitespace-pre-line">{error}</p>
-          </div>
-          <div className="space-y-3">
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-xl text-white font-bold hover:scale-105 transition-transform"
-            >
-              🔄 Попробовать снова
-            </button>
-            <details className="text-left">
-              <summary className="text-slate-400 text-sm cursor-pointer hover:text-slate-300">
-                💡 Инструкция по настройке
-              </summary>
-              <div className="mt-3 p-4 bg-slate-800/50 rounded-xl text-xs text-slate-300 space-y-2">
-                <p>1. Откройте <a href="https://supabase.com/dashboard/" target="_blank" className="text-cyan-400 underline">Supabase Dashboard</a></p>
-                <p>2. Перейдите в SQL Editor</p>
-                <p>3. Выполните скрипт из файла <code className="bg-slate-700 px-1 rounded">supabase-schema.sql</code></p>
-                <p>4. В Authentication → Providers → Email отключите "Confirm email"</p>
-                <p>5. Обновите эту страницу</p>
+      <>
+        <AuthScreen />
+        {warning && (
+          <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto">
+            <div className="bg-amber-500/90 backdrop-blur-lg border-2 border-amber-400 rounded-2xl p-4 shadow-xl">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-amber-950 text-sm font-semibold whitespace-pre-line">{warning}</p>
+                </div>
+                <button
+                  onClick={dismissWarning}
+                  className="text-amber-950 hover:text-amber-800 font-bold text-xl leading-none"
+                >
+                  ×
+                </button>
               </div>
-            </details>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+      </>
     )
-  }
-
-  // Экран авторизации (нет сессии)
-  if (!session) {
-    return <AuthScreen />
-  }
-
-  // Главный экран (есть сессия, но нет профиля - показываем auth)
-  if (!profile) {
-    return <AuthScreen />
   }
 
   return <MainScreen profile={profile} onLogout={handleLogout} />
