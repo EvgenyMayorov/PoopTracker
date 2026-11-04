@@ -2,15 +2,15 @@
   "name": "PoopTracker",
   "short_name": "PoopTracker",
   "description": "Отслеживай. Делись. Удивляй.",
-  "theme_color": "#1e1b4b",
-  "background_color": "#1e1b4b",
+  "theme_color": "#e0f2fe",
+  "background_color": "#e0f2fe",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "./",
   "start_url": "./",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "icon-light.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

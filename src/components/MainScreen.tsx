@@ -985,21 +985,33 @@ export function MainScreen({ profile, onLogout }: Props) {
   // Вкладка Настройки
   const SettingsTab = () => (
     <div className="p-4">
-      <h2 className="text-xl font-bold text-white mb-6">{t(lang, 'settings')}</h2>
+      <h2 className={`text-xl font-bold mb-6 ${
+        theme === 'light' ? 'text-gray-800' : 'text-white'
+      }`}>{t(lang, 'settings')}</h2>
 
       {/* Профиль */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
           👤 {t(lang, 'account')}
         </h3>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+        <div className={`rounded-xl p-4 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
           {editingUsername ? (
             <div className="space-y-3">
               <input
                 type="text"
                 value={tempUsername}
                 onChange={e => setTempUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-blue-500/30 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400 ${
+                  theme === 'light'
+                    ? 'bg-gray-50 border-2 border-gray-200 text-gray-800'
+                    : 'bg-white/5 border border-blue-500/30 text-white'
+                }`}
               />
               <div className="flex gap-2">
                 <button
@@ -1013,7 +1025,11 @@ export function MainScreen({ profile, onLogout }: Props) {
                     setEditingUsername(false)
                     setTempUsername(profile.username)
                   }}
-                  className="flex-1 py-2 bg-gray-500/20 border border-gray-500/30 rounded-lg text-gray-300 font-semibold"
+                  className={`flex-1 py-2 rounded-lg font-semibold ${
+                    theme === 'light'
+                      ? 'bg-gray-100 text-gray-700'
+                      : 'bg-gray-500/20 border border-gray-500/30 text-gray-300'
+                  }`}
                 >
                   {t(lang, 'cancel')}
                 </button>
@@ -1022,12 +1038,20 @@ export function MainScreen({ profile, onLogout }: Props) {
           ) : (
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-white font-semibold">{profile.username}</div>
-                <div className="text-xs text-gray-500">{profile.id.substring(0, 8)}...</div>
+                <div className={`font-semibold ${
+                  theme === 'light' ? 'text-gray-800' : 'text-white'
+                }`}>{profile.username}</div>
+                <div className={`text-xs ${
+                  theme === 'light' ? 'text-gray-500' : 'text-gray-500'
+                }`}>{profile.id.substring(0, 8)}...</div>
               </div>
               <button
                 onClick={() => setEditingUsername(true)}
-                className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-semibold"
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  theme === 'light'
+                    ? 'bg-blue-50 border-2 border-blue-200 text-blue-600'
+                    : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                }`}
               >
                 {t(lang, 'editProfile')}
               </button>
@@ -1102,17 +1126,23 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {/* Статистика */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+        <h3 className={`text-sm font-semibold mb-3 ${
+          theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+        }`}>
           📊 {t(lang, 'stats')}
         </h3>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+        <div className={`rounded-xl p-4 space-y-2 ${
+          theme === 'light'
+            ? 'bg-white border-2 border-gray-200'
+            : 'bg-white/5 border border-white/10'
+        }`}>
           <div className="flex justify-between">
-            <span className="text-gray-400">{t(lang, 'totalEvents')}</span>
-            <span className="text-white font-semibold">{events.length}</span>
+            <span className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>{t(lang, 'totalEvents')}</span>
+            <span className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{events.length}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">{t(lang, 'dailyRecord')}</span>
-            <span className="text-white font-semibold">
+            <span className={theme === 'light' ? 'text-gray-600' : 'text-gray-400'}>{t(lang, 'dailyRecord')}</span>
+            <span className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
               {(() => {
                 const dayMap: Record<string, number> = {}
                 events.forEach(e => {
@@ -1130,12 +1160,16 @@ export function MainScreen({ profile, onLogout }: Props) {
       <div className="mb-6">
         <button
           onClick={() => setShowPWAGuide(true)}
-          className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-left hover:bg-white/10 transition-colors"
+          className={`w-full rounded-xl p-4 text-left transition-colors ${
+            theme === 'light'
+              ? 'bg-white border-2 border-gray-200 hover:bg-gray-50'
+              : 'bg-white/5 border border-white/10 hover:bg-white/10'
+          }`}
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-white font-semibold">{t(lang, 'pwaSettingsTitle')}</div>
-              <div className="text-gray-400 text-sm">{t(lang, 'pwaSettingsDesc')}</div>
+              <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{t(lang, 'pwaSettingsTitle')}</div>
+              <div className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'pwaSettingsDesc')}</div>
             </div>
             <span className="text-2xl">📲</span>
           </div>
@@ -1145,7 +1179,11 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Выход */}
       <button
         onClick={onLogout}
-        className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 font-semibold"
+        className={`w-full py-3 rounded-xl font-semibold ${
+          theme === 'light'
+            ? 'bg-red-50 border-2 border-red-200 text-red-600'
+            : 'bg-red-500/20 border border-red-500/30 text-red-400'
+        }`}
       >
         {t(lang, 'logout')}
       </button>
@@ -1220,7 +1258,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Модальное окно Бристольской шкалы */}
       {showBristolModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-5 w-full max-w-sm">
+          <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-white text-center mb-1">
               {t(lang, 'bristolTitle')}
             </h2>
@@ -1228,20 +1266,20 @@ export function MainScreen({ profile, onLogout }: Props) {
               {t(lang, 'bristolSubtitle')}
             </p>
 
-            {/* Компактная сетка кнопок */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* Вертикальный список с подробными описаниями */}
+            <div className="space-y-2 mb-3">
               {[1, 2, 3, 4, 5, 6, 7].map(type => (
                 <button
                   key={type}
                   onClick={() => handleBristolSelect(type)}
-                  className={`p-2 rounded-xl border-2 transition-all active:scale-95 ${
+                  className={`w-full p-3 rounded-xl border-2 transition-all active:scale-98 text-left ${
                     type <= 2 ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20' :
                     type === 3 || type === 4 ? 'border-green-500/30 bg-green-500/10 hover:bg-green-500/20' :
                     'border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20'
                   }`}
                 >
-                  <div className="flex flex-col items-center">
-                    <div className="text-2xl mb-1">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl flex-shrink-0">
                       {type === 1 && '⚫'}
                       {type === 2 && '🟫'}
                       {type === 3 && '🟤'}
@@ -1250,15 +1288,22 @@ export function MainScreen({ profile, onLogout }: Props) {
                       {type === 6 && '🟠'}
                       {type === 7 && '🔵'}
                     </div>
-                    <div className="text-white font-bold text-xs">
-                      {t(lang, `bristolType${type}`)}
-                    </div>
-                    <div className={`text-[10px] mt-0.5 ${
-                      type <= 2 ? 'text-red-400' :
-                      type === 3 || type === 4 ? 'text-green-400' :
-                      'text-orange-400'
-                    }`}>
-                      {t(lang, `bristolLabel${type}`)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-white font-bold text-sm">
+                          {t(lang, `bristolType${type}`)}
+                        </span>
+                        <span className={`text-xs font-semibold ${
+                          type <= 2 ? 'text-red-400' :
+                          type === 3 || type === 4 ? 'text-green-400' :
+                          'text-orange-400'
+                        }`}>
+                          {t(lang, `bristolLabel${type}`)}
+                        </span>
+                      </div>
+                      <div className="text-gray-300 text-xs leading-relaxed">
+                        {t(lang, `bristolDesc${type}`)}
+                      </div>
                     </div>
                   </div>
                 </button>
