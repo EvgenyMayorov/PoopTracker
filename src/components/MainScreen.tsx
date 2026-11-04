@@ -60,7 +60,14 @@ export function MainScreen({ profile, onLogout }: Props) {
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) setEvents(data)
+    if (data) {
+      setEvents(data)
+      // Загружаем реакции и комментарии для каждого события
+      data.forEach(event => {
+        fetchReactions(event.id)
+        fetchComments(event.id)
+      })
+    }
   }, [])
 
   // Загрузка подписчиков
@@ -323,7 +330,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     fetchFriendsEvents()
   }, [fetchFriendsEvents])
 
-  // Realtime подписка на события друзей
+  // Realtime подписка на события друзей, реакции и комментарии
   useEffect(() => {
     const channel = supabase
       .channel('friends-events')
@@ -364,6 +371,30 @@ export function MainScreen({ profile, onLogout }: Props) {
           }
         }
       )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'reactions' },
+        (payload) => {
+          // Обновляем реакции для всех событий
+          if (payload.new && 'event_id' in payload.new) {
+            fetchReactions(payload.new.event_id as string)
+          }
+          if (payload.old && 'event_id' in payload.old) {
+            fetchReactions(payload.old.event_id as string)
+          }
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        (payload) => {
+          // Обновляем комментарии для всех событий
+          if (payload.new && 'event_id' in payload.new) {
+            fetchComments(payload.new.event_id as string)
+          }
+          if (payload.old && 'event_id' in payload.old) {
+            fetchComments(payload.old.event_id as string)
+          }
+        }
+      )
       .subscribe()
 
     return () => {
@@ -401,11 +432,20 @@ export function MainScreen({ profile, onLogout }: Props) {
         .from('events')
         .update({ bristol_type: type })
         .eq('id', currentEventId)
+      
+      // Обновляем список событий
+      fetchEvents()
+      fetchFriendsEvents()
     }
     setShowBristolModal(false)
     setCurrentEventId(null)
     setSelectedType(null)
-    setShowSuccess(true)
+    setEditingEventId(null)
+    
+    // Показываем анимацию успеха только для новых записей
+    if (!editingEventId) {
+      setShowSuccess(true)
+    }
   }
 
   // Пропустить выбор типа
@@ -551,6 +591,72 @@ export function MainScreen({ profile, onLogout }: Props) {
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
+
+                  {/* Реакции */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
+                    <button
+                      onClick={() => handleReaction(event.id, 'thumbs_up')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'thumbs_up'
+                          ? 'bg-blue-500/20 text-blue-400'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      👍 {reactions[event.id]?.thumbs_up || 0}
+                    </button>
+                    <button
+                      onClick={() => handleReaction(event.id, 'heart')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'heart'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      ❤️ {reactions[event.id]?.heart || 0}
+                    </button>
+                    <button
+                      onClick={() => handleReaction(event.id, 'poop')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition-all ${
+                        reactions[event.id]?.userReaction === 'poop'
+                          ? 'bg-amber-500/20 text-amber-400'
+                          : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                      }`}
+                    >
+                      💩 {reactions[event.id]?.poop || 0}
+                    </button>
+                  </div>
+
+                  {/* Комментарии */}
+                  {comments[event.id] && comments[event.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {comments[event.id].map(comment => (
+                        <div key={comment.id} className="bg-white/5 rounded-lg p-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
+                            <span className="text-xs text-gray-500">{formatTimeAgo(comment.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-gray-300 mt-1">{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Поле для добавления комментария */}
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={newComment[event.id] || ''}
+                      onChange={(e) => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
+                      placeholder={t(lang, 'commentPlaceholder')}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                    />
+                    <button
+                      onClick={() => handleAddComment(event.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-lg text-white text-sm font-semibold hover:opacity-90"
+                    >
+                      {t(lang, 'commentSend')}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -591,6 +697,62 @@ export function MainScreen({ profile, onLogout }: Props) {
                   <div className="mt-2 text-xs text-gray-500">
                     {new Date(event.created_at).toLocaleString()}
                   </div>
+
+                  {/* Кнопки редактирования и удаления */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
+                    <button
+                      onClick={() => {
+                        setEditingEventId(event.id)
+                        setShowBristolModal(true)
+                        setCurrentEventId(event.id)
+                      }}
+                      className="flex-1 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-semibold hover:bg-blue-500/30"
+                    >
+                      ✏️ {t(lang, 'editEvent')}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className="flex-1 px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm font-semibold hover:bg-red-500/30"
+                    >
+                      🗑️ {t(lang, 'deleteEvent')}
+                    </button>
+                  </div>
+
+                  {/* Реакции от друзей */}
+                  {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-white/10">
+                      {reactions[event.id].thumbs_up > 0 && (
+                        <span className="px-2 py-1 bg-blue-500/10 rounded-lg text-xs text-blue-400">
+                          👍 {reactions[event.id].thumbs_up}
+                        </span>
+                      )}
+                      {reactions[event.id].heart > 0 && (
+                        <span className="px-2 py-1 bg-red-500/10 rounded-lg text-xs text-red-400">
+                          ❤️ {reactions[event.id].heart}
+                        </span>
+                      )}
+                      {reactions[event.id].poop > 0 && (
+                        <span className="px-2 py-1 bg-amber-500/10 rounded-lg text-xs text-amber-400">
+                          💩 {reactions[event.id].poop}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Комментарии от друзей */}
+                  {comments[event.id] && comments[event.id].length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {comments[event.id].map(comment => (
+                        <div key={comment.id} className="bg-white/5 rounded-lg p-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
+                            <span className="text-xs text-gray-500">{formatTimeAgo(comment.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-gray-300 mt-1">{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
