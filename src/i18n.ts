@@ -100,6 +100,25 @@ const translations: Record<Lang, Dict> = {
     pwaClose: 'Закрыть',
     pwaSettingsTitle: 'Памятка по PWA',
     pwaSettingsDesc: 'Как установить приложение на телефон',
+    // Reactions
+    reactionThumbsUp: '👍',
+    reactionHeart: '❤️',
+    reactionPoop: '💩',
+    commentPlaceholder: 'Добавить комментарий...',
+    commentSend: 'Отправить',
+    // Edit/Delete
+    editEvent: 'Редактировать',
+    deleteEvent: 'Удалить',
+    deleteConfirm: 'Вы уверены, что хотите удалить эту запись?',
+    editBristolType: 'Изменить тип',
+    // Theme
+    theme: 'Тема',
+    themeLight: 'Светлая',
+    themeDark: 'Тёмная',
+    // Success animation
+    successMessage: 'Записано!',
+    // Language selector
+    selectLanguage: 'Выберите язык',
   },
   en: {
     tabHome: 'Home',
@@ -182,6 +201,25 @@ const translations: Record<Lang, Dict> = {
     pwaClose: 'Close',
     pwaSettingsTitle: 'PWA Guide',
     pwaSettingsDesc: 'How to install the app on your phone',
+    // Reactions
+    reactionThumbsUp: '👍',
+    reactionHeart: '❤️',
+    reactionPoop: '💩',
+    commentPlaceholder: 'Add a comment...',
+    commentSend: 'Send',
+    // Edit/Delete
+    editEvent: 'Edit',
+    deleteEvent: 'Delete',
+    deleteConfirm: 'Are you sure you want to delete this record?',
+    editBristolType: 'Change type',
+    // Theme
+    theme: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    // Success animation
+    successMessage: 'Recorded!',
+    // Language selector
+    selectLanguage: 'Select language',
   },
   zh: {
     tabHome: '首页',
@@ -264,6 +302,25 @@ const translations: Record<Lang, Dict> = {
     pwaClose: '关闭',
     pwaSettingsTitle: 'PWA 指南',
     pwaSettingsDesc: '如何在手机上安装应用',
+    // Reactions
+    reactionThumbsUp: '👍',
+    reactionHeart: '❤️',
+    reactionPoop: '💩',
+    commentPlaceholder: '添加评论...',
+    commentSend: '发送',
+    // Edit/Delete
+    editEvent: '编辑',
+    deleteEvent: '删除',
+    deleteConfirm: '您确定要删除此记录吗？',
+    editBristolType: '更改类型',
+    // Theme
+    theme: '主题',
+    themeLight: '浅色',
+    themeDark: '深色',
+    // Success animation
+    successMessage: '已记录！',
+    // Language selector
+    selectLanguage: '选择语言',
   },
   de: {
     tabHome: 'Start',
@@ -346,6 +403,25 @@ const translations: Record<Lang, Dict> = {
     pwaClose: 'Schließen',
     pwaSettingsTitle: 'PWA-Anleitung',
     pwaSettingsDesc: 'So installieren Sie die App auf Ihrem Telefon',
+    // Reactions
+    reactionThumbsUp: '👍',
+    reactionHeart: '❤️',
+    reactionPoop: '💩',
+    commentPlaceholder: 'Kommentar hinzufügen...',
+    commentSend: 'Senden',
+    // Edit/Delete
+    editEvent: 'Bearbeiten',
+    deleteEvent: 'Löschen',
+    deleteConfirm: 'Möchten Sie diesen Eintrag wirklich löschen?',
+    editBristolType: 'Typ ändern',
+    // Theme
+    theme: 'Thema',
+    themeLight: 'Hell',
+    themeDark: 'Dunkel',
+    // Success animation
+    successMessage: 'Aufgezeichnet!',
+    // Language selector
+    selectLanguage: 'Sprache auswählen',
   },
   es: {
     tabHome: 'Inicio',
@@ -428,6 +504,25 @@ const translations: Record<Lang, Dict> = {
     pwaClose: 'Cerrar',
     pwaSettingsTitle: 'Guía PWA',
     pwaSettingsDesc: 'Cómo instalar la aplicación en su teléfono',
+    // Reactions
+    reactionThumbsUp: '👍',
+    reactionHeart: '❤️',
+    reactionPoop: '💩',
+    commentPlaceholder: 'Añadir un comentario...',
+    commentSend: 'Enviar',
+    // Edit/Delete
+    editEvent: 'Editar',
+    deleteEvent: 'Eliminar',
+    deleteConfirm: '¿Está seguro de que desea eliminar este registro?',
+    editBristolType: 'Cambiar tipo',
+    // Theme
+    theme: 'Tema',
+    themeLight: 'Claro',
+    themeDark: 'Oscuro',
+    // Success animation
+    successMessage: '¡Registrado!',
+    // Language selector
+    selectLanguage: 'Seleccionar idioma',
   },
 }
 
