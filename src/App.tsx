@@ -10,61 +10,68 @@ function App() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    initApp()
+    console.log('[PoopTracker] Запуск приложения...')
+
+    // СРАЗУ подписываемся на изменения auth состояния
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('[PoopTracker] Auth event:', event, 'User:', newSession?.user?.email || 'none')
+        
+        setSession(newSession)
+
+        if (newSession?.user) {
+          console.log('[PoopTracker] Загрузка профиля для:', newSession.user.id)
+          await fetchProfile(newSession.user.id)
+        } else {
+          console.log('[PoopTracker] Сессия отсутствует')
+          setProfile(null)
+          setLoading(false)
+        }
+      }
+    )
+
+    // Получаем текущую сессию при старте
+    checkSession()
+
+    // Cleanup
+    return () => {
+      console.log('[PoopTracker] Отписка от auth listener')
+      subscription.unsubscribe()
+    }
   }, [])
 
-  const initApp = async () => {
+  const checkSession = async () => {
     try {
-      console.log('[PoopTracker] Инициализация...')
-
-      // Получаем текущую сессию
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      console.log('[PoopTracker] Проверка текущей сессии...')
+      
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError) {
-        console.error('[PoopTracker] Ошибка получения сессии:', sessionError)
-        setError('Ошибка подключения к серверу. Проверьте настройки Supabase.')
+        console.error('[PoopTracker] Ошибка getSession:', sessionError)
+        setError('Ошибка подключения к Supabase: ' + sessionError.message)
         setLoading(false)
         return
       }
 
-      const currentSession = sessionData?.session ?? null
-      console.log('[PoopTracker] Сессия:', currentSession ? 'найдена' : 'не найдена')
-      setSession(currentSession)
-
-      if (currentSession?.user) {
+      console.log('[PoopTracker] Текущая сессия:', currentSession ? 'найдена' : 'не найдена')
+      
+      // Состояние обновится через onAuthStateChange, но на всякий случай установим здесь тоже
+      if (currentSession?.user && !session) {
+        setSession(currentSession)
         await fetchProfile(currentSession.user.id)
-      } else {
+      } else if (!currentSession) {
         setLoading(false)
       }
-
-      // Подписываемся на изменения состояния авторизации
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        async (_event, newSession) => {
-          console.log('[PoopTracker] Изменение auth:', _event)
-          setSession(newSession)
-
-          if (newSession?.user) {
-            await fetchProfile(newSession.user.id)
-          } else {
-            setProfile(null)
-            setLoading(false)
-          }
-        }
-      )
-
-      return () => {
-        authListener?.subscription?.unsubscribe()
-      }
     } catch (err: any) {
-      console.error('[PoopTracker] Критическая ошибка:', err)
-      setError(`Ошибка инициализации: ${err.message || 'Неизвестная ошибка'}`)
+      console.error('[PoopTracker] Критическая ошибка checkSession:', err)
+      setError('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
       setLoading(false)
     }
   }
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('[PoopTracker] Загрузка профиля для:', userId)
+      console.log('[PoopTracker] Запрос профиля для userId:', userId)
 
       const { data, error } = await supabase
         .from('profiles')
@@ -73,16 +80,15 @@ function App() {
         .maybeSingle()
 
       if (error) {
-        console.error('[PoopTracker] Ошибка загрузки профиля:', error)
+        console.error('[PoopTracker] Ошибка fetchProfile:', error)
 
-        // Если таблицы нет - показываем понятную ошибку
         if (error.code === '42P01' || error.message?.includes('profiles')) {
           setError(
-            '⚠️ Таблица profiles не найдена в базе данных Supabase!\n\n' +
+            '⚠️ Таблица profiles не найдена!\n\n' +
             'Выполните SQL-скрипт из файла supabase-schema.sql в Supabase SQL Editor.'
           )
         } else {
-          setError(`Ошибка загрузки профиля: ${error.message}`)
+          setError('Ошибка загрузки профиля: ' + error.message)
         }
         setLoading(false)
         return
@@ -92,7 +98,7 @@ function App() {
         console.log('[PoopTracker] Профиль загружен:', data.username)
         setProfile(data)
       } else {
-        console.warn('[PoopTracker] Профиль не найден для пользователя:', userId)
+        console.warn('[PoopTracker] Профиль не найден для userId:', userId)
         setError(
           '⚠️ Профиль не найден!\n\n' +
           'Возможно, таблицы в Supabase не созданы. ' +
@@ -100,8 +106,8 @@ function App() {
         )
       }
     } catch (err: any) {
-      console.error('[PoopTracker] Ошибка fetchProfile:', err)
-      setError(`Ошибка: ${err.message}`)
+      console.error('[PoopTracker] Исключение в fetchProfile:', err)
+      setError('Ошибка: ' + (err.message || 'Неизвестная ошибка'))
     } finally {
       setLoading(false)
     }
@@ -109,19 +115,14 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      console.log('[PoopTracker] Выход...')
       await supabase.auth.signOut()
       setSession(null)
       setProfile(null)
       setError(null)
+      console.log('[PoopTracker] Выход выполнен')
     } catch (err: any) {
       console.error('[PoopTracker] Ошибка выхода:', err)
-    }
-  }
-
-  const handleAuth = () => {
-    // Состояние обновится через onAuthStateChange
-    if (session?.user) {
-      fetchProfile(session.user.id)
     }
   }
 
@@ -173,14 +174,14 @@ function App() {
     )
   }
 
-  // Экран авторизации
+  // Экран авторизации (нет сессии)
   if (!session) {
-    return <AuthScreen onAuth={handleAuth} />
+    return <AuthScreen />
   }
 
-  // Главный экран (если есть сессия, но нет профиля - показываем auth)
+  // Главный экран (есть сессия, но нет профиля - показываем auth)
   if (!profile) {
-    return <AuthScreen onAuth={handleAuth} />
+    return <AuthScreen />
   }
 
   return <MainScreen profile={profile} onLogout={handleLogout} />

@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-type Props = {
-  onAuth: () => void
-}
-
-export function AuthScreen({ onAuth }: Props) {
+export function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,7 +26,8 @@ export function AuthScreen({ onAuth }: Props) {
           throw error
         }
         console.log('[Auth] Успешный вход:', data)
-        onAuth()
+        setMessage('✅ Вход выполнен! Загрузка...')
+        // onAuthStateChange в App.tsx автоматически обновит состояние
       } else {
         if (!username.trim()) {
           throw new Error('Введите никнейм')
@@ -58,7 +55,8 @@ export function AuthScreen({ onAuth }: Props) {
           console.log('[Auth] Профиль создан')
         }
 
-        setMessage('✅ Регистрация успешна! Проверьте email или войдите в аккаунт.')
+        setMessage('✅ Регистрация успешна! Загрузка...')
+        // onAuthStateChange в App.tsx автоматически обновит состояние
       }
     } catch (err: any) {
       console.error('[Auth] Критическая ошибка:', err)
