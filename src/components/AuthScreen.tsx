@@ -21,27 +21,47 @@ export function AuthScreen({ onAuth }: Props) {
     setMessage(null)
 
     try {
+      console.log('[Auth] Отправка формы...', { isLogin, email, username })
+
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) {
+          console.error('[Auth] Ошибка входа:', error)
+          throw error
+        }
+        console.log('[Auth] Успешный вход:', data)
         onAuth()
       } else {
         if (!username.trim()) {
           throw new Error('Введите никнейм')
         }
+
+        console.log('[Auth] Регистрация...')
         const { data, error } = await supabase.auth.signUp({ email, password })
-        if (error) throw error
+        if (error) {
+          console.error('[Auth] Ошибка регистрации:', error)
+          throw error
+        }
+
+        console.log('[Auth] Регистрация успешна:', data)
 
         if (data.user) {
+          console.log('[Auth] Создание профиля...')
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({ id: data.user.id, username: username.trim() })
-          if (profileError) throw profileError
+
+          if (profileError) {
+            console.error('[Auth] Ошибка создания профиля:', profileError)
+            throw new Error(`Ошибка создания профиля: ${profileError.message}`)
+          }
+          console.log('[Auth] Профиль создан')
         }
 
-        setMessage('✅ Проверьте email для подтверждения!')
+        setMessage('✅ Регистрация успешна! Проверьте email или войдите в аккаунт.')
       }
     } catch (err: any) {
+      console.error('[Auth] Критическая ошибка:', err)
       setError(err.message || 'Ошибка авторизации')
     } finally {
       setLoading(false)
