@@ -82,14 +82,20 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Загрузка событий
   const fetchEvents = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50)
     
+    if (error) {
+      console.error('[FetchEvents] Ошибка загрузки:', error)
+      return
+    }
+    
     if (data) {
       console.log('[FetchEvents] Загруженные события:', data)
+      console.log('[FetchEvents] Первое событие:', data[0])
       setEvents(data)
       // Загружаем реакции и комментарии для каждого события
       data.forEach(event => {
@@ -968,9 +974,17 @@ export function MainScreen({ profile, onLogout }: Props) {
           <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
           <div className="flex flex-col items-center justify-center h-full">
             <svg className="w-20 h-20 text-white transition-transform duration-200 group-active:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2C11 2 10 2.5 10 3.5C10 4 10.3 4.4 10.7 4.7C9.5 5 8.5 6 8.5 7.5C8.5 8.3 8.9 9 9.5 9.4C8.3 9.8 7.5 11 7.5 12.5C7.5 14.5 9 16 11 16H13C15 16 16.5 14.5 16.5 12.5C16.5 11 15.7 9.8 14.5 9.4C15.1 9 15.5 8.3 15.5 7.5C15.5 6 14.5 5 13.3 4.7C13.7 4.4 14 4 14 3.5C14 2.5 13 2 12 2Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12C9 12 9.5 11.5 10 11.5C10.5 11.5 11 12 11 12" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 12C13 12 13.5 11.5 14 11.5C14.5 11.5 15 12 15 12" />
+              {/* Основание - широкая нижняя часть */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18C6 18 5 16 5 14.5C5 13 6 12 7.5 12L16.5 12C18 12 19 13 19 14.5C19 16 18 18 18 18" />
+              {/* Средний ярус */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 12C7.5 12 7 10.5 7 9.5C7 8 8 7 9.5 7L14.5 7C16 7 17 8 17 9.5C17 10.5 16.5 12 16.5 12" />
+              {/* Верхний ярус с завитком */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 7C9.5 7 9 5.5 9 5C9 4 9.5 3 10.5 3C11.5 3 12 3.5 12 4C12 4.5 11.5 5 11 5C10.5 5 10 4.5 10 4" />
+              {/* Спиральные линии для текстуры */}
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 15C8 15 9 14 10 14C11 14 12 15 12 15" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15C12 15 13 14 14 14C15 14 16 15 16 15" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 10C9 10 10 9 11 9C12 9 13 10 13 10" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10C13 10 14 9 15 9" />
             </svg>
             <span className="text-sm font-bold mt-2 text-white px-4 text-center leading-tight">
               {t(lang, 'poopButton')}
