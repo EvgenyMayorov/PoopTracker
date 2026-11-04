@@ -1,301 +1,529 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase, Profile, PoopEvent } from '../lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase, Profile } from '../lib/supabase'
+import { Lang, LANG_NAMES, LANG_FLAGS, t } from '../i18n'
 
 type Props = {
   profile: Profile
   onLogout: () => void
 }
 
-const FAKE_SUBSCRIBERS = [
-  { id: '1', name: 'Мама', avatar: '👩' },
-  { id: '2', name: 'Братан', avatar: '🧔' },
-  { id: '3', name: 'Коллега Серёга', avatar: '👨‍💻' },
-  { id: '4', name: 'Бывшая', avatar: '💅' },
-  { id: '5', name: 'Начальник', avatar: '🤵' },
-  { id: '6', name: 'Кот', avatar: '🐱' },
-  { id: '7', name: 'Доставка еды', avatar: '🛵' },
-  { id: '8', name: 'Батя', avatar: '👴' },
-  { id: '9', name: 'Лучшая подруга', avatar: '👧' },
-  { id: '10', name: 'Тренер', avatar: '🏋️' },
-  { id: '11', name: 'Сосед', avatar: '🧑‍🦰' },
-  { id: '12', name: 'Бот Олег', avatar: '🤖' },
-]
+type Tab = 'home' | 'people' | 'settings'
 
-const REACTIONS = [
-  '👍 Подписчик одобряет',
-  '😢 Подписчик прослезился',
-  '🎉 Подписчик празднует',
-  '🤢 Подписчику стало плохо',
-  '😍 Подписчик в восторге',
-  '💀 Подписчик не выжил',
-  '🙏 Подписчик благодарен за новость',
-  '📸 Подписчик сделал скриншот',
-  '🔥 ОГОНЬ!',
-  '😱 Подписчик в шоке',
-]
+interface Friend {
+  id: string
+  user_id: string
+  username: string
+  avatar?: string
+}
+
+interface Notification {
+  id: string
+  friend_id: string
+  friend_username: string
+  created_at: string
+}
 
 export function MainScreen({ profile, onLogout }: Props) {
-  const [events, setEvents] = useState<PoopEvent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showNotif, setShowNotif] = useState(false)
-  const [currentReaction, setCurrentReaction] = useState('')
-  const [poopEmojis, setPoopEmojis] = useState<{ id: number; x: number; y: number }[]>([])
-  const audioCtxRef = useRef<AudioContext | null>(null)
+  const [activeTab, setActiveTab] = useState<Tab>('home')
+  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('poop_lang') as Lang) || 'ru')
+  const [events, setEvents] = useState<any[]>([])
+  const [followers, setFollowers] = useState<Friend[]>([])
+  const [following, setFollowing] = useState<Friend[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [editingUsername, setEditingUsername] = useState(false)
+  const [tempUsername, setTempUsername] = useState(profile.username)
 
+  // Загрузка событий
   const fetchEvents = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('events')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50)
-
-    if (!error && data) {
-      setEvents(data)
-    }
-    setLoading(false)
+    
+    if (data) setEvents(data)
   }, [])
+
+  // Загрузка подписчиков
+  const fetchFollowers = useCallback(async () => {
+    const { data } = await supabase
+      .from('friends')
+      .select('id, user_id, follower_id')
+      .eq('follower_id', profile.id)
+    
+    if (data && data.length > 0) {
+      // Получаем имена подписчиков
+      const userIds = data.map(f => f.user_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds)
+      
+      if (profiles) {
+        setFollowers(data.map(f => {
+          const profile = profiles.find(p => p.id === f.user_id)
+          return {
+            id: f.id,
+            user_id: f.user_id,
+            username: profile?.username || 'Unknown'
+          }
+        }))
+      }
+    } else {
+      setFollowers([])
+    }
+  }, [profile.id])
+
+  // Загрузка подписок
+  const fetchFollowing = useCallback(async () => {
+    const { data } = await supabase
+      .from('friends')
+      .select('id, user_id, follower_id')
+      .eq('user_id', profile.id)
+    
+    if (data && data.length > 0) {
+      // Получаем имена подписок
+      const followerIds = data.map(f => f.follower_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', followerIds)
+      
+      if (profiles) {
+        setFollowing(data.map(f => {
+          const profile = profiles.find(p => p.id === f.follower_id)
+          return {
+            id: f.id,
+            user_id: f.follower_id,
+            username: profile?.username || 'Unknown'
+          }
+        }))
+      }
+    } else {
+      setFollowing([])
+    }
+  }, [profile.id])
+
+  // Загрузка уведомлений
+  const fetchNotifications = useCallback(async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    
+    if (data) setNotifications(data)
+  }, [profile.id])
 
   useEffect(() => {
     fetchEvents()
+    fetchFollowers()
+    fetchFollowing()
+    fetchNotifications()
+  }, [fetchEvents, fetchFollowers, fetchFollowing, fetchNotifications])
 
-    // Subscribe to realtime changes
+  // Realtime подписка на события друзей
+  useEffect(() => {
     const channel = supabase
-      .channel('events-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'events' }, fetchEvents)
+      .channel('friends-events')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'events' },
+        async (payload) => {
+          // Проверяем, есть ли этот пользователь в подписках
+          const friendEvent = payload.new
+          const isFriend = following.some(f => f.user_id === friendEvent.user_id)
+          
+          if (isFriend) {
+            // Получаем имя друга
+            const { data: friendProfile } = await supabase
+              .from('profiles')
+              .select('username')
+              .eq('id', friendEvent.user_id)
+              .single()
+            
+            if (friendProfile) {
+              // Создаём уведомление
+              await supabase.from('notifications').insert({
+                user_id: profile.id,
+                friend_id: friendEvent.user_id,
+                friend_username: friendProfile.username
+              })
+              
+              // Обновляем список уведомлений
+              fetchNotifications()
+              
+              // Показываем браузерное уведомление
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(t(lang, 'notification'), {
+                  body: t(lang, 'friendPooped').replace('{name}', friendProfile.username),
+                  icon: '💩'
+                })
+              }
+            }
+          }
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [fetchEvents])
+  }, [following, profile.id, lang, fetchNotifications])
 
-  const playSound = useCallback(() => {
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      const ctx = audioCtxRef.current
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.frequency.setValueAtTime(200, ctx.currentTime)
-      osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.3)
-      gain.gain.setValueAtTime(0.3, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
-      osc.start(ctx.currentTime)
-      osc.stop(ctx.currentTime + 0.4)
-    } catch { /* ignore */ }
+  // Запрос разрешения на уведомления
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
   }, [])
 
+  // Обработка кнопки "У меня вышло!"
   const handlePoop = async () => {
-    playSound()
-
-    // Insert event
-    const { error } = await supabase.from('events').insert({ user_id: profile.id })
-    if (error) {
-      console.error('Error inserting event:', error)
-      return
-    }
-
-    // Flying emojis
-    const newEmojis = Array.from({ length: 8 }, (_, i) => ({
-      id: Date.now() + i,
-      x: 20 + Math.random() * 60,
-      y: 30 + Math.random() * 40,
-    }))
-    setPoopEmojis(newEmojis)
-    setTimeout(() => setPoopEmojis([]), 2000)
-
-    // Show notification
-    setShowNotif(true)
-    setTimeout(() => {
-      setCurrentReaction(REACTIONS[Math.floor(Math.random() * REACTIONS.length)])
-    }, 800)
-
-    // Refresh events
+    await supabase.from('events').insert({ user_id: profile.id })
     fetchEvents()
   }
 
-  const todayCount = events.filter(e => new Date(e.created_at).toDateString() === new Date().toDateString()).length
-  const weekCount = events.filter(e => e.created_at > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()).length
+  // Поиск пользователей
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
+    }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white relative overflow-hidden">
-      {/* Neon background effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .ilike('username', `%${searchQuery}%`)
+      .neq('id', profile.id)
+      .limit(20)
+
+    setSearchResults(data || [])
+  }
+
+  // Подписаться
+  const handleFollow = async (userId: string) => {
+    await supabase.from('friends').insert({
+      user_id: profile.id,
+      follower_id: userId
+    })
+    fetchFollowing()
+    setSearchResults([])
+    setSearchQuery('')
+  }
+
+  // Отписаться
+  const handleUnfollow = async (friendId: string) => {
+    await supabase.from('friends').delete().eq('id', friendId)
+    fetchFollowing()
+  }
+
+  // Сохранить имя
+  const handleSaveUsername = async () => {
+    if (tempUsername.trim()) {
+      await supabase
+        .from('profiles')
+        .update({ username: tempUsername.trim() })
+        .eq('id', profile.id)
+      
+      setEditingUsername(false)
+      // Перезагружаем страницу для обновления профиля
+      window.location.reload()
+    }
+  }
+
+  // Статистика
+  const todayCount = events.filter(e => 
+    new Date(e.created_at).toDateString() === new Date().toDateString()
+  ).length
+  const weekCount = events.filter(e => 
+    new Date(e.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  ).length
+
+  // Главная вкладка
+  const HomeTab = () => (
+    <div className="p-4">
+      {/* Статистика */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-white/5 border border-blue-500/20 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-blue-400">{todayCount}</div>
+          <div className="text-xs text-gray-400">{t(lang, 'today')}</div>
+        </div>
+        <div className="bg-white/5 border border-purple-500/20 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-purple-400">{weekCount}</div>
+          <div className="text-xs text-gray-400">{t(lang, 'week')}</div>
+        </div>
+        <div className="bg-white/5 border border-pink-500/20 rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold text-pink-400">{events.length}</div>
+          <div className="text-xs text-gray-400">{t(lang, 'total')}</div>
+        </div>
       </div>
 
-      {/* Floating emojis */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {[...Array(10)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute text-4xl opacity-10 animate-float"
-            style={{
-              left: `${(i * 10) % 100}%`,
-              top: `${(i * 13) % 100}%`,
-              animationDuration: `${6 + (i % 4)}s`,
-              animationDelay: `${(i % 3)}s`,
-            }}
-          >
-            💩
-          </div>
-        ))}
-      </div>
+      {/* Кнопка */}
+      <button
+        onClick={handlePoop}
+        className="w-full py-6 bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-purple-500 rounded-2xl text-white font-bold text-lg shadow-lg shadow-fuchsia-500/30 active:scale-95 transition-transform"
+      >
+        💩 {t(lang, 'poopButton')}
+      </button>
 
-      {/* Flying poop emojis on click */}
-      {poopEmojis.map(emoji => (
-        <div
-          key={emoji.id}
-          className="fixed text-5xl pointer-events-none z-50 animate-flyAway"
-          style={{ left: `${emoji.x}%`, top: `${emoji.y}%` }}
-        >
-          💩
-        </div>
-      ))}
-
-      {/* Header */}
-      <div className="relative z-10 bg-slate-900/50 backdrop-blur-xl border-b border-cyan-500/20">
-        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-fuchsia-400 bg-clip-text text-transparent">
-            💩 PoopTracker
-          </h1>
-          <div className="flex items-center gap-3">
-            <span className="text-cyan-300 text-sm font-medium">@{profile.username}</span>
-            <button
-              onClick={onLogout}
-              className="text-xs text-slate-400 hover:text-red-400 transition-colors"
-            >
-              Выйти
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 max-w-lg mx-auto px-4 py-6">
-        {/* Welcome */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Привет, <span className="bg-gradient-to-r from-cyan-400 to-fuchsia-400 bg-clip-text text-transparent">{profile.username}</span>! 👋
-          </h2>
-          <p className="text-cyan-300/60 text-sm">Готов удивить подписчиков?</p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="bg-slate-800/50 border border-cyan-500/20 rounded-2xl p-3 text-center backdrop-blur-sm">
-            <div className="text-xl font-bold text-cyan-400">{todayCount}</div>
-            <div className="text-[10px] text-slate-400 uppercase tracking-wide">Сегодня</div>
-          </div>
-          <div className="bg-slate-800/50 border border-fuchsia-500/20 rounded-2xl p-3 text-center backdrop-blur-sm">
-            <div className="text-xl font-bold text-fuchsia-400">{weekCount}</div>
-            <div className="text-[10px] text-slate-400 uppercase tracking-wide">Неделя</div>
-          </div>
-          <div className="bg-slate-800/50 border border-purple-500/20 rounded-2xl p-3 text-center backdrop-blur-sm">
-            <div className="text-xl font-bold text-purple-400">{events.length}</div>
-            <div className="text-[10px] text-slate-400 uppercase tracking-wide">Всего</div>
-          </div>
-        </div>
-
-        {/* MAIN BUTTON */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handlePoop}
-            className="relative w-56 h-56 rounded-full bg-gradient-to-br from-cyan-500 via-fuchsia-500 to-purple-600 shadow-2xl shadow-fuchsia-500/40 border-4 border-cyan-400/40 transition-all duration-200 hover:shadow-fuchsia-500/60 hover:scale-105 active:scale-90 group neon-button"
-          >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
-            <div className="flex flex-col items-center justify-center h-full">
-              <span className="text-7xl transition-transform duration-200 group-active:scale-125">
-                💩
-              </span>
-              <span className="text-sm font-bold mt-3 text-white px-4 text-center leading-tight">
-                У МЕНЯ ВЫШЛО!
-              </span>
-            </div>
-            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/50 animate-ping" />
-          </button>
-        </div>
-
-        {/* Notification */}
-        {showNotif && (
-          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-2xl p-4 text-center mb-6 animate-slideDown backdrop-blur-sm">
-            <p className="text-sm font-bold text-cyan-300">
-              ✅ Уведомление отправлено {FAKE_SUBSCRIBERS.length} подписчикам!
-            </p>
-            {currentReaction && (
-              <p className="text-xs text-fuchsia-300 mt-1">{currentReaction}</p>
-            )}
-          </div>
-        )}
-
-        {/* Subscribers */}
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-cyan-300/80 mb-3 uppercase tracking-wider">
-            👥 Мои подписчики
+      {/* Уведомления */}
+      {notifications.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3">
+            🔔 {t(lang, 'notification')}
           </h3>
-          <div className="grid grid-cols-4 gap-2">
-            {FAKE_SUBSCRIBERS.map(sub => (
-              <div
-                key={sub.id}
-                className="bg-slate-800/50 border border-cyan-500/10 rounded-xl p-2 text-center backdrop-blur-sm hover:border-cyan-500/30 transition-all"
-              >
-                <div className="text-2xl mb-1">{sub.avatar}</div>
-                <div className="text-[10px] text-slate-400 truncate">{sub.name}</div>
+          <div className="space-y-2">
+            {notifications.slice(0, 5).map(notif => (
+              <div key={notif.id} className="bg-white/5 border border-cyan-500/20 rounded-xl p-3">
+                <div className="text-sm text-white">
+                  💩 {t(lang, 'friendPooped').replace('{name}', notif.friend_username)}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(notif.created_at).toLocaleString()}
+                </div>
               </div>
             ))}
           </div>
         </div>
+      )}
+    </div>
+  )
 
-        {/* Events feed */}
-        <div>
-          <h3 className="text-sm font-semibold text-fuchsia-300/80 mb-3 uppercase tracking-wider">
-            📋 Мои события
-          </h3>
-          {loading ? (
-            <div className="text-center py-8 text-slate-400">
-              <div className="text-3xl mb-2 animate-spin">⏳</div>
-              <p className="text-sm">Загрузка...</p>
-            </div>
-          ) : events.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
-              <div className="text-5xl mb-3">🫥</div>
-              <p className="text-sm">Пока пусто. Самое время нажать кнопку!</p>
+  // Вкладка Люди
+  const PeopleTab = () => (
+    <div className="p-4">
+      {/* Поиск */}
+      <div className="mb-6">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          onKeyUp={handleSearch}
+          placeholder={t(lang, 'searchPlaceholder')}
+          className="w-full px-4 py-3 bg-white/5 border border-blue-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
+        />
+        
+        {/* Результаты поиска */}
+        {searchResults.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {searchResults.map(user => (
+              <div key={user.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
+                <span className="text-white">{user.username}</span>
+                <button
+                  onClick={() => handleFollow(user.id)}
+                  className="px-4 py-1 bg-blue-500 rounded-lg text-white text-sm font-semibold"
+                >
+                  {t(lang, 'follow')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Подписки */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          👥 {t(lang, 'following')} ({following.length})
+        </h3>
+        {following.length === 0 ? (
+          <p className="text-gray-500 text-sm">{t(lang, 'noResults')}</p>
+        ) : (
+          <div className="space-y-2">
+            {following.map(friend => (
+              <div key={friend.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
+                <span className="text-white">{friend.username}</span>
+                <button
+                  onClick={() => handleUnfollow(friend.id)}
+                  className="px-4 py-1 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm font-semibold"
+                >
+                  {t(lang, 'unfollow')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Подписчики */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          🌟 {t(lang, 'followers')} ({followers.length})
+        </h3>
+        {followers.length === 0 ? (
+          <p className="text-gray-500 text-sm">{t(lang, 'noResults')}</p>
+        ) : (
+          <div className="space-y-2">
+            {followers.map(follower => (
+              <div key={follower.id} className="bg-white/5 border border-white/10 rounded-xl p-3">
+                <span className="text-white">{follower.username}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // Вкладка Настройки
+  const SettingsTab = () => (
+    <div className="p-4">
+      <h2 className="text-xl font-bold text-white mb-6">{t(lang, 'settings')}</h2>
+
+      {/* Профиль */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          👤 {t(lang, 'account')}
+        </h3>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          {editingUsername ? (
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={tempUsername}
+                onChange={e => setTempUsername(e.target.value)}
+                className="w-full px-3 py-2 bg-white/5 border border-blue-500/30 rounded-lg text-white focus:outline-none focus:border-blue-400"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveUsername}
+                  className="flex-1 py-2 bg-blue-500 rounded-lg text-white font-semibold"
+                >
+                  {t(lang, 'save')}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingUsername(false)
+                    setTempUsername(profile.username)
+                  }}
+                  className="flex-1 py-2 bg-gray-500/20 border border-gray-500/30 rounded-lg text-gray-300 font-semibold"
+                >
+                  {t(lang, 'cancel')}
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {events.map((event, idx) => {
-                const date = new Date(event.created_at)
-                return (
-                  <div
-                    key={event.id}
-                    className="bg-slate-800/50 border border-fuchsia-500/10 rounded-xl p-3 flex items-center gap-3 backdrop-blur-sm"
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500/20 to-fuchsia-500/20 rounded-full flex items-center justify-center text-xl">
-                      💩
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-white">
-                        {date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                      </div>
-                      <div className="text-xs text-slate-400">
-                        {date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </div>
-                    <div className="text-xs text-fuchsia-400 font-medium">
-                      #{events.length - idx}
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white font-semibold">{profile.username}</div>
+                <div className="text-xs text-gray-500">{profile.id.substring(0, 8)}...</div>
+              </div>
+              <button
+                onClick={() => setEditingUsername(true)}
+                className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-sm font-semibold"
+              >
+                {t(lang, 'editProfile')}
+              </button>
             </div>
           )}
         </div>
+      </div>
 
-        <div className="text-center mt-8 text-slate-500 text-xs">
-          💩 PoopTracker v2.0 — powered by Supabase
+      {/* Язык */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          🌐 {t(lang, 'language')}
+        </h3>
+        <div className="space-y-2">
+          {(Object.keys(LANG_NAMES) as Lang[]).map(l => (
+            <button
+              key={l}
+              onClick={() => {
+                setLang(l)
+                localStorage.setItem('poop_lang', l)
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+                lang === l
+                  ? 'bg-blue-500/20 border-2 border-blue-500 text-blue-400'
+                  : 'bg-white/5 border-2 border-transparent text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              <span className="text-xl">{LANG_FLAGS[l]}</span>
+              <span className="flex-1 text-left font-medium">{LANG_NAMES[l]}</span>
+              {lang === l && <span>✓</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Статистика */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-400 mb-3">
+          📊 {t(lang, 'stats')}
+        </h3>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+          <div className="flex justify-between">
+            <span className="text-gray-400">{t(lang, 'totalEvents')}</span>
+            <span className="text-white font-semibold">{events.length}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-400">{t(lang, 'dailyRecord')}</span>
+            <span className="text-white font-semibold">
+              {(() => {
+                const dayMap: Record<string, number> = {}
+                events.forEach(e => {
+                  const day = new Date(e.created_at).toDateString()
+                  dayMap[day] = (dayMap[day] || 0) + 1
+                })
+                return Math.max(0, ...Object.values(dayMap))
+              })()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Выход */}
+      <button
+        onClick={onLogout}
+        className="w-full py-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 font-semibold"
+      >
+        {t(lang, 'logout')}
+      </button>
+    </div>
+  )
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex flex-col">
+      {/* Контент */}
+      <div className="flex-1 overflow-y-auto pb-20">
+        {activeTab === 'home' && <HomeTab />}
+        {activeTab === 'people' && <PeopleTab />}
+        {activeTab === 'settings' && <SettingsTab />}
+      </div>
+
+      {/* Нижняя навигация */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/10">
+        <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+          <button
+            onClick={() => setActiveTab('home')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              activeTab === 'home' ? 'text-cyan-400' : 'text-gray-500'
+            }`}
+          >
+            <span className="text-xl">🏠</span>
+            <span className="text-xs font-semibold">{t(lang, 'tabHome')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('people')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              activeTab === 'people' ? 'text-cyan-400' : 'text-gray-500'
+            }`}
+          >
+            <span className="text-xl">👥</span>
+            <span className="text-xs font-semibold">{t(lang, 'tabPeople')}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              activeTab === 'settings' ? 'text-cyan-400' : 'text-gray-500'
+            }`}
+          >
+            <span className="text-xl">⚙️</span>
+            <span className="text-xs font-semibold">{t(lang, 'tabSettings')}</span>
+          </button>
         </div>
       </div>
     </div>

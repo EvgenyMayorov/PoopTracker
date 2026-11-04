@@ -1,83 +1,183 @@
-# 💩 PoopTracker v2.0
+# 💩 PoopTracker - Социальная сеть для отслеживания
 
-Полноценный веб-сервис с авторизацией и базой данных на Supabase.
+Полноценное веб-приложение с авторизацией, базой данных Supabase и системой уведомлений.
 
-## 🚀 Быстрый старт
+## 🚀 Возможности
 
-### 1. Настройка Supabase
+### ✅ Авторизация
+- Регистрация с email и паролем
+- Автоматическое создание профиля
+- Сохранение сессии
+- Retry-логика для надёжности
 
-1. Зайдите в [Supabase Dashboard](https://supabase.com/dashboard/)
-2. Откройте ваш проект: `iwfrojbhfihzuikxhgos`
-3. Перейдите в **SQL Editor**
-4. Скопируйте содержимое файла `supabase-schema.sql` и выполните его
-5. Дождитесь успешного создания таблиц и политик
+### 🏠 Главная страница
+- Кнопка "У меня вышло!" с анимацией
+- Статистика (сегодня/неделя/всего)
+- Уведомления от друзей в реальном времени
 
-### 2. Запуск приложения
+### 👥 Социальные функции
+- Поиск пользователей по имени
+- Подписка на друзей
+- Список подписчиков и подписок
+- Отписка в один клик
 
+### 🔔 Уведомления
+- Браузерные push-уведомления
+- Получение уведомлений когда друг "сходил"
+- Realtime обновления через Supabase
+
+### ⚙️ Настройки
+- Изменение имени пользователя
+- Выбор языка (RU/EN/ZH/DE/ES)
+- Статистика аккаунта
+- Выход из системы
+
+## 📋 Установка и настройка
+
+### 1. Клонирование репозитория
 ```bash
+git clone https://github.com/evgenymayorov/PoopTracker.git
+cd PoopTracker
 npm install
+```
+
+### 2. Настройка Supabase
+
+#### Создайте проект в Supabase
+1. Зайдите на https://supabase.com
+2. Создайте новый проект
+3. Скопируйте URL проекта и anon key
+
+#### Обновите конфигурацию
+Откройте `src/lib/supabase.ts` и замените:
+```typescript
+const SUPABASE_URL = 'YOUR_SUPABASE_URL'
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'
+```
+
+#### Выполните SQL-скрипт
+1. Откройте SQL Editor в Supabase Dashboard
+2. Скопируйте содержимое `supabase-schema.sql`
+3. Выполните скрипт
+
+Это создаст таблицы:
+- `profiles` - профили пользователей
+- `events` - события "походов"
+- `friends` - подписки
+- `notifications` - уведомления
+
+### 3. Настройка GitHub Pages
+
+#### Измените vite.config.js
+```javascript
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  base: '/PoopTracker/',
+  build: {
+    outDir: 'docs',
+  },
+})
+```
+
+#### Задеплойте
+```bash
+npm run build
+git add .
+git commit -m "Deploy to GitHub Pages"
+git push
+```
+
+В настройках репозитория:
+- Settings → Pages
+- Source: Deploy from a branch
+- Branch: main → /docs
+
+### 4. Локальный запуск
+```bash
 npm run dev
 ```
 
-### 3. Регистрация
+Откройте http://localhost:5173
 
-1. Откройте приложение в браузере
-2. Нажмите "Зарегистрируйся"
-3. Введите:
-   - **Никнейм** (уникальный, например: PoopMaster69)
-   - **Email**
-   - **Пароль** (минимум 6 символов)
-4. Подтвердите email (если включено в настройках Supabase)
-5. Войдите в аккаунт
+## 🗄️ Структура базы данных
 
-## 📊 Структура базы данных
+### profiles
+```sql
+- id (UUID, primary key)
+- username (text, unique)
+- created_at (timestamp)
+- updated_at (timestamp)
+```
 
-### Таблица `profiles`
-- `id` (UUID) - ID пользователя из auth.users
-- `username` (TEXT) - Уникальный никнейм
-- `updated_at` (TIMESTAMP) - Время обновления
+### events
+```sql
+- id (UUID, primary key)
+- user_id (UUID, foreign key)
+- created_at (timestamp)
+```
 
-### Таблица `events`
-- `id` (UUID) - Уникальный ID события
-- `user_id` (UUID) - ID пользователя
-- `created_at` (TIMESTAMP) - Время нажатия кнопки
+### friends
+```sql
+- id (UUID, primary key)
+- user_id (UUID, foreign key) - на кого подписаны
+- follower_id (UUID, foreign key) - кто подписан
+- created_at (timestamp)
+```
+
+### notifications
+```sql
+- id (UUID, primary key)
+- user_id (UUID, foreign key) - кто получает уведомление
+- friend_id (UUID, foreign key) - кто "сходил"
+- friend_username (text)
+- created_at (timestamp)
+```
 
 ## 🔒 Безопасность (RLS)
 
-Включены политики Row Level Security:
+Все таблицы защищены Row Level Security:
 - Пользователи видят только свои данные
-- Пользователи могут создавать только свои записи
-- Пользователи могут удалять только свои события
+- Подписчики могут видеть события друг друга
+- Профили доступны для поиска всем пользователям
 
-## 🎨 Особенности
+## 🎨 Технологии
 
-- **Неоновый дизайн** с анимациями
-- **Real-time обновления** через Supabase Realtime
-- **Адаптивный интерфейс** для мобильных устройств
-- **Сохранение сессии** через localStorage
-- **Звуковые эффекты** при нажатии кнопки
-- **Анимированные уведомления** подписчикам
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **Backend**: Supabase (PostgreSQL)
+- **Auth**: Supabase Auth
+- **Realtime**: Supabase Realtime
+- **i18n**: Собственная система переводов
 
-## 🛠️ Технологии
+## 📱 Мобильная версия
 
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
-- Supabase (Auth + Database + Realtime)
+Приложение адаптировано для мобильных устройств:
+- Нижняя навигация
+- Touch-friendly интерфейс
+- Responsive дизайн
 
-## 📝 Примечания
+## 🌍 Мультиязычность
 
-- Подписчики (Мама, Начальник и т.д.) - это симуляция для демонстрации
-- Для реальных push-уведомлений нужна интеграция с Firebase Cloud Messaging или аналогом
-- Все данные хранятся в Supabase и защищены RLS политиками
+Поддерживаемые языки:
+- 🇷🇺 Русский
+- 🇬🇧 English
+- 🇨🇳 中文
+- 🇩🇪 Deutsch
+- 🇪🇸 Español
 
-## 🔧 Настройки Supabase
+## 🐛 Известные проблемы
 
-Убедитесь, что в настройках проекта Supabase:
-1. **Authentication** → **Providers** → Email включен
-2. **Authentication** → **URL Configuration** → Site URL соответствует вашему домену
-3. **Database** → **Replication** → Включены таблицы `profiles` и `events` для Realtime
+- При первой регистрации может потребоваться обновление страницы
+- Браузерные уведомления требуют разрешения пользователя
+
+## 📝 Лицензия
+
+MIT
+
+## 👨‍💻 Автор
+
+Evgeny Mayorov - https://github.com/evgenymayorov
 
 ---
 
-Сделано с 💩 и ❤️
+**Важно**: Это шуточное приложение. Не используйте его для серьёзных целей! 😄
