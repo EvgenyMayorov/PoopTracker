@@ -357,28 +357,45 @@ export function MainScreen({ profile, onLogout }: Props) {
 
     console.log('[SearchFriend] Ищем пользователя с email:', friendEmail)
 
-    const { data, error } = await supabase.rpc('search_users_by_email', {
+    // Пробуем RPC функцию
+    const { data: rpcData, error: rpcError } = await supabase.rpc('search_users_by_email', {
       search_email: friendEmail.trim(),
       current_user_id: profile.id
     })
 
-    setIsSearchingFriend(false)
+    console.log('[SearchFriend] RPC результат:', rpcData)
+    console.log('[SearchFriend] RPC ошибка:', rpcError)
 
-    if (error) {
-      console.error('[SearchFriend] Ошибка RPC:', error)
-      console.error('[SearchFriend] Код ошибки:', error.code)
-      console.error('[SearchFriend] Сообщение:', error.message)
-      console.error('[SearchFriend] Детали:', error.details)
-      setFriendSearchResult(null)
-      return
-    }
+    // Если RPC не сработал, пробуем через view
+    if (rpcError || !rpcData || rpcData.length === 0) {
+      console.log('[SearchFriend] RPC не сработал, пробуем через view...')
+      
+      const { data: viewData, error: viewError } = await supabase
+        .from('user_search')
+        .select('id, username, email')
+        .ilike('email', `%${friendEmail.trim()}%`)
+        .neq('id', profile.id)
+        .limit(20)
 
-    console.log('[SearchFriend] Результат поиска:', data)
+      console.log('[SearchFriend] View результат:', viewData)
+      console.log('[SearchFriend] View ошибка:', viewError)
 
-    if (data && data.length > 0) {
-      setFriendSearchResult(data[0])
+      setIsSearchingFriend(false)
+
+      if (viewError) {
+        console.error('[SearchFriend] Ошибка view:', viewError)
+        setFriendSearchResult(null)
+        return
+      }
+
+      if (viewData && viewData.length > 0) {
+        setFriendSearchResult(viewData[0])
+      } else {
+        setFriendSearchResult(null)
+      }
     } else {
-      setFriendSearchResult(null)
+      setIsSearchingFriend(false)
+      setFriendSearchResult(rpcData[0])
     }
   }
 
