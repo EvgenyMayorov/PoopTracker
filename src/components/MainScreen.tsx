@@ -1320,44 +1320,68 @@ export function MainScreen({ profile, onLogout }: Props) {
     <div className="p-4">
       {/* Поиск */}
       <div className="mb-6">
-        <input
-          type="email"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          onKeyUp={handleSearch}
-          placeholder={t(lang, 'searchByEmail')}
-          className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:border-blue-400 ${
-            theme === 'light'
-              ? 'bg-white border-2 border-blue-200 text-gray-800 placeholder-gray-400'
-              : 'bg-white/5 border border-blue-500/30 text-white placeholder-gray-500'
-          }`}
-        />
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={t(lang, 'searchByEmail')}
+            className={`flex-1 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-400 ${
+              theme === 'light'
+                ? 'bg-white border-2 border-blue-200 text-gray-800 placeholder-gray-400'
+                : 'bg-white/5 border border-blue-500/30 text-white placeholder-gray-500'
+            }`}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={isSearching || !searchQuery.trim()}
+            className="px-6 py-3 bg-blue-500 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+          >
+            {isSearching ? '...' : t(lang, 'search')}
+          </button>
+        </div>
         
         {/* Результаты поиска */}
-        {searchResults.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {searchResults.map(user => (
-              <div key={user.id} className={`flex items-center justify-between rounded-xl p-3 ${
+        {searchPerformed && !isSearching && (
+          <div className="mt-3">
+            {searchResults.length > 0 ? (
+              <div className="space-y-2">
+                {searchResults.map(user => (
+                  <div key={user.id} className={`flex items-center justify-between rounded-xl p-3 ${
+                    theme === 'light'
+                      ? 'bg-white border-2 border-blue-200'
+                      : 'bg-white/5 border border-white/10'
+                  }`}>
+                    <div>
+                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                        {user.username}
+                      </div>
+                      <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {user.email}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleFollow(user.id, user.username)}
+                      className="px-4 py-1 bg-blue-500 rounded-lg text-white text-sm font-semibold hover:bg-blue-600 transition-colors"
+                    >
+                      {t(lang, 'follow')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`text-center py-6 rounded-xl ${
                 theme === 'light'
-                  ? 'bg-white border-2 border-blue-200'
+                  ? 'bg-gray-50 border-2 border-gray-200'
                   : 'bg-white/5 border border-white/10'
               }`}>
-                <div>
-                  <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
-                    {user.username}
-                  </div>
-                  <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
-                    {user.email}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleFollow(user.id, user.username)}
-                  className="px-4 py-1 bg-blue-500 rounded-lg text-white text-sm font-semibold"
-                >
-                  {t(lang, 'follow')}
-                </button>
+                <div className="text-4xl mb-2">🔍</div>
+                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                  {t(lang, 'noUserFound')}
+                </p>
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
