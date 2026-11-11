@@ -35,6 +35,8 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchPerformed, setSearchPerformed] = useState(false)
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
@@ -611,14 +613,20 @@ export function MainScreen({ profile, onLogout }: Props) {
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setSearchPerformed(false)
       return
     }
+
+    setIsSearching(true)
+    setSearchPerformed(true)
 
     // Используем RPC функцию для поиска по email
     const { data, error } = await supabase.rpc('search_users_by_email', {
       search_email: searchQuery,
       current_user_id: profile.id
     })
+
+    setIsSearching(false)
 
     if (error) {
       console.error('[Search] Ошибка поиска:', error)
@@ -627,6 +635,13 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
 
     setSearchResults(data || [])
+  }
+
+  // Обработка нажатия клавиш в поле поиска
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+    }
   }
 
   // Подписаться
