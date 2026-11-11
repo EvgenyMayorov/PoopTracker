@@ -60,6 +60,14 @@ export function MainScreen({ profile, onLogout }: Props) {
       friendFollowed: true
     }
   })
+  const [avatar, setAvatar] = useState<string>(() => 
+    localStorage.getItem('poop_avatar') || '💩'
+  )
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
+  
+  // Список эмодзи для аватарки
+  const avatarEmojis = ['💩', '🎉', '🔥', '⭐', '🌟', '✨', '💎', '🎨', '🎯', '🚀', '🌈', '🦄', '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐵']
 
   // Вспомогательная функция для отправки уведомлений
   const showNotification = async (title: string, options: NotificationOptions) => {
@@ -365,6 +373,21 @@ export function MainScreen({ profile, onLogout }: Props) {
     fetchFriendsEvents()
   }, [fetchFriendsEvents])
 
+  // Автоматическая прокрутка к подсвеченной записи
+  useEffect(() => {
+    if (highlightedEventId) {
+      const element = document.getElementById(`event-${highlightedEventId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Убираем подсветку через 3 секунды
+        const timer = setTimeout(() => {
+          setHighlightedEventId(null)
+        }, 3000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [highlightedEventId, activeTab, feedTab])
+
   // Realtime подписка на события друзей, реакции и комментарии
   useEffect(() => {
     const channel = supabase
@@ -629,6 +652,20 @@ export function MainScreen({ profile, onLogout }: Props) {
       // Перезагружаем страницу для обновления профиля
       window.location.reload()
     }
+  }
+
+  // Сохранить аватарку
+  const handleSaveAvatar = (emoji: string) => {
+    setAvatar(emoji)
+    localStorage.setItem('poop_avatar', emoji)
+    setShowAvatarPicker(false)
+  }
+
+  // Переход к записи из главной страницы
+  const handleEventClick = (eventId: string) => {
+    setHighlightedEventId(eventId)
+    setActiveTab('feed')
+    setFeedTab('my')
   }
 
   // Обновить настройки уведомлений
@@ -896,11 +933,19 @@ export function MainScreen({ profile, onLogout }: Props) {
           ) : (
             <div className="space-y-3">
               {events.map(event => (
-                <div key={event.id} className={`rounded-xl p-4 ${
-                  theme === 'light'
-                    ? 'bg-white border-2 border-cyan-200'
-                    : 'bg-white/5 border border-cyan-500/20'
-                }`}>
+                <div 
+                  key={event.id} 
+                  id={`event-${event.id}`}
+                  className={`rounded-xl p-4 transition-all ${
+                    highlightedEventId === event.id
+                      ? theme === 'light'
+                        ? 'bg-blue-100 border-4 border-blue-500 shadow-lg shadow-blue-500/30 scale-105'
+                        : 'bg-blue-500/20 border-4 border-blue-400 shadow-lg shadow-blue-500/50 scale-105'
+                      : theme === 'light'
+                        ? 'bg-white border-2 border-cyan-200'
+                        : 'bg-white/5 border border-cyan-500/20'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                       💩
@@ -1030,18 +1075,18 @@ export function MainScreen({ profile, onLogout }: Props) {
         </div>
         <div className={`rounded-xl p-3 text-center ${
           theme === 'light' 
-            ? 'bg-white border-2 border-purple-200' 
+            ? 'bg-white border-2 border-cyan-200' 
             : 'bg-white/5 border border-purple-500/20'
         }`}>
-          <div className="text-2xl font-bold text-purple-400">{weekCount}</div>
+          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-cyan-600' : 'text-purple-400'}`}>{weekCount}</div>
           <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'week')}</div>
         </div>
         <div className={`rounded-xl p-3 text-center ${
           theme === 'light' 
-            ? 'bg-white border-2 border-pink-200' 
+            ? 'bg-white border-2 border-sky-200' 
             : 'bg-white/5 border border-pink-500/20'
         }`}>
-          <div className="text-2xl font-bold text-pink-400">{events.length}</div>
+          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-sky-600' : 'text-pink-400'}`}>{events.length}</div>
           <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'total')}</div>
         </div>
       </div>
@@ -1050,22 +1095,27 @@ export function MainScreen({ profile, onLogout }: Props) {
       <div className="flex justify-center my-6">
         <button
           onClick={handlePoop}
-          className="relative w-48 h-48 rounded-full bg-gradient-to-br from-cyan-500 via-fuchsia-500 to-purple-500 shadow-2xl shadow-fuchsia-500/40 border-4 border-cyan-400/30 transition-all duration-200 hover:shadow-fuchsia-500/60 hover:scale-105 active:scale-90 group"
+          className={`relative w-48 h-48 rounded-full shadow-2xl border-4 transition-all duration-200 hover:scale-105 active:scale-90 group ${
+            theme === 'light'
+              ? 'bg-gradient-to-br from-blue-400 via-cyan-400 to-sky-400 shadow-blue-500/40 border-blue-300/50 hover:shadow-blue-500/60'
+              : 'bg-gradient-to-br from-cyan-500 via-fuchsia-500 to-purple-500 shadow-fuchsia-500/40 border-cyan-400/30 hover:shadow-fuchsia-500/60'
+          }`}
         >
           <div className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent to-white/10" />
           <div className="flex flex-col items-center justify-center h-full">
-            <svg className="w-20 h-20 text-white transition-transform duration-200 group-active:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {/* Основание - широкая нижняя часть */}
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18C6 18 5 16 5 14.5C5 13 6 12 7.5 12L16.5 12C18 12 19 13 19 14.5C19 16 18 18 18 18" />
-              {/* Средний ярус */}
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 12C7.5 12 7 10.5 7 9.5C7 8 8 7 9.5 7L14.5 7C16 7 17 8 17 9.5C17 10.5 16.5 12 16.5 12" />
-              {/* Верхний ярус с завитком */}
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.5 7C9.5 7 9 5.5 9 5C9 4 9.5 3 10.5 3C11.5 3 12 3.5 12 4C12 4.5 11.5 5 11 5C10.5 5 10 4.5 10 4" />
-              {/* Спиральные линии для текстуры */}
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 15C8 15 9 14 10 14C11 14 12 15 12 15" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15C12 15 13 14 14 14C15 14 16 15 16 15" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 10C9 10 10 9 11 9C12 9 13 10 13 10" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10C13 10 14 9 15 9" />
+            <svg className="w-20 h-20 text-white transition-transform duration-200 group-active:scale-125" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              {/* Какашка - три яруса */}
+              <path d="M7 21h10c1.1 0 2-.9 2-2v-1c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
+              <path d="M8 16h8c1.1 0 2-.9 2-2v-1c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
+              <path d="M9 11h6c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
+              {/* Завиток сверху */}
+              <path d="M11 6c0-1.1.9-2 2-2s2 .9 2 2" />
+              {/* Глаза */}
+              <circle cx="10" cy="14" r="0.5" fill="currentColor" />
+              <circle cx="14" cy="14" r="0.5" fill="currentColor" />
+              {/* Улыбка */}
+              <path d="M10 16c0.5 0.5 1 0.5 1.5 0" />
+              <path d="M12.5 16c0.5 0.5 1 0.5 1.5 0" />
             </svg>
             <span className="text-sm font-bold mt-2 text-white px-4 text-center leading-tight">
               {t(lang, 'poopButton')}
@@ -1140,6 +1190,70 @@ export function MainScreen({ profile, onLogout }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Последние 7 записей */}
+      {events.length > 0 && (
+        <div className={`mb-6 p-4 rounded-2xl ${
+          theme === 'light' 
+            ? 'bg-white border-2 border-blue-200' 
+            : 'bg-white/5 border border-white/10'
+        }`}>
+          <h3 className={`text-sm font-semibold mb-3 ${
+            theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+          }`}>
+            <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Последние записи
+          </h3>
+          <div className="space-y-2">
+            {events.slice(0, 7).map(event => (
+              <button
+                key={event.id}
+                onClick={() => handleEventClick(event.id)}
+                className={`w-full text-left p-3 rounded-lg transition-all ${
+                  theme === 'light'
+                    ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{avatar}</span>
+                    <div>
+                      <div className={`text-sm font-medium ${
+                        theme === 'light' ? 'text-gray-800' : 'text-white'
+                      }`}>
+                        {new Date(event.created_at).toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </div>
+                      <div className={`text-xs ${
+                        theme === 'light' ? 'text-gray-500' : 'text-gray-400'
+                      }`}>
+                        {new Date(event.created_at).toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  {event.bristol_type && (
+                    <div className={`text-xs px-2 py-1 rounded ${
+                      event.bristol_type <= 2 ? 'bg-red-100 text-red-700' :
+                      event.bristol_type <= 4 ? 'bg-green-100 text-green-700' :
+                      'bg-orange-100 text-orange-700'
+                    }`}>
+                      {t(lang, `bristolType${event.bristol_type}`)}
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Уведомления */}
       {notifications.length > 0 && (
@@ -1258,11 +1372,14 @@ export function MainScreen({ profile, onLogout }: Props) {
         <h3 className={`text-sm font-semibold mb-3 ${
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
-          👤 {t(lang, 'account')}
+          <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          {t(lang, 'account')}
         </h3>
         <div className={`rounded-xl p-4 ${
           theme === 'light'
-            ? 'bg-white border-2 border-gray-200'
+            ? 'bg-white border-2 border-blue-200'
             : 'bg-white/5 border border-white/10'
         }`}>
           {editingUsername ? (
@@ -1273,7 +1390,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 onChange={e => setTempUsername(e.target.value)}
                 className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400 ${
                   theme === 'light'
-                    ? 'bg-gray-50 border-2 border-gray-200 text-gray-800'
+                    ? 'bg-blue-50 border-2 border-blue-200 text-gray-800'
                     : 'bg-white/5 border border-blue-500/30 text-white'
                 }`}
               />
@@ -1301,13 +1418,21 @@ export function MainScreen({ profile, onLogout }: Props) {
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <div>
-                <div className={`font-semibold ${
-                  theme === 'light' ? 'text-gray-800' : 'text-white'
-                }`}>{profile.username}</div>
-                <div className={`text-xs ${
-                  theme === 'light' ? 'text-gray-500' : 'text-gray-500'
-                }`}>{profile.id.substring(0, 8)}...</div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                  className="text-4xl hover:scale-110 transition-transform"
+                >
+                  {avatar}
+                </button>
+                <div>
+                  <div className={`font-semibold ${
+                    theme === 'light' ? 'text-gray-800' : 'text-white'
+                  }`}>{profile.username}</div>
+                  <div className={`text-xs ${
+                    theme === 'light' ? 'text-gray-500' : 'text-gray-500'
+                  }`}>{profile.id.substring(0, 8)}...</div>
+                </div>
               </div>
               <button
                 onClick={() => setEditingUsername(true)}
@@ -1321,6 +1446,34 @@ export function MainScreen({ profile, onLogout }: Props) {
               </button>
             </div>
           )}
+          
+          {/* Выбор аватарки */}
+          {showAvatarPicker && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className={`text-sm mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                Выберите аватарку:
+              </p>
+              <div className="grid grid-cols-5 gap-2">
+                {avatarEmojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleSaveAvatar(emoji)}
+                    className={`text-3xl p-2 rounded-lg transition-all hover:scale-110 ${
+                      avatar === emoji
+                        ? theme === 'light'
+                          ? 'bg-blue-100 border-2 border-blue-400'
+                          : 'bg-blue-500/20 border-2 border-blue-400'
+                        : theme === 'light'
+                          ? 'bg-gray-50 border-2 border-gray-200'
+                          : 'bg-white/5 border-2 border-white/10'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1329,7 +1482,10 @@ export function MainScreen({ profile, onLogout }: Props) {
         <h3 className={`text-sm font-semibold mb-3 ${
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
-          🎨 {t(lang, 'theme')}
+          <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          </svg>
+          {t(lang, 'theme')}
         </h3>
         <div className="flex gap-2">
           <button
@@ -1366,7 +1522,10 @@ export function MainScreen({ profile, onLogout }: Props) {
         <h3 className={`text-sm font-semibold mb-3 ${
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
-          🌐 {t(lang, 'language')}
+          <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+          {t(lang, 'language')}
         </h3>
         <select
           value={lang}
@@ -1425,7 +1584,10 @@ export function MainScreen({ profile, onLogout }: Props) {
         <h3 className={`text-sm font-semibold mb-3 ${
           theme === 'light' ? 'text-gray-600' : 'text-gray-400'
         }`}>
-          🔔 {t(lang, 'notificationSettings')}
+          <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          {t(lang, 'notificationSettings')}
         </h3>
         <div className={`rounded-xl p-4 space-y-3 ${
           theme === 'light'
@@ -1441,7 +1603,10 @@ export function MainScreen({ profile, onLogout }: Props) {
               className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
             />
             <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
-              💩 {t(lang, 'notifFriendPooped')}
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {t(lang, 'notifFriendPooped')}
             </span>
           </label>
 
@@ -1454,7 +1619,10 @@ export function MainScreen({ profile, onLogout }: Props) {
               className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
             />
             <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
-              👍 {t(lang, 'notifFriendReaction')}
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+              </svg>
+              {t(lang, 'notifFriendReaction')}
             </span>
           </label>
 
@@ -1467,7 +1635,10 @@ export function MainScreen({ profile, onLogout }: Props) {
               className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
             />
             <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
-              💬 {t(lang, 'notifFriendComment')}
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {t(lang, 'notifFriendComment')}
             </span>
           </label>
 
@@ -1480,7 +1651,10 @@ export function MainScreen({ profile, onLogout }: Props) {
               className="w-5 h-5 rounded border-2 border-gray-300 text-cyan-500 focus:ring-cyan-500 focus:ring-2"
             />
             <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
-              👥 {t(lang, 'notifFriendFollowed')}
+              <svg className="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              {t(lang, 'notifFriendFollowed')}
             </span>
           </label>
 
@@ -1513,7 +1687,9 @@ export function MainScreen({ profile, onLogout }: Props) {
               <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{t(lang, 'pwaSettingsTitle')}</div>
               <div className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>{t(lang, 'pwaSettingsDesc')}</div>
             </div>
-            <span className="text-2xl">📲</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </div>
         </button>
       </div>
@@ -1535,7 +1711,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   return (
     <div className={`min-h-screen flex flex-col ${
       theme === 'light' 
-        ? 'bg-gradient-to-br from-blue-50 via-white to-cyan-50' 
+        ? 'bg-gradient-to-br from-sky-50 via-white to-blue-50' 
         : 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950'
     }`}>
       {/* Контент */}
