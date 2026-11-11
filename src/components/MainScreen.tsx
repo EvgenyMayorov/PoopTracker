@@ -355,18 +355,25 @@ export function MainScreen({ profile, onLogout }: Props) {
     setIsSearchingFriend(true)
     setFriendSearchResult(null)
 
+    console.log('[SearchFriend] Ищем пользователя с email:', friendEmail)
+
     const { data, error } = await supabase.rpc('search_users_by_email', {
-      search_email: friendEmail,
+      search_email: friendEmail.trim(),
       current_user_id: profile.id
     })
 
     setIsSearchingFriend(false)
 
     if (error) {
-      console.error('[SearchFriend] Ошибка:', error)
+      console.error('[SearchFriend] Ошибка RPC:', error)
+      console.error('[SearchFriend] Код ошибки:', error.code)
+      console.error('[SearchFriend] Сообщение:', error.message)
+      console.error('[SearchFriend] Детали:', error.details)
       setFriendSearchResult(null)
       return
     }
+
+    console.log('[SearchFriend] Результат поиска:', data)
 
     if (data && data.length > 0) {
       setFriendSearchResult(data[0])
