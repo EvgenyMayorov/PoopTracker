@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
-import { Lang, LANG_NAMES, LANG_FLAGS, t } from '../i18n'
+import { t, tWithParams } from '../i18n'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
 
@@ -28,7 +28,6 @@ interface Notification {
 
 export function MainScreen({ profile, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('home')
-  const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('poop_lang') as Lang) || 'ru')
   const [events, setEvents] = useState<any[]>([])
   const [followers, setFollowers] = useState<Friend[]>([])
   const [following, setFollowing] = useState<Friend[]>([])
