@@ -121,12 +121,15 @@ const translations: Record<Lang, Dict> = {
     selectLanguage: 'Выберите язык',
     // Week chart
     weekChart: 'За последние 7 дней',
+    // Search
+    searchByEmail: 'Поиск по email...',
     // Notification settings
     notificationSettings: 'Настройки уведомлений',
     notifFriendPooped: 'У друга вышло',
     notifFriendReaction: 'Друг поставил реакцию',
     notifFriendComment: 'Друг оставил комментарий',
     notifFriendFollowed: 'Друг подписался на меня',
+    notifFriendSubscribed: 'На меня подписались',
     testNotification: 'Тестовое уведомление',
     testNotificationText: 'Проверяем работу уведомлений',
   },
@@ -232,12 +235,15 @@ const translations: Record<Lang, Dict> = {
     selectLanguage: 'Select language',
     // Week chart
     weekChart: 'Last 7 days',
+    // Search
+    searchByEmail: 'Search by email...',
     // Notification settings
     notificationSettings: 'Notification settings',
     notifFriendPooped: 'Friend pooped',
     notifFriendReaction: 'Friend reacted',
     notifFriendComment: 'Friend commented',
     notifFriendFollowed: 'Friend followed me',
+    notifFriendSubscribed: 'Someone subscribed to me',
     testNotification: 'Test notification',
     testNotificationText: 'Testing notifications',
   },
@@ -343,12 +349,15 @@ const translations: Record<Lang, Dict> = {
     selectLanguage: '选择语言',
     // Week chart
     weekChart: '最近7天',
+    // Search
+    searchByEmail: '按邮箱搜索...',
     // Notification settings
     notificationSettings: '通知设置',
     notifFriendPooped: '朋友拉了',
     notifFriendReaction: '朋友反应了',
     notifFriendComment: '朋友评论了',
     notifFriendFollowed: '朋友关注了我',
+    notifFriendSubscribed: '有人订阅了我',
     testNotification: '测试通知',
     testNotificationText: '测试通知功能',
   },
@@ -454,12 +463,15 @@ const translations: Record<Lang, Dict> = {
     selectLanguage: 'Sprache auswählen',
     // Week chart
     weekChart: 'Letzte 7 Tage',
+    // Search
+    searchByEmail: 'Nach E-Mail suchen...',
     // Notification settings
     notificationSettings: 'Benachrichtigungseinstellungen',
     notifFriendPooped: 'Freund hat gekotet',
     notifFriendReaction: 'Freund hat reagiert',
     notifFriendComment: 'Freund hat kommentiert',
     notifFriendFollowed: 'Freund folgt mir',
+    notifFriendSubscribed: 'Jemand hat mich abonniert',
     testNotification: 'Testbenachrichtigung',
     testNotificationText: 'Benachrichtigungen testen',
   },
@@ -565,12 +577,15 @@ const translations: Record<Lang, Dict> = {
     selectLanguage: 'Seleccionar idioma',
     // Week chart
     weekChart: 'Últimos 7 días',
+    // Search
+    searchByEmail: 'Buscar por correo electrónico...',
     // Notification settings
     notificationSettings: 'Configuración de notificaciones',
     notifFriendPooped: 'Amigo cagó',
     notifFriendReaction: 'Amigo reaccionó',
     notifFriendComment: 'Amigo comentó',
     notifFriendFollowed: 'Amigo me siguió',
+    notifFriendSubscribed: 'Alguien me suscribió',
     testNotification: 'Notificación de prueba',
     testNotificationText: 'Probando notificaciones',
   },
