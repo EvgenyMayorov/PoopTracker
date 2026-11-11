@@ -57,7 +57,8 @@ export function MainScreen({ profile, onLogout }: Props) {
       friendPooped: true,
       friendReaction: true,
       friendComment: true,
-      friendFollowed: true
+      friendFollowed: true,
+      friendSubscribed: true
     }
   })
   const [avatar, setAvatar] = useState<string>(() => 
@@ -606,29 +607,44 @@ export function MainScreen({ profile, onLogout }: Props) {
     setSelectedType(null)
   }
 
-  // Поиск пользователей
+  // Поиск пользователей по email
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([])
       return
     }
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .ilike('username', `%${searchQuery}%`)
-      .neq('id', profile.id)
-      .limit(20)
+    // Используем RPC функцию для поиска по email
+    const { data, error } = await supabase.rpc('search_users_by_email', {
+      search_email: searchQuery,
+      current_user_id: profile.id
+    })
+
+    if (error) {
+      console.error('[Search] Ошибка поиска:', error)
+      setSearchResults([])
+      return
+    }
 
     setSearchResults(data || [])
   }
 
   // Подписаться
-  const handleFollow = async (userId: string) => {
+  const handleFollow = async (userId: string, username: string) => {
+    // Создаём подписку
     await supabase.from('friends').insert({
       user_id: profile.id,
       follower_id: userId
     })
+    
+    // Отправляем уведомление пользователю
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      friend_id: profile.id,
+      friend_username: profile.username,
+      notification_type: 'follow'
+    })
+    
     fetchFollowing()
     setSearchResults([])
     setSearchQuery('')
@@ -1290,22 +1306,37 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Поиск */}
       <div className="mb-6">
         <input
-          type="text"
+          type="email"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyUp={handleSearch}
-          placeholder={t(lang, 'searchPlaceholder')}
-          className="w-full px-4 py-3 bg-white/5 border border-blue-500/30 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-400"
+          placeholder={t(lang, 'searchByEmail')}
+          className={`w-full px-4 py-3 rounded-xl focus:outline-none focus:border-blue-400 ${
+            theme === 'light'
+              ? 'bg-white border-2 border-blue-200 text-gray-800 placeholder-gray-400'
+              : 'bg-white/5 border border-blue-500/30 text-white placeholder-gray-500'
+          }`}
         />
         
         {/* Результаты поиска */}
         {searchResults.length > 0 && (
           <div className="mt-3 space-y-2">
             {searchResults.map(user => (
-              <div key={user.id} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3">
-                <span className="text-white">{user.username}</span>
+              <div key={user.id} className={`flex items-center justify-between rounded-xl p-3 ${
+                theme === 'light'
+                  ? 'bg-white border-2 border-blue-200'
+                  : 'bg-white/5 border border-white/10'
+              }`}>
+                <div>
+                  <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                    {user.username}
+                  </div>
+                  <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {user.email}
+                  </div>
+                </div>
                 <button
-                  onClick={() => handleFollow(user.id)}
+                  onClick={() => handleFollow(user.id, user.username)}
                   className="px-4 py-1 bg-blue-500 rounded-lg text-white text-sm font-semibold"
                 >
                   {t(lang, 'follow')}
