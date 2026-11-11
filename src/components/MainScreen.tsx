@@ -217,22 +217,46 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   const fetchComments = async (eventId: string) => {
-    const { data } = await supabase
+    // Получаем комментарии
+    const { data: commentsData, error: commentsError } = await supabase
       .from('comments')
-      .select('*, profiles(username)')
+      .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: true })
     
-    if (data) {
+    if (commentsError) {
+      console.error('[FetchComments] Ошибка:', commentsError)
+      return
+    }
+    
+    if (commentsData && commentsData.length > 0) {
+      // Получаем имена пользователей
+      const userIds = [...new Set(commentsData.map(c => c.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds)
+      
+      // Объединяем данные
+      const commentsWithProfiles = commentsData.map(comment => {
+        const profile = profilesData?.find(p => p.id === comment.user_id)
+        return {
+          id: comment.id,
+          user_id: comment.user_id,
+          username: profile?.username || 'Unknown',
+          text: comment.comment_text,
+          created_at: comment.created_at,
+        }
+      })
+      
       setComments(prev => ({
         ...prev,
-        [eventId]: data.map(c => ({
-          id: c.id,
-          user_id: c.user_id,
-          username: c.profiles?.username || 'Unknown',
-          text: c.comment_text,
-          created_at: c.created_at,
-        }))
+        [eventId]: commentsWithProfiles
+      }))
+    } else {
+      setComments(prev => ({
+        ...prev,
+        [eventId]: []
       }))
     }
   }
@@ -425,11 +449,36 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   const handleFollowFriend = async (userId: string, username: string) => {
-    await supabase.from('friends').insert({
+    // Проверяем, не подписаны ли уже
+    const { data: existingSub } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('user_id', profile.id)
+      .eq('follower_id', userId)
+      .single()
+    
+    if (existingSub) {
+      alert('Вы уже подписаны на этого пользователя')
+      return
+    }
+    
+    // Подписываемся
+    const { error: followError } = await supabase.from('friends').insert({
       user_id: profile.id,
       follower_id: userId
     })
     
+    if (followError) {
+      console.error('[FollowFriend] Ошибка подписки:', followError)
+      if (followError.code === '23505') {
+        alert('Вы уже подписаны на этого пользователя')
+      } else {
+        alert('Ошибка при подписке: ' + followError.message)
+      }
+      return
+    }
+    
+    // Отправляем уведомление
     await supabase.from('notifications').insert({
       user_id: userId,
       friend_id: profile.id,
@@ -441,6 +490,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     setShowAddFriendModal(false)
     setFriendEmail('')
     setFriendSearchResult(null)
+    alert(`Вы подписались на ${username}`)
   }
 
   // Статистика
