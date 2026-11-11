@@ -158,19 +158,44 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
     
     const friendIds = following.map(f => f.user_id)
-    const { data } = await supabase
+    
+    // Получаем события
+    const { data: eventsData, error: eventsError } = await supabase
       .from('events')
-      .select('*, profiles(username)')
+      .select('*')
       .in('user_id', friendIds)
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) {
-      setFriendsEvents(data)
-      data.forEach(event => {
+    if (eventsError) {
+      console.error('[FetchFriendsEvents] Ошибка получения событий:', eventsError)
+      return
+    }
+    
+    if (eventsData && eventsData.length > 0) {
+      // Получаем имена пользователей для каждого события
+      const userIds = [...new Set(eventsData.map(e => e.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds)
+      
+      // Объединяем данные
+      const eventsWithProfiles = eventsData.map(event => {
+        const profile = profilesData?.find(p => p.id === event.user_id)
+        return {
+          ...event,
+          profiles: profile ? { username: profile.username } : null
+        }
+      })
+      
+      setFriendsEvents(eventsWithProfiles)
+      eventsData.forEach(event => {
         fetchReactions(event.id)
         fetchComments(event.id)
       })
+    } else {
+      setFriendsEvents([])
     }
   }, [following])
 
