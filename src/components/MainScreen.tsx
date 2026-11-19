@@ -753,7 +753,7 @@ export function MainScreen({ profile, onLogout }: Props) {
             {following.map(friend => (
               <div
                 key={friend.id}
-                onClick={() => navigate(`/user/${friend.id}`)}
+                onClick={() => navigate(`/user/${friend.user_id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
                   theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
                 }`}
@@ -796,7 +796,7 @@ export function MainScreen({ profile, onLogout }: Props) {
             {followers.map(follower => (
               <div
                 key={follower.id}
-                onClick={() => navigate(`/user/${follower.id}`)}
+                onClick={() => navigate(`/user/${follower.user_id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
                   theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
                 }`}

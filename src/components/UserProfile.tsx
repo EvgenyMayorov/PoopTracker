@@ -73,7 +73,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
 
   const fetchFollowers = useCallback(async () => {
     if (!userId) return
-    const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('follower_id', userId)
+    const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('user_id', userId)
     if (data && data.length > 0) {
       const followerIds = data.map(f => f.follower_id)
       const { data: profiles } = await supabase.from('profiles').select('id, username, email, avatar').in('id', followerIds)
@@ -82,7 +82,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           const p = profiles.find(p => p.id === f.follower_id)
           return {
             id: f.id,
-            user_id: f.user_id,
+            user_id: f.follower_id,
             username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
@@ -95,16 +95,16 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
 
   const fetchFollowing = useCallback(async () => {
     if (!userId) return
-    const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('user_id', userId)
+    const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('follower_id', userId)
     if (data && data.length > 0) {
-      const userIds = data.map(f => f.follower_id)
+      const userIds = data.map(f => f.user_id)
       const { data: profiles } = await supabase.from('profiles').select('id, username, email, avatar').in('id', userIds)
       if (profiles) {
         setFollowing(data.map(f => {
-          const p = profiles.find(p => p.id === f.follower_id)
+          const p = profiles.find(p => p.id === f.user_id)
           return {
             id: f.id,
-            user_id: f.follower_id,
+            user_id: f.user_id,
             username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }

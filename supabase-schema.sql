@@ -123,14 +123,14 @@ CREATE POLICY "Users can delete own events"
   ON public.events FOR DELETE
   USING (auth.uid() = user_id);
 
--- Разрешаем подписчикам видеть события друг друга (для уведомлений)
-CREATE POLICY "Followers can view friend events"
+-- Разрешаем пользователям видеть события тех, на которых они подписаны (для профиля друга)
+CREATE POLICY "Users can view events of people they follow"
   ON public.events FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM public.friends
-      WHERE friends.user_id = auth.uid()
-      AND friends.follower_id = events.user_id
+      WHERE friends.user_id = events.user_id
+      AND friends.follower_id = auth.uid()
     )
   );
 
