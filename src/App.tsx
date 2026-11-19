@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase, Profile } from './lib/supabase'
 import { AuthScreen } from './components/AuthScreen'
 import { MainScreen } from './components/MainScreen'
+import { UserProfile } from './components/UserProfile'
 
 function App() {
   const [session, setSession] = useState<any>(null)
@@ -218,46 +220,59 @@ function App() {
   // Экран загрузки
   if (loading) {
     return (
-      <div className="mobile-container flex items-center justify-center p-4">
-        <div className="text-center">
-          <img src="/logo.svg" alt="PooTrack" className="w-24 h-24 mx-auto mb-4" />
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
+      <BrowserRouter>
+        <div className="mobile-container flex items-center justify-center p-4">
+          <div className="text-center">
+            <img src="/logo.svg" alt="PooTrack" className="w-24 h-24 mx-auto mb-4" />
+            <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
+          </div>
         </div>
-      </div>
+      </BrowserRouter>
     )
   }
 
   // Экран авторизации (нет сессии или нет профиля)
   if (!session || !profile) {
     return (
-      <>
-        <AuthScreen />
-        {warning && (
-          <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto">
-            <div className="bg-amber-500/90 backdrop-blur-lg border-2 border-amber-400 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">⚠️</span>
-                <div className="flex-1">
-                  <p className="text-amber-950 text-sm font-semibold whitespace-pre-line">{warning}</p>
+      <BrowserRouter>
+        <>
+          <AuthScreen />
+          {warning && (
+            <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto">
+              <div className="bg-amber-500/90 backdrop-blur-lg border-2 border-amber-400 rounded-2xl p-4 shadow-xl">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⚠️</span>
+                  <div className="flex-1">
+                    <p className="text-amber-950 text-sm font-semibold whitespace-pre-line">{warning}</p>
+                  </div>
+                  <button
+                    onClick={dismissWarning}
+                    className="text-amber-950 hover:text-amber-800 font-bold text-xl leading-none"
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  onClick={dismissWarning}
-                  className="text-amber-950 hover:text-amber-800 font-bold text-xl leading-none"
-                >
-                  ×
-                </button>
               </div>
             </div>
-          </div>
-        )}
-      </>
+          )}
+        </>
+      </BrowserRouter>
     )
   }
 
   return (
-    <div className="mobile-container">
-      <MainScreen profile={profile} onLogout={handleLogout} />
-    </div>
+    <BrowserRouter>
+      <div className="mobile-container">
+        <Routes>
+          <Route path="/" element={<MainScreen profile={profile} onLogout={handleLogout} />} />
+          <Route
+            path="/user/:userId"
+            element={<UserProfile currentUserProfile={profile} onLogout={handleLogout} />}
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </BrowserRouter>
   )
 }
 

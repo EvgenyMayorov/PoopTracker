@@ -25,11 +25,11 @@ CREATE POLICY "Users can view own friends"
 
 CREATE POLICY "Users can insert own subscriptions"
   ON public.friends FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (auth.uid() = follower_id);
 
 CREATE POLICY "Users can delete own subscriptions"
   ON public.friends FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = follower_id);
 
 -- ============================================
 -- ГОТОВО! Теперь подписки должны работать

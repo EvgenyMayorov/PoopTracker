@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
@@ -61,6 +62,8 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [isSearchingFriend, setIsSearchingFriend] = useState(false)
   
   const avatarEmojis = ['💩', '🎉', '🔥', '⭐', '🌟', '✨', '💎', '🎨', '🎯', '🚀', '🌈', '🦄', '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐵']
+
+  const navigate = useNavigate()
 
   // Уведомления
   const showNotification = async (title: string, options: NotificationOptions) => {
@@ -745,17 +748,24 @@ export function MainScreen({ profile, onLogout }: Props) {
         ) : (
           <div className="space-y-2">
             {following.map(friend => (
-              <div key={friend.id} className={`flex items-center justify-between rounded-xl p-3 ${
-                theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
-              }`}>
+              <a
+                key={friend.id}
+                href={`/user/${friend.id}`}
+                onClick={() => navigate(`/user/${friend.id}`)}
+                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
+                  theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                }`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                     {friend.avatar}
                   </div>
                   <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{friend.username}</span>
                 </div>
+                <span className="text-xs text-gray-400">→</span>
                 <button
-                  onClick={async () => {
+                  onClick={async (e: React.MouseEvent) => {
+                    e.stopPropagation()
                     await supabase.from('friends').delete().eq('id', friend.id)
                     fetchFollowing()
                   }}
@@ -767,7 +777,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 >
                   Отписаться
                 </button>
-              </div>
+              </a>
             ))}
           </div>
         )}
@@ -782,14 +792,22 @@ export function MainScreen({ profile, onLogout }: Props) {
         ) : (
           <div className="space-y-2">
             {followers.map(follower => (
-              <div key={follower.id} className={`flex items-center gap-3 rounded-xl p-3 ${
-                theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
-              }`}>
-                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
-                  {follower.avatar}
+              <a
+                key={follower.id}
+                href={`/user/${follower.id}`}
+                onClick={() => navigate(`/user/${follower.id}`)}
+                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
+                  theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                    {follower.avatar}
+                  </div>
+                  <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{follower.username}</span>
                 </div>
-                <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{follower.username}</span>
-              </div>
+                <span className="text-xs text-gray-400">→</span>
+              </a>
             ))}
           </div>
         )}
