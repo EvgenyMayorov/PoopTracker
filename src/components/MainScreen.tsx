@@ -7,6 +7,7 @@ import { getBristolDescription } from '../lib/bristol'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
 import { SettingsTab } from './SettingsTab'
+import { ConfirmModal } from './ConfirmModal'
 
 type Props = {
   profile: Profile
@@ -62,7 +63,22 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [friendEmail, setFriendEmail] = useState('')
   const [friendSearchResult, setFriendSearchResult] = useState<any>(null)
   const [isSearchingFriend, setIsSearchingFriend] = useState(false)
-  
+
+  // Состояния для подтверждения удаления записи
+  const [deleteConfirmEventId, setDeleteConfirmEventId] = useState<string | null>(null)
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false)
+
+  // Состояния для подтверждения отписки
+  const [unfollowConfirmUserId, setUnfollowConfirmUserId] = useState<string | null>(null)
+  const [unfollowConfirmUsername, setUnfollowConfirmUsername] = useState<string>('')
+  const [isUnfollowing, setIsUnfollowing] = useState(false)
+
+  // Ошибка, отображаемая пользователю
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Состояние подписки на найденного пользователя
+  const [friendIsFollowing, setFriendIsFollowing] = useState(false)
+
   const navigate = useNavigate()
 
   // Уведомления
@@ -100,21 +116,21 @@ export function MainScreen({ profile, onLogout }: Props) {
     const { data } = await supabase
       .from('friends')
       .select('id, user_id, follower_id')
-      .eq('follower_id', profile.id)
+      .eq('user_id', profile.id)
     
     if (data && data.length > 0) {
-      const userIds = data.map(f => f.user_id)
+      const followerIds = data.map(f => f.follower_id)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, email, avatar')
-        .in('id', userIds)
+        .in('id', followerIds)
       
       if (profiles) {
         setFollowers(data.map(f => {
-          const p = profiles.find(p => p.id === f.user_id)
+          const p = profiles.find(p => p.id === f.follower_id)
           return { 
             id: f.id, 
-            user_id: f.user_id, 
+            user_id: f.follower_id, 
             username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
@@ -129,21 +145,21 @@ export function MainScreen({ profile, onLogout }: Props) {
     const { data } = await supabase
       .from('friends')
       .select('id, user_id, follower_id')
-      .eq('user_id', profile.id)
+      .eq('follower_id', profile.id)
     
     if (data && data.length > 0) {
-      const followerIds = data.map(f => f.follower_id)
+      const userIds = data.map(f => f.user_id)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, username, email, avatar')
-        .in('id', followerIds)
+        .in('id', userIds)
       
       if (profiles) {
         setFollowing(data.map(f => {
-          const p = profiles.find(p => p.id === f.follower_id)
+          const p = profiles.find(p => p.id === f.user_id)
           return { 
             id: f.id, 
-            user_id: f.follower_id, 
+            user_id: f.user_id, 
             username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
@@ -153,6 +169,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       setFollowing([])
     }
   }, [profile.id])
+
 
   const fetchNotifications = useCallback(async () => {
     const { data } = await supabase
@@ -377,15 +394,45 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm('Вы уверены, что хотите удалить эту запись?')) return
-    
-    await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId)
-      .eq('user_id', profile.id)
-    
-    fetchEvents()
+    setDeleteConfirmEventId(eventId)
+  }
+
+  const confirmDeleteEvent = async () => {
+    if (!deleteConfirmEventId) return
+    const eventId = deleteConfirmEventId
+    setIsDeletingEvent(true)
+    setErrorMessage(null)
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId)
+        .eq('user_id', profile.id)
+
+      if (error) {
+        console.error('[DeleteEvent] Ошибка удаления:', error)
+        setErrorMessage(`Не удалось удалить запись: ${error.message || 'Неизвестная ошибка'}`)
+        return
+      }
+
+      setEvents(prev => prev.filter(e => e.id !== eventId))
+      setComments(prev => Object.fromEntries(
+        Object.entries(prev).filter(([eid]) => eid !== eventId)
+      ))
+      setReactions(prev => Object.fromEntries(
+        Object.entries(prev).filter(([eid]) => eid !== eventId)
+      ))
+      setDeleteConfirmEventId(null)
+
+      fetchEvents()
+      setErrorMessage(null)
+    } catch (err: any) {
+      console.error('[DeleteEvent] Исключение при удалении:', err)
+      setErrorMessage(`Не удалось удалить запись: ${err.message || 'Неизвестная ошибка'}`)
+    } finally {
+      setIsDeletingEvent(false)
+    }
   }
 
   const handleEventClick = (eventId: string) => {
@@ -455,7 +502,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       .single()
     
     if (existingSub) {
-      alert('Вы уже подписаны на этого пользователя')
+      setFriendIsFollowing(true)
       return
     }
     
@@ -468,26 +515,49 @@ export function MainScreen({ profile, onLogout }: Props) {
     if (followError) {
       console.error('[FollowFriend] Ошибка подписки:', followError)
       if (followError.code === '23505') {
-        alert('Вы уже подписаны на этого пользователя')
+        setFriendIsFollowing(true)
       } else {
-        alert('Ошибка при подписке: ' + followError.message)
+        setFriendIsFollowing(true)
       }
       return
     }
-    
-    // Отправляем уведомление
-    await supabase.from('notifications').insert({
-      user_id: userId,
-      friend_id: profile.id,
-      friend_username: profile.username,
-      notification_type: 'follow'
-    })
     
     fetchFollowing()
     setShowAddFriendModal(false)
     setFriendEmail('')
     setFriendSearchResult(null)
+    setFriendIsFollowing(true)
     alert(`Вы подписались на ${username}`)
+  }
+
+  const handleUnfollowFriend = async (userId: string, username: string) => {
+    setUnfollowConfirmUserId(userId)
+    setUnfollowConfirmUsername(username)
+  }
+
+  const confirmUnfollow = async () => {
+    if (!unfollowConfirmUserId) return
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('id', unfollowConfirmUserId)
+        .eq('follower_id', profile.id)
+      
+      if (error) {
+        console.error('[Unfollow] Ошибка:', error)
+        setErrorMessage(`Ошибка при отписке: ${error.message || 'Неизвестная ошибка'}`)
+      } else {
+        fetchFollowing()
+        fetchFollowers()
+        setUnfollowConfirmUserId(null)
+        setUnfollowConfirmUsername('')
+        setErrorMessage(null)
+      }
+    } catch (err: any) {
+      console.error('[Unfollow] Исключение:', err)
+      setErrorMessage(`Ошибка при отписке: ${err.message || 'Неизвестная ошибка'}`)
+    }
   }
 
   // Статистика

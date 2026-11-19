@@ -4,6 +4,7 @@ import { supabase, Profile } from '../lib/supabase'
 import { getDisplayName } from '../lib/displayName'
 import { t } from '../i18n'
 import { getBristolDescription } from '../lib/bristol'
+import { ConfirmModal } from './ConfirmModal'
 
 type Props = {
   currentUserProfile: Profile
@@ -50,6 +51,15 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     () =>
       (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
   )
+
+  // Состояния для подтверждения отписки
+  const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false)
+  const [isUnfollowing, setIsUnfollowing] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Состояния для подтверждения удаления записи
+  const [deleteConfirmEventId, setDeleteConfirmEventId] = useState<string | null>(null)
+  const [isDeletingEvent, setIsDeletingEvent] = useState(false)
 
   const weekData = useMemo(() => {
     const data: Array<{ day: string; count: number; isToday: boolean }> = []
@@ -185,20 +195,103 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     }
   }
 
-  const handleToggleFollow = async () => {
+  const handleToggleFollow = () => {
     if (isOwner || !userId) return
-    if (isFollowing) {
-      await supabase.from('friends').delete().eq('user_id', userId).eq('follower_id', currentUserProfile.id)
+    setShowUnfollowConfirm(true)
+  }
+
+  const confirmUnfollow = async () => {
+    setIsUnfollowing(true)
+    setErrorMessage(null)
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('user_id', userId)
+        .eq('follower_id', currentUserProfile.id)
+      if (error) {
+        console.error('[Unfollow] Ошибка:', error)
+        setErrorMessage(`Ошибка при отписке: ${error.message || 'Неизвестная ошибка'}`)
+        return
+      }
       setIsFollowing(false)
-    } else {
-      await supabase.from('friends').insert({
+      setShowUnfollowConfirm(false)
+      fetchFollowers()
+      fetchFollowing()
+    } catch (err: any) {
+      console.error('[Unfollow] Исключение:', err)
+      setErrorMessage(`Ошибка при отписке: ${err.message || 'Неизвестная ошибка'}`)
+    } finally {
+      setIsUnfollowing(false)
+    }
+  }
+
+  const handleFollow = async () => {
+    if (isOwner || !userId) return
+    setErrorMessage(null)
+    try {
+      const { error } = await supabase.from('friends').insert({
         user_id: userId,
         follower_id: currentUserProfile.id,
       })
-      setIsFollowing(true)
+      if (error) {
+        console.error('[Follow] Ошибка:', error)
+        if (error.code === '23505') {
+          setErrorMessage('Вы уже подписаны на этого пользователя')
+        } else {
+          setErrorMessage(`Ошибка при подписке: ${error.message || 'Неизвестная ошибка'}`)
+        }
+      } else {
+        setIsFollowing(true)
+        fetchFollowers()
+        fetchFollowing()
+      }
+    } catch (err: any) {
+      console.error('[Follow] Исключение:', err)
+      setErrorMessage(`Ошибка при подписке: ${err.message || 'Неизвестная ошибка'}`)
     }
-    fetchFollowers()
-    fetchFollowing()
+  }
+
+  const handleDeleteEvent = (eventId: string) => {
+    setDeleteConfirmEventId(eventId)
+  }
+
+  const confirmDeleteEvent = async () => {
+    if (!deleteConfirmEventId) return
+    const eventId = deleteConfirmEventId
+    setIsDeletingEvent(true)
+    setErrorMessage(null)
+    
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId)
+        .eq('user_id', currentUserProfile.id)
+      
+      if (error) {
+        console.error('[DeleteEvent] Ошибка удаления:', error)
+        setErrorMessage(`Не удалось удалить запись: ${error.message || 'Неизвестная ошибка'}`)
+        return
+      }
+      
+      setEvents(prev => prev.filter(e => e.id !== eventId))
+      setComments(prev => Object.fromEntries(
+        Object.entries(prev).filter(([eid]) => eid !== eventId)
+      ))
+      setReactions(prev => Object.fromEntries(
+        Object.entries(prev).filter(([eid]) => eid !== eventId)
+      ))
+      setDeleteConfirmEventId(null)
+      
+      fetchEvents()
+      setErrorMessage(null)
+    } catch (err: any) {
+      console.error('[DeleteEvent] Исключение при удалении:', err)
+      setErrorMessage(`Не удалось удалить запись: ${err.message || 'Неизвестная ошибка'}`)
+    } finally {
+      setIsDeletingEvent(false)
+    }
   }
 
   const handleReaction = async (eventId: string, reactionType: 'thumbs_up' | 'heart' | 'poop') => {
@@ -613,6 +706,37 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           )}
         </div>
       )}
-    </div>
+            {/* Confirm Modal for Delete Event */}
+        <ConfirmModal
+          isOpen={!!deleteConfirmEventId}
+          title="Удаление записи"
+          message="Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить."
+          confirmText="Удалить"
+          cancelText="Отмена"
+          onConfirm={confirmDeleteEvent}
+          onCancel={() => setDeleteConfirmEventId(null)}
+          confirmClassName="bg-red-500 hover:bg-red-600 text-white"
+        />
+
+        {/* Error Message Toast */}
+        {errorMessage && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 sm:px-6">
+            <div className="bg-red-600/95 border border-red-500/50 rounded-xl p-4 shadow-2xl max-w-md animate-slide-up">
+              <div className="flex items-start gap-3">
+                <span className="text-xl flex-shrink-0">⚠️</span>
+                <div className="flex-1">
+                  <p className="text-white font-medium">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-white/70 hover:text-white flex-shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
   )
 }
