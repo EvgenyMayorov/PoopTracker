@@ -5,6 +5,10 @@
    ============================================ */
 
 :root {
+  /* Приложение всегда использует светлую тему */
+  color-scheme: light;
+  forced-color-adjust: none;
+
   /* Light palette */
   --background: #F7FBFE;
   --foreground: #14202D;
@@ -50,26 +54,9 @@
   --shadow-float: 0 18px 45px -18px rgba(0, 140, 223, 0.45);
 }
 
-/* Dark palette (for future use) */
-.dark {
-  --background: #020618;
-  --foreground: #F8FAFC;
-  --card: #0F172B;
-  --popover: #0F172B;
-  --primary: #E2E8F0;
-  --primary-foreground: #0F172B;
-  --secondary: #1D293D;
-  --muted: #1D293D;
-  --accent: #1D293D;
-  --muted-foreground: #90A1B9;
-  --destructive: #FF6467;
-  --ring: #6A7282;
-  --border: rgba(255, 255, 255, 0.10);
-  --input: rgba(255, 255, 255, 0.15);
-}
-
 /* Base styles */
 html, body {
+  color-scheme: light;
   background-color: var(--background);
   background-image: linear-gradient(to bottom, #F3FCFF 0%, #FFFFFF 45%);
   background-attachment: fixed;

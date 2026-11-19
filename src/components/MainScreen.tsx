@@ -43,9 +43,6 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<number | null>(null)
   const [showPWAGuide, setShowPWAGuide] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => 
-    (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
-  )
   const [profileUsername, setProfileUsername] = useState(profile.username)
   const [avatar, setAvatar] = useState<string>(() =>
     profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
@@ -613,22 +610,22 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className={`rounded-xl p-3 text-center ${
-          theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-blue-500/20'
+          'bg-white border-2 border-blue-200'
         }`}>
           <div className="text-2xl font-bold text-blue-400">{todayCount}</div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Сегодня</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Сегодня</div>
         </div>
         <div className={`rounded-xl p-3 text-center ${
-          theme === 'light' ? 'bg-white border-2 border-cyan-200' : 'bg-white/5 border border-purple-500/20'
+          'bg-white border-2 border-cyan-200'
         }`}>
-          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-cyan-600' : 'text-purple-400'}`}>{weekCount}</div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Неделя</div>
+          <div className={`text-2xl font-bold ${'text-cyan-600'}`}>{weekCount}</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Неделя</div>
         </div>
         <div className={`rounded-xl p-3 text-center ${
-          theme === 'light' ? 'bg-white border-2 border-sky-200' : 'bg-white/5 border border-pink-500/20'
+          'bg-white border-2 border-sky-200'
         }`}>
-          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-sky-600' : 'text-pink-400'}`}>{events.length}</div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Всего</div>
+          <div className={`text-2xl font-bold ${'text-sky-600'}`}>{events.length}</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Всего</div>
         </div>
       </div>
 
@@ -636,9 +633,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         <button
           onClick={handlePoop}
           className={`relative w-48 h-48 rounded-full shadow-2xl border-4 transition-all duration-200 hover:scale-105 active:scale-90 group ${
-            theme === 'light'
-              ? 'bg-gradient-to-br from-blue-400 via-cyan-400 to-sky-400 shadow-blue-500/40 border-blue-300/50'
-              : 'bg-gradient-to-br from-cyan-500 via-fuchsia-500 to-purple-500 shadow-fuchsia-500/40 border-cyan-400/30'
+            'bg-gradient-to-br from-blue-400 via-cyan-400 to-sky-400 shadow-blue-500/40 border-blue-300/50'
           }`}
         >
           <div className="flex flex-col items-center justify-center h-full">
@@ -658,20 +653,20 @@ export function MainScreen({ profile, onLogout }: Props) {
       </div>
 
       <div className={`text-center mb-6 p-4 rounded-2xl ${
-        theme === 'light' ? 'bg-blue-50 border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+        'bg-blue-50 border-2 border-blue-200'
       }`}>
-        <div className={`text-3xl font-bold ${theme === 'light' ? 'text-blue-600' : 'text-cyan-400'}`}>
+        <div className={`text-3xl font-bold ${'text-blue-600'}`}>
           {todayCount}
         </div>
-        <div className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+        <div className={`text-sm ${'text-gray-600'}`}>
           💩 Сегодня
         </div>
       </div>
 
       <div className={`mb-6 p-4 rounded-2xl ${
-        theme === 'light' ? 'bg-white border-2 border-gray-200' : 'bg-white/5 border border-white/10'
+        'bg-white border-2 border-gray-200'
       }`}>
-        <h3 className={`text-sm font-semibold mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+        <h3 className={`text-sm font-semibold mb-4 ${'text-gray-600'}`}>
           📊 За последние 7 дней
         </h3>
         <div className="flex items-end justify-between gap-2 h-32">
@@ -682,24 +677,22 @@ export function MainScreen({ profile, onLogout }: Props) {
                   className={`w-full rounded-t-lg transition-all duration-500 ${
                     day.isToday
                       ? 'bg-gradient-to-t from-cyan-500 to-fuchsia-500'
-                      : theme === 'light'
-                        ? 'bg-gradient-to-t from-blue-300 to-blue-400'
-                        : 'bg-gradient-to-t from-purple-500/50 to-fuchsia-500/50'
+                      : 'bg-gradient-to-t from-blue-300 to-blue-400'
                   }`}
                   style={{ height: `${day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 5}%` }}
                 />
               </div>
               <div className={`text-xs font-medium ${
                 day.isToday
-                  ? theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'
-                  : theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                  ? 'text-cyan-600'
+                  : 'text-gray-600'
               }`}>
                 {day.day}
               </div>
               <div className={`text-xs ${
                 day.count > 0
-                  ? theme === 'light' ? 'text-gray-800' : 'text-white'
-                  : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                  ? 'text-gray-800'
+                  : 'text-gray-400'
               }`}>
                 {day.count}
               </div>
@@ -710,9 +703,9 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {events.length > 0 && (
         <div className={`mb-6 p-4 rounded-2xl ${
-          theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+          'bg-white border-2 border-blue-200'
         }`}>
-          <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+          <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
             📋 Последние записи
           </h3>
           <div className="space-y-2">
@@ -721,28 +714,26 @@ export function MainScreen({ profile, onLogout }: Props) {
                 key={event.id}
                 onClick={() => handleEventClick(event.id)}
                 className={`w-full text-left p-3 rounded-lg transition-all ${
-                  theme === 'light'
-                    ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
-                    : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                  'bg-blue-50 hover:bg-blue-100 border border-blue-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{avatar}</span>
                     <div>
-                      <div className={`text-sm font-medium ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                      <div className={`text-sm font-medium ${'text-gray-800'}`}>
                         {new Date(event.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                       </div>
-                      <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <div className={`text-xs ${'text-gray-500'}`}>
                         {new Date(event.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   </div>
                   {event.bristol_type && (
                     <div className={`text-xs px-2 py-1 rounded ${
-                      event.bristol_type <= 2 ? 'bg-red-100 text-red-700' :
-                      event.bristol_type <= 4 ? 'bg-green-100 text-green-700' :
-                      'bg-orange-100 text-orange-700'
+                      event.bristol_type <= 2 ? 'bg-red-100 text-slate-700' :
+                      event.bristol_type <= 4 ? 'bg-green-100 text-slate-700' :
+                      'bg-orange-100 text-slate-700'
                     }`}>
                       {getBristolDescription(event.bristol_type)}
                     </div>
@@ -756,18 +747,18 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {notifications.length > 0 && (
         <div className="mt-6">
-          <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+          <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
             🔔 Уведомления
           </h3>
           <div className="space-y-2">
             {notifications.slice(0, 5).map(notif => (
               <div key={notif.id} className={`rounded-xl p-3 ${
-                theme === 'light' ? 'bg-white border-2 border-cyan-200' : 'bg-white/5 border border-cyan-500/20'
+                'bg-white border-2 border-cyan-200'
               }`}>
-                <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                <div className={`text-sm ${'text-gray-800'}`}>
                   💩 У {notif.friend_username} вышло!
                 </div>
-                <div className={`text-xs mt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                <div className={`text-xs mt-1 ${'text-gray-500'}`}>
                   {new Date(notif.created_at).toLocaleString()}
                 </div>
               </div>
@@ -783,16 +774,14 @@ export function MainScreen({ profile, onLogout }: Props) {
       <button
         onClick={() => setShowAddFriendModal(true)}
         className={`w-full mb-6 py-3 rounded-xl font-semibold transition-all ${
-          theme === 'light'
-            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
-            : 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white'
+          'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
         }`}
       >
         ➕ Добавить друга
       </button>
 
       <div className="mb-6">
-        <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
           👥 Подписки ({following.length})
         </h3>
         {following.length === 0 ? (
@@ -804,14 +793,14 @@ export function MainScreen({ profile, onLogout }: Props) {
                 key={friend.id}
                 onClick={() => navigate(`/user/${friend.user_id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                  theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                  'bg-white border-2 border-blue-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                     {friend.avatar}
                   </div>
-                  <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{friend.username}</span>
+                  <span className={'text-gray-800'}>{friend.username}</span>
                 </div>
                 <span className="text-xs text-gray-400">→</span>
                 <button
@@ -821,9 +810,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     fetchFollowing()
                   }}
                   className={`px-4 py-1 rounded-lg text-sm font-semibold ${
-                    theme === 'light'
-                      ? 'bg-red-50 border-2 border-red-200 text-red-600'
-                      : 'bg-red-500/20 border border-red-500/30 text-red-400'
+                    'bg-red-50 border-2 border-red-200 text-red-600'
                   }`}
                 >
                   Отписаться
@@ -835,7 +822,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       </div>
 
       <div>
-        <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
           🌟 Подписчики ({followers.length})
         </h3>
         {followers.length === 0 ? (
@@ -847,14 +834,14 @@ export function MainScreen({ profile, onLogout }: Props) {
                 key={follower.id}
                 onClick={() => navigate(`/user/${follower.user_id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                  theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                  'bg-white border-2 border-blue-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                     {follower.avatar}
                   </div>
-                  <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{follower.username}</span>
+                  <span className={'text-gray-800'}>{follower.username}</span>
                 </div>
                 <span className="text-xs text-gray-400">→</span>
               </div>
@@ -891,48 +878,48 @@ export function MainScreen({ profile, onLogout }: Props) {
           {friendsEvents.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">👀</div>
-              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Пока пусто</p>
-              <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>Подпишитесь на друзей</p>
+              <p className={`font-semibold ${'text-gray-600'}`}>Пока пусто</p>
+              <p className={`text-sm mt-1 ${'text-gray-500'}`}>Подпишитесь на друзей</p>
             </div>
           ) : (
             <div className="space-y-3">
               {friendsEvents.map(event => (
                 <div key={event.id} className={`rounded-xl p-4 ${
-                  theme === 'light' ? 'bg-white border-2 border-fuchsia-200' : 'bg-white/5 border border-fuchsia-500/20'
+                  'bg-white border-2 border-fuchsia-200'
                 }`}>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
                       {event.profiles?.avatar || '💩'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                      <div className={`font-semibold ${'text-gray-800'}`}>
                         {event.profiles ? getDisplayName(event.profiles) : ''}
                       </div>
-                      <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-fuchsia-400'}`}>
+                      <div className={`text-sm ${'text-gray-800'}`}>
                         У {event.profiles?.username} вышло!
                       </div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
-                          event.bristol_type <= 2 ? 'text-red-400' :
-                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
-                          'text-orange-400'
+                          event.bristol_type <= 2 ? 'text-slate-700' :
+                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-slate-700' :
+                          'text-slate-700'
                         }`}>
                           {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
-                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    <div className={`text-xs ${'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
 
-                  <div className={`flex gap-2 mt-3 pt-3 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'}`}>
+                  <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
                     <button
                       onClick={() => handleReaction(event.id, 'thumbs_up')}
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'thumbs_up'
                           ? 'bg-blue-500/20 text-blue-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       👍 {reactions[event.id]?.thumbs_up || 0}
@@ -941,8 +928,8 @@ export function MainScreen({ profile, onLogout }: Props) {
                       onClick={() => handleReaction(event.id, 'heart')}
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'heart'
-                          ? 'bg-red-500/20 text-red-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          ? 'bg-red-500/20 text-slate-700'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       ❤️ {reactions[event.id]?.heart || 0}
@@ -952,7 +939,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'poop'
                           ? 'bg-amber-500/20 text-amber-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       💩 {reactions[event.id]?.poop || 0}
@@ -962,12 +949,12 @@ export function MainScreen({ profile, onLogout }: Props) {
                   {comments[event.id] && comments[event.id].length > 0 && (
                     <div className="mt-3 space-y-2">
                       {comments[event.id].map(comment => (
-                        <div key={comment.id} className={`rounded-lg p-2 ${theme === 'light' ? 'bg-gray-50' : 'bg-white/5'}`}>
+                        <div key={comment.id} className={`rounded-lg p-2 ${'bg-gray-50'}`}>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
+                            <span className={`text-xs ${'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
                           </div>
-                          <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>{comment.text}</p>
+                          <p className={`text-sm mt-1 ${'text-gray-700'}`}>{comment.text}</p>
                         </div>
                       ))}
                     </div>
@@ -980,9 +967,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                       onChange={(e) => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
                       placeholder="Добавить комментарий..."
                       className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 ${
-                        theme === 'light'
-                          ? 'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
-                          : 'bg-white/5 border border-white/10 text-white placeholder-gray-500'
+                        'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
                       }`}
                     />
                     <button
@@ -1002,7 +987,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           {events.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
-              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Вы ещё не нажимали кнопку 💩</p>
+              <p className={`font-semibold ${'text-gray-600'}`}>Вы ещё не нажимали кнопку 💩</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1012,35 +997,31 @@ export function MainScreen({ profile, onLogout }: Props) {
                   id={`event-${event.id}`}
                   className={`rounded-xl p-4 transition-all ${
                     highlightedEventId === event.id
-                      ? theme === 'light'
-                        ? 'bg-blue-100 border-4 border-blue-500 shadow-lg scale-105'
-                        : 'bg-blue-500/20 border-4 border-blue-400 shadow-lg scale-105'
-                      : theme === 'light'
-                        ? 'bg-white border-2 border-cyan-200'
-                        : 'bg-white/5 border border-cyan-500/20'
+                      ? 'bg-blue-100 border-4 border-blue-500 shadow-lg scale-105'
+                      : 'bg-white border-2 border-cyan-200'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">💩</div>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
-                      <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>У меня вышло!</div>
+                      <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
+                      <div className={`text-sm ${'text-gray-800'}`}>У меня вышло!</div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
-                          event.bristol_type <= 2 ? 'text-red-400' :
-                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
-                          'text-orange-400'
+                          event.bristol_type <= 2 ? 'text-slate-700' :
+                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-slate-700' :
+                          'text-slate-700'
                         }`}>
                           {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
-                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    <div className={`text-xs ${'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
 
-                  <div className={`flex gap-2 mt-3 pt-3 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'}`}>
+                  <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
                     <button
                       onClick={() => {
                         setEditingEventId(event.id)
@@ -1048,9 +1029,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                         setCurrentEventId(event.id)
                       }}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                        theme === 'light'
-                          ? 'bg-blue-50 border-2 border-blue-200 text-blue-600'
-                          : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                        'bg-blue-50 border-2 border-blue-200 text-blue-600'
                       }`}
                     >
                       ✏️ Редактировать
@@ -1058,9 +1037,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     <button
                       onClick={() => handleDeleteEvent(event.id)}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                        theme === 'light'
-                          ? 'bg-red-50 border-2 border-red-200 text-red-600'
-                          : 'bg-red-500/20 border border-red-500/30 text-red-400'
+                        'bg-red-50 border-2 border-red-200 text-red-600'
                       }`}
                     >
                       🗑️ Удалить
@@ -1068,19 +1045,19 @@ export function MainScreen({ profile, onLogout }: Props) {
                   </div>
 
                   {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
-                    <div className={`flex gap-2 mt-3 pt-3 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'}`}>
+                    <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
                       {reactions[event.id].thumbs_up > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${theme === 'light' ? 'bg-blue-50 text-blue-600' : 'bg-blue-500/10 text-blue-400'}`}>
+                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-blue-50 text-blue-600'}`}>
                           👍 {reactions[event.id].thumbs_up}
                         </span>
                       )}
                       {reactions[event.id].heart > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${theme === 'light' ? 'bg-red-50 text-red-600' : 'bg-red-500/10 text-red-400'}`}>
+                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-red-50 text-red-600'}`}>
                           ❤️ {reactions[event.id].heart}
                         </span>
                       )}
                       {reactions[event.id].poop > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${theme === 'light' ? 'bg-amber-50 text-amber-600' : 'bg-amber-500/10 text-amber-400'}`}>
+                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-amber-50 text-amber-600'}`}>
                           💩 {reactions[event.id].poop}
                         </span>
                       )}
@@ -1090,12 +1067,12 @@ export function MainScreen({ profile, onLogout }: Props) {
                   {comments[event.id] && comments[event.id].length > 0 && (
                     <div className="mt-3 space-y-2">
                       {comments[event.id].map(comment => (
-                        <div key={comment.id} className={`rounded-lg p-2 ${theme === 'light' ? 'bg-gray-50' : 'bg-white/5'}`}>
+                        <div key={comment.id} className={`rounded-lg p-2 ${'bg-gray-50'}`}>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
+                            <span className={`text-xs ${'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
                           </div>
-                          <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>{comment.text}</p>
+                          <p className={`text-sm mt-1 ${'text-gray-700'}`}>{comment.text}</p>
                         </div>
                       ))}
                     </div>
@@ -1112,7 +1089,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   return (
     <div className={`min-h-screen flex flex-col ${
-      theme === 'light' ? 'bg-gradient-to-br from-sky-50 via-white to-blue-50' : 'bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950'
+      'bg-gradient-to-br from-sky-50 via-white to-blue-50'
     }`}>
       {showSuccess && <SuccessAnimation bristolType={successBristolType} onComplete={() => setShowSuccess(false)} />}
 
@@ -1120,7 +1097,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'people' && <PeopleTab />}
         {activeTab === 'feed' && <FeedTab />}
-        {activeTab === 'settings' && <SettingsTab profile={profile} theme={theme} setTheme={setTheme} onLogout={onLogout} />}
+        {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} />}
       </div>
 
       {/* Модальное окно Бристольской шкалы */}
@@ -1150,7 +1127,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-white font-bold text-sm">Тип {type}</span>
                         <span className={`text-xs font-semibold ${
-                          type <= 2 ? 'text-red-400' : type === 3 || type === 4 ? 'text-green-400' : 'text-orange-400'
+                          type <= 2 ? 'text-slate-700' : type === 3 || type === 4 ? 'text-slate-700' : 'text-slate-700'
                         }`}>
                           {type === 1 && 'Запор'}{type === 2 && 'Лёгкий запор'}{type === 3 && 'Норма'}{type === 4 && 'Идеал'}
                           {type === 5 && 'Склонность к диарее'}{type === 6 && 'Диарея'}{type === 7 && 'Сильная диарея'}
@@ -1185,12 +1162,12 @@ export function MainScreen({ profile, onLogout }: Props) {
       {showAddFriendModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className={`rounded-3xl p-6 w-full max-w-md ${
-            theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30'
+            'bg-white border-2 border-blue-200'
           }`}>
-            <h2 className={`text-xl font-bold text-center mb-4 ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+            <h2 className={`text-xl font-bold text-center mb-4 ${'text-gray-800'}`}>
               Добавить друга
             </h2>
-            <p className={`text-sm text-center mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+            <p className={`text-sm text-center mb-4 ${'text-gray-600'}`}>
               Введите email друга для поиска
             </p>
 
@@ -1201,9 +1178,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 onChange={e => setFriendEmail(e.target.value)}
                 placeholder="friend@example.com"
                 className={`flex-1 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-400 ${
-                  theme === 'light'
-                    ? 'bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400'
-                    : 'bg-white/5 border border-blue-500/30 text-white placeholder-gray-500'
+                  'bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400'
                 }`}
               />
               <button
@@ -1217,12 +1192,12 @@ export function MainScreen({ profile, onLogout }: Props) {
 
             {friendSearchResult && (
               <div className={`rounded-xl p-4 mb-4 ${
-                theme === 'light' ? 'bg-blue-50 border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                'bg-blue-50 border-2 border-blue-200'
               }`}>
-                <div className={`font-semibold mb-1 ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                <div className={`font-semibold mb-1 ${'text-gray-800'}`}>
                   {friendSearchResult.username}
                 </div>
-                <div className={`text-xs mb-3 ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>
+                <div className={`text-xs mb-3 ${'text-gray-500'}`}>
                   {friendSearchResult.email}
                 </div>
                 <button
@@ -1236,10 +1211,10 @@ export function MainScreen({ profile, onLogout }: Props) {
 
             {friendSearchResult === null && friendEmail && !isSearchingFriend && (
               <div className={`text-center py-6 rounded-xl ${
-                theme === 'light' ? 'bg-gray-50 border-2 border-gray-200' : 'bg-white/5 border border-white/10'
+                'bg-gray-50 border-2 border-gray-200'
               }`}>
                 <div className="text-4xl mb-2">🔍</div>
-                <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                <p className={`text-sm ${'text-gray-600'}`}>
                   Пользователь не найден
                 </p>
               </div>
@@ -1252,7 +1227,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 setFriendSearchResult(null)
               }}
               className={`w-full mt-4 py-3 rounded-xl font-semibold ${
-                theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-white/5 border border-white/10 text-gray-300'
+                'bg-gray-100 text-gray-700'
               }`}
             >
               Закрыть
@@ -1263,7 +1238,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {/* Нижняя навигация */}
       <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 backdrop-blur-xl border-t ${
-        theme === 'light' ? 'bg-white/95 border-blue-200' : 'bg-slate-900/95 border-white/10'
+        'bg-white/95 border-blue-200'
       }`}>
         <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
           <button

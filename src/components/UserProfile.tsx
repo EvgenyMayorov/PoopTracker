@@ -47,10 +47,6 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'activity' | 'following' | 'followers'>('activity')
-  const [theme, setTheme] = useState<'light' | 'dark'>(
-    () =>
-      (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
-  )
 
   // Состояния для подтверждения отписки
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false)
@@ -358,7 +354,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       <div className="mobile-container flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-4xl mb-2">⏳</div>
-          <p className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Загрузка профиля…</p>
+          <p className={`text-sm ${'text-gray-600'}`}>Загрузка профиля…</p>
         </div>
       </div>
     )
@@ -370,7 +366,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         <button onClick={handleGoBack} className="mb-4 text-sm">← Назад</button>
         <div className="text-center py-12">
           <div className="text-5xl mb-3">❓</div>
-          <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Пользователь не найден</p>
+          <p className={`font-semibold ${'text-gray-600'}`}>Пользователь не найден</p>
         </div>
       </div>
     )
@@ -379,22 +375,22 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   return (
     <div className="mobile-container">
       <header className={`p-4 rounded-2xl mb-4 flex items-center justify-between ${
-        theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+        'bg-white border-2 border-blue-200'
       }`}>
         <button onClick={handleGoBack} className="text-lg">←</button>
         <div className="flex-1 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-fuchsia-500 rounded-full flex items-center justify-center text-lg">💩</div>
-          <div className={`text-xl font-bold ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>
+          <div className={`text-xl font-bold ${'text-gray-800'}`}>
             {profile.username}
           </div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+          <div className={`text-xs ${'text-gray-600'}`}>
             {isOwner ? 'Ваш профиль' : profile.id.substring(0, 8) + '...'}
           </div>
           {!isOwner && (
             <button
               onClick={handleToggleFollow}
               className={`mt-3 px-4 py-1.5 rounded-lg text-sm font-semibold ${
-                theme === 'light' ? 'bg-red-50 border-2 border-red-200 text-red-600' : 'bg-red-500/20 border border-red-500/30 text-red-400'
+                'bg-red-50 border-2 border-red-200 text-red-600'
               }`}
             >
               {isFollowing ? 'Отписаться' : 'Подписаться'}
@@ -404,7 +400,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             <button
               onClick={onLogout}
               className={`mt-3 px-4 py-1.5 rounded-lg text-sm font-semibold ${
-                theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-white/5 text-gray-300'
+                'bg-gray-100 text-gray-700'
               }`}
             >
               Выйти
@@ -417,34 +413,34 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       {/* Статистика */}
       <div className={`grid grid-cols-3 gap-3 mb-4`}>
         <div className={`p-3 rounded-xl text-center ${
-          theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-blue-500/20'
+          'bg-white border-2 border-blue-200'
         }}`}>
-          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-gray-800' : 'text-blue-600'}`}>
+          <div className={`text-2xl font-bold ${'text-gray-800'}`}>
             {events.length}
           </div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Записей</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Записей</div>
         </div>
         <div className={`p-3 rounded-xl text-center ${
-          theme === 'light' ? 'bg-white border-2 border-green-200' : 'bg-white/5 border border-green-500/20'
+          'bg-white border-2 border-green-200'
         }}`}>
-          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-gray-800' : 'text-green-400'}`}>
+          <div className={`text-2xl font-bold ${'text-gray-800'}`}>
             {following.length}
           </div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Подписок</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Подписок</div>
         </div>
         <div className={`p-3 rounded-xl text-center ${
-          theme === 'light' ? 'bg-white border-2 border-purple-200' : 'bg-white/5 border border-purple-500/20'
+          'bg-white border-2 border-purple-200'
         }}`}>
-          <div className={`text-2xl font-bold ${theme === 'light' ? 'text-gray-800' : 'text-purple-400'}`}>
+          <div className={`text-2xl font-bold ${'text-gray-800'}`}>
             {followers.length}
           </div>
-          <div className={`text-xs ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Подписчиков</div>
+          <div className={`text-xs ${'text-gray-600'}`}>Подписчиков</div>
         </div>
       </div>
 
       {/* Вкладки: Активность, Подписки, Подписчики */}
       <div className={`flex bg-white/5 rounded-xl p-1 mb-4 ${
-        theme === 'light' ? 'border border-gray-200' : 'border border-white/10'
+        'border border-gray-200'
       }`}>
         <button
           onClick={() => setActiveTab('activity')}
@@ -476,9 +472,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         <div>
           {events.length > 0 && (
             <div className={`mb-6 p-4 rounded-2xl ${
-              theme === 'light' ? 'bg-white border-2 border-gray-200' : 'bg-white/5 border border-white/10'
+              'bg-white border-2 border-gray-200'
             }`}>
-              <h3 className={`text-sm font-semibold mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+              <h3 className={`text-sm font-semibold mb-4 ${'text-gray-600'}`}>
                 📊 За последние 7 дней
               </h3>
               <div className="flex items-end justify-between gap-2 h-32">
@@ -489,24 +485,22 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                         className={`w-full rounded-t-lg transition-all duration-500 ${
                           day.isToday
                             ? 'bg-gradient-to-t from-cyan-500 to-fuchsia-500'
-                            : theme === 'light'
-                              ? 'bg-gradient-to-t from-blue-300 to-blue-400'
-                              : 'bg-gradient-to-t from-purple-500/50 to-fuchsia-500/50'
+                            : 'bg-gradient-to-t from-blue-300 to-blue-400'
                         }`}
                         style={{ height: `${day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 5}%` }}
                       />
                     </div>
                     <div className={`text-xs font-medium ${
                       day.isToday
-                        ? theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'
-                        : theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                        ? 'text-cyan-600'
+                        : 'text-gray-600'
                     }`}>
                       {day.day}
                     </div>
                     <div className={`text-xs ${
                       day.count > 0
-                        ? theme === 'light' ? 'text-gray-800' : 'text-white'
-                        : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                        ? 'text-gray-800'
+                        : 'text-gray-400'
                     }`}>
                       {day.count}
                     </div>
@@ -518,7 +512,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           {events.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
-              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+              <p className={`font-semibold ${'text-gray-600'}`}>
                 {isOwner ? 'Вы ещё не нажимали кнопку 💩' : 'У этого пользователя пока нет записей'}
               </p>
             </div>
@@ -528,9 +522,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                 <div
                   key={event.id}
                   className={`rounded-xl p-4 transition-all ${
-                    theme === 'light'
-                      ? 'bg-white border-2 border-cyan-200'
-                      : 'bg-white/5 border border-cyan-500/20'
+                    'bg-white border-2 border-cyan-200'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -538,34 +530,34 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       {profile.avatar || '💩'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                      <div className={`font-semibold ${'text-gray-800'}`}>
                         {profile.username}
                       </div>
-                      <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>
+                      <div className={`text-sm ${'text-gray-800'}`}>
                         {isOwner ? 'У МЕНЯ ВЫШЛО!' : `У ${profile.username} вышло!`}
                       </div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 leading-snug break-words ${
-                          event.bristol_type <= 2 ? 'text-red-400' :
-                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
-                          'text-orange-400'
+                          event.bristol_type <= 2 ? 'text-slate-700' :
+                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-slate-700' :
+                          'text-slate-700'
                         }`}>
                           {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
-                    <div className={`text-xs shrink-0 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    <div className={`text-xs shrink-0 ${'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
 
-                  <div className={`flex gap-2 mt-3 pt-3 border-t ${theme === 'light' ? 'border-gray-200' : 'border-white/10'}`}>
+                  <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
                     <button
                       onClick={() => handleReaction(event.id, 'thumbs_up')}
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'thumbs_up'
                           ? 'bg-blue-500/20 text-blue-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       👍 {reactions[event.id]?.thumbs_up || 0}
@@ -574,8 +566,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       onClick={() => handleReaction(event.id, 'heart')}
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'heart'
-                          ? 'bg-red-500/20 text-red-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          ? 'bg-red-500/20 text-slate-700'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       ❤️ {reactions[event.id]?.heart || 0}
@@ -585,7 +577,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
                         reactions[event.id]?.userReaction === 'poop'
                           ? 'bg-amber-500/20 text-amber-400'
-                          : theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-white/5 text-gray-400'
+                          : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       💩 {reactions[event.id]?.poop || 0}
@@ -597,15 +589,15 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       {comments[event.id].map(comment => (
                         <div
                           key={comment.id}
-                          className={`rounded-lg p-2 ${theme === 'light' ? 'bg-gray-50' : 'bg-white/5'}`}
+                          className={`rounded-lg p-2 ${'bg-gray-50'}`}
                         >
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                            <span className={`text-xs ${'text-gray-500'}`}>
                               {formatTimeAgo(comment.created_at)}
                             </span>
                           </div>
-                          <p className={`text-sm mt-1 ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>{comment.text}</p>
+                          <p className={`text-sm mt-1 ${'text-gray-700'}`}>{comment.text}</p>
                         </div>
                       ))}
                     </div>
@@ -618,9 +610,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       onChange={e => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
                       placeholder="Добавить комментарий..."
                       className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 ${
-                        theme === 'light'
-                          ? 'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
-                          : 'bg-white/5 border border-white/10 text-white placeholder-gray-500'
+                        'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
                       }`}
                     />
                     <button
@@ -642,7 +632,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           {following.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">👀</div>
-              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+              <p className={`font-semibold ${'text-gray-600'}`}>
                 {isOwner ? 'Вы ни на кого не подписаны' : 'Этот пользователь ни на кого не подписан'}
               </p>
             </div>
@@ -653,14 +643,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   key={f.id}
                   onClick={() => handleViewUser(f.user_id)}
                   className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                    theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                    'bg-white border-2 border-blue-200'
                   }`}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                    <div className={`font-semibold ${'text-gray-800'}`}>
                       {f.username}
                     </div>
                   </div>
@@ -677,7 +667,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           {followers.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
-              <p className={`font-semibold ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+              <p className={`font-semibold ${'text-gray-600'}`}>
                 {isOwner ? 'У вас пока нет подписчиков' : 'У этого пользователя пока нет подписчиков'}
               </p>
             </div>
@@ -688,14 +678,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   key={f.id}
                   onClick={() => handleViewUser(f.user_id)}
                   className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                    theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
+                    'bg-white border-2 border-blue-200'
                   }`}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
+                    <div className={`font-semibold ${'text-gray-800'}`}>
                       {f.username}
                     </div>
                   </div>

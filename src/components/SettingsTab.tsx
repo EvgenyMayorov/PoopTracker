@@ -3,14 +3,13 @@ import { supabase, Profile } from '../lib/supabase'
 
 interface SettingsTabProps {
   profile: Profile
-  theme: 'light' | 'dark'
-  setTheme: (theme: 'light' | 'dark') => void
   onLogout: () => void
 }
 
-const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️']
+// Животные и птицы (сохраняем существующие, добавляем новые без дублирования)
+const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️', '🐱', '🐈', '🐶', '🐕', '🐯', '🐅', '🐓', '🐔', '🐨', '🐺', '🐷', '🐮', '🐵', '🐰', '🐹', '🦉', '🐧', '🦆', '🦖']
 
-export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabProps) {
+export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
   const [profileUsername, setProfileUsername] = useState(profile.username)
@@ -70,13 +69,13 @@ export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabP
 
   return (
     <div className="p-4">
-      <h2 className={`text-xl font-bold mb-6 ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>Настройки</h2>
+      <h2 className={`text-xl font-bold mb-6 ${'text-gray-800'}`}>Настройки</h2>
 
       <div className="mb-6">
-        <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
           👤 Аккаунт
         </h3>
-        <div className={`rounded-xl p-4 ${theme === 'light' ? 'bg-white border-2 border-gray-200' : 'bg-white/5 border border-white/10'}`}>
+        <div className={`rounded-xl p-4 ${'bg-white border-2 border-gray-200'}`}>
           {editingUsername ? (
             <div className="space-y-3">
               <input
@@ -87,7 +86,7 @@ export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabP
                   if (usernameError) setUsernameError(null)
                 }}
                 className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400 ${
-                  theme === 'light' ? 'bg-gray-50 border-2 border-gray-200 text-gray-800' : 'bg-white/5 border border-blue-500/30 text-white'
+                  'bg-gray-50 border-2 border-gray-200 text-gray-800'
                 }`}
               />
               {usernameError && (
@@ -99,7 +98,7 @@ export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabP
                 </button>
                 <button
                   onClick={() => { setEditingUsername(false); setTempUsername(profileUsername) }}
-                  className={`flex-1 py-2 rounded-lg font-semibold ${theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-gray-500/20 text-gray-300'}`}
+                  className={`flex-1 py-2 rounded-lg font-semibold ${'bg-gray-100 text-gray-700'}`}
                 >
                   Отмена
                 </button>
@@ -113,40 +112,40 @@ export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabP
                     {avatar}
                   </button>
                   <div>
-                    <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
-                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
+                    <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
+                    <div className={`text-xs ${'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
                   </div>
                 </div>
                 <button
                   onClick={() => setEditingUsername(true)}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                    theme === 'light' ? 'bg-blue-50 border-2 border-blue-200 text-blue-600' : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                    'bg-blue-50 border-2 border-blue-200 text-blue-600'
                   }`}
                 >
                   Изменить профиль
                 </button>
               </div>
               <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                theme === 'light' ? 'bg-gray-50 border border-gray-200' : 'bg-white/5 border border-white/10'
+                'bg-gray-50 border border-gray-200'
               }`}>
-                <span className={`text-xs font-semibold ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>📧 Электронная почта</span>
-                <span className={`text-sm truncate max-w-[60%] text-right ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.email || '—'}</span>
+                <span className={`text-xs font-semibold ${'text-gray-500'}`}>📧 Электронная почта</span>
+                <span className={`text-sm truncate max-w-[60%] text-right ${'text-gray-800'}`}>{profile.email || '—'}</span>
               </div>
             </div>
           )}
 
           {showAvatarPicker && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className={`text-sm mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>Выберите аватарку:</p>
-              <div className="grid grid-cols-5 gap-2">
+              <p className={`text-sm mb-3 ${'text-gray-600'}`}>Выберите аватарку:</p>
+              <div className="grid grid-cols-5 gap-2 max-h-[280px] overflow-y-auto overscroll-contain pr-1">
                 {avatarEmojis.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => handleSaveAvatar(emoji)}
                     className={`text-3xl p-2 rounded-lg transition-all hover:scale-110 ${
                       avatar === emoji
-                        ? theme === 'light' ? 'bg-blue-100 border-2 border-blue-400' : 'bg-blue-500/20 border-2 border-blue-400'
-                        : theme === 'light' ? 'bg-gray-50 border-2 border-gray-200' : 'bg-white/5 border-2 border-white/10'
+                        ? 'bg-blue-100 border-2 border-blue-400'
+                        : 'bg-gray-50 border-2 border-gray-200'
                     }`}
                   >
                     {emoji}
@@ -159,34 +158,10 @@ export function SettingsTab({ profile, theme, setTheme, onLogout }: SettingsTabP
       </div>
 
       <div className="mb-6">
-        <h3 className={`text-sm font-semibold mb-3 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
-          🎨 Тема
-        </h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { localStorage.setItem('poop_theme', 'light'); setTheme('light') }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-              theme === 'light' ? 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-lg' : 'bg-white/5 text-gray-400'
-            }`}
-          >
-            ☀️ Светлая
-          </button>
-          <button
-            onClick={() => { localStorage.setItem('poop_theme', 'dark'); setTheme('dark') }}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-              theme === 'dark' ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg' : 'bg-white/5 text-gray-400'
-            }`}
-          >
-            🌙 Тёмная
-          </button>
-        </div>
-      </div>
-
-      <div className="mb-6">
         <button
           onClick={onLogout}
           className={`w-full py-3 rounded-xl font-semibold ${
-            theme === 'light' ? 'bg-red-50 border-2 border-red-200 text-red-600' : 'bg-red-500/20 border border-red-500/30 text-red-400'
+            'bg-red-50 border-2 border-red-200 text-red-600'
           }`}
         >
           Выйти
