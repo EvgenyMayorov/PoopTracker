@@ -218,7 +218,7 @@ function App() {
   // Экран загрузки
   if (loading) {
     return (
-      <div className="app-container flex items-center justify-center p-4">
+      <div className="mobile-container flex items-center justify-center p-4">
         <div className="text-center">
           <img src="/logo.svg" alt="PooTrack" className="w-24 h-24 mx-auto mb-4" />
           <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
@@ -254,7 +254,11 @@ function App() {
     )
   }
 
-  return <MainScreen profile={profile} onLogout={handleLogout} />
+  return (
+    <div className="mobile-container">
+      <MainScreen profile={profile} onLogout={handleLogout} />
+    </div>
+  )
 }
 
 export default App

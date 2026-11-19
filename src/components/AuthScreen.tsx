@@ -106,7 +106,7 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="app-container flex items-center justify-center p-6">
+    <div className="mobile-container flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         {/* Logo and description */}
         <div className="text-center mb-6">
