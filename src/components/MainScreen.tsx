@@ -43,6 +43,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
   )
   const [showSuccess, setShowSuccess] = useState(false)
+  const [successBristolType, setSuccessBristolType] = useState<number | null>(null)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
   const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})

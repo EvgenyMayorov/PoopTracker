@@ -111,12 +111,9 @@ export function AuthScreen() {
         {/* Logo and description */}
         <div className="text-center mb-6">
           <img src="/logo.svg" alt="PooTrack" className="w-20 h-20 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold tracking-tight mb-2" style={{ color: 'var(--primary)' }}>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--primary)' }}>
             PooTrack
           </h1>
-          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>
-            Личный медицинский дневник. Данные защищены и доступны только вам.
-          </p>
         </div>
 
         {/* Form card */}

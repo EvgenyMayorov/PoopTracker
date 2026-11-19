@@ -1,7 +1,7 @@
 {
   "name": "PooTrack",
   "short_name": "PooTrack",
-  "description": "Личный медицинский дневник. Данные защищены и доступны только вам.",
+  "description": "PooTrack - отслеживай и делись",
   "theme_color": "#008CDF",
   "background_color": "#F7FBFE",
   "display": "standalone",
