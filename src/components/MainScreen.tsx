@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
 import { getDisplayName, isNicknameMissing } from '../lib/displayName'
+import { t } from '../i18n'
+import { getBristolDescription } from '../lib/bristol'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
 
@@ -52,7 +54,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
   const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [avatar, setAvatar] = useState<string>(() => 
-    localStorage.getItem('poop_avatar') || '💩'
+    profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
   )
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
@@ -63,7 +65,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [friendSearchResult, setFriendSearchResult] = useState<any>(null)
   const [isSearchingFriend, setIsSearchingFriend] = useState(false)
   
-  const avatarEmojis = ['💩', '🎉', '🔥', '⭐', '🌟', '✨', '💎', '🎨', '🎯', '🚀', '🌈', '🦄', '🐱', '🐶', '🦊', '🐼', '🐨', '🦁', '🐸', '🐵']
+  const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️']
 
   const navigate = useNavigate()
 
@@ -403,10 +405,23 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
   }
 
-  const handleSaveAvatar = (emoji: string) => {
+  const handleSaveAvatar = async (emoji: string) => {
     setAvatar(emoji)
     localStorage.setItem('poop_avatar', emoji)
     setShowAvatarPicker(false)
+
+    // Сохраняем аватар в Supabase, чтобы обновление отобразилось во всём приложении без перезагрузки
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar: emoji })
+        .eq('id', profile.id)
+      if (error) {
+        console.error('[Settings] Ошибка сохранения аватара в Supabase:', error)
+      }
+    } catch (err) {
+      console.error('[Settings] Исключение при сохранении аватара:', err)
+    }
   }
 
   const handleEventClick = (eventId: string) => {
@@ -695,7 +710,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                       event.bristol_type <= 4 ? 'bg-green-100 text-green-700' :
                       'bg-orange-100 text-orange-700'
                     }`}>
-                      Тип {event.bristol_type}
+                      {getBristolDescription(event.bristol_type)}
                     </div>
                   )}
                 </div>
@@ -855,7 +870,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
                       {event.profiles?.avatar || '💩'}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                         {event.profiles ? getDisplayName(event.profiles) : ''}
                       </div>
@@ -863,12 +878,12 @@ export function MainScreen({ profile, onLogout }: Props) {
                         У {event.profiles?.username} вышло!
                       </div>
                       {event.bristol_type && (
-                        <div className={`text-xs mt-1 ${
+                        <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
                           event.bristol_type <= 2 ? 'text-red-400' :
                           event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
                           'text-orange-400'
                         }`}>
-                          Тип {event.bristol_type}
+                          {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
@@ -973,16 +988,16 @@ export function MainScreen({ profile, onLogout }: Props) {
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">💩</div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
                       <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>У меня вышло!</div>
                       {event.bristol_type && (
-                        <div className={`text-xs mt-1 ${
+                        <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
                           event.bristol_type <= 2 ? 'text-red-400' :
                           event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
                           'text-orange-400'
                         }`}>
-                          Тип {event.bristol_type}
+                          {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
@@ -1092,24 +1107,32 @@ export function MainScreen({ profile, onLogout }: Props) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowAvatarPicker(!showAvatarPicker)} className="text-4xl hover:scale-110 transition-transform">
-                  {avatar}
-                </button>
-                <div>
-                  <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
-                  <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setShowAvatarPicker(!showAvatarPicker)} className="text-4xl hover:scale-110 transition-transform">
+                    {avatar}
+                  </button>
+                  <div>
+                    <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
+                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setEditingUsername(true)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    theme === 'light' ? 'bg-blue-50 border-2 border-blue-200 text-blue-600' : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
+                  }`}
+                >
+                  Изменить профиль
+                </button>
               </div>
-              <button
-                onClick={() => setEditingUsername(true)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                  theme === 'light' ? 'bg-blue-50 border-2 border-blue-200 text-blue-600' : 'bg-blue-500/20 border border-blue-500/30 text-blue-400'
-                }`}
-              >
-                Изменить профиль
-              </button>
+              <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                theme === 'light' ? 'bg-gray-50 border border-gray-200' : 'bg-white/5 border border-white/10'
+              }`}>
+                <span className={`text-xs font-semibold ${theme === 'light' ? 'text-gray-500' : 'text-gray-400'}`}>📧 Электронная почта</span>
+                <span className={`text-sm truncate max-w-[60%] text-right ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.email || '—'}</span>
+              </div>
             </div>
           )}
           

@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
 import { getDisplayName } from '../lib/displayName'
+import { t } from '../i18n'
+import { getBristolDescription } from '../lib/bristol'
 
 type Props = {
   currentUserProfile: Profile
@@ -48,6 +50,28 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     () =>
       (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
   )
+
+  const weekData = useMemo(() => {
+    const data: Array<{ day: string; count: number; isToday: boolean }> = []
+    const now = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      date.setHours(0, 0, 0, 0)
+      const count = events.filter(e => {
+        const eventDate = new Date(e.created_at)
+        return eventDate.toDateString() === date.toDateString()
+      }).length
+      data.push({
+        day: date.toLocaleDateString('ru-RU', { weekday: 'short' }),
+        count,
+        isToday: i === 0,
+      })
+    }
+    return data
+  }, [events])
+
+  const maxCount = Math.max(...weekData.map(d => d.count), 1)
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return
@@ -357,6 +381,47 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
 
       {activeTab === 'activity' && (
         <div>
+          {events.length > 0 && (
+            <div className={`mb-6 p-4 rounded-2xl ${
+              theme === 'light' ? 'bg-white border-2 border-gray-200' : 'bg-white/5 border border-white/10'
+            }`}>
+              <h3 className={`text-sm font-semibold mb-4 ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'}`}>
+                📊 За последние 7 дней
+              </h3>
+              <div className="flex items-end justify-between gap-2 h-32">
+                {weekData.map((day, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                    <div className="w-full flex flex-col justify-end h-20">
+                      <div
+                        className={`w-full rounded-t-lg transition-all duration-500 ${
+                          day.isToday
+                            ? 'bg-gradient-to-t from-cyan-500 to-fuchsia-500'
+                            : theme === 'light'
+                              ? 'bg-gradient-to-t from-blue-300 to-blue-400'
+                              : 'bg-gradient-to-t from-purple-500/50 to-fuchsia-500/50'
+                        }`}
+                        style={{ height: `${day.count > 0 ? Math.max((day.count / maxCount) * 100, 10) : 5}%` }}
+                      />
+                    </div>
+                    <div className={`text-xs font-medium ${
+                      day.isToday
+                        ? theme === 'light' ? 'text-cyan-600' : 'text-cyan-400'
+                        : theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                    }`}>
+                      {day.day}
+                    </div>
+                    <div className={`text-xs ${
+                      day.count > 0
+                        ? theme === 'light' ? 'text-gray-800' : 'text-white'
+                        : theme === 'light' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      {day.count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {events.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
@@ -376,10 +441,10 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
                       {profile.avatar || '💩'}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                         {profile.username}
                       </div>
@@ -387,16 +452,16 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                         {isOwner ? 'У МЕНЯ ВЫШЛО!' : `У ${profile.username} вышло!`}
                       </div>
                       {event.bristol_type && (
-                        <div className={`text-xs mt-1 ${
+                        <div className={`text-xs mt-1 leading-snug break-words ${
                           event.bristol_type <= 2 ? 'text-red-400' :
                           event.bristol_type === 3 || event.bristol_type === 4 ? 'text-green-400' :
                           'text-orange-400'
                         }`}>
-                          Тип {event.bristol_type}
+                          {getBristolDescription(event.bristol_type)}
                         </div>
                       )}
                     </div>
-                    <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    <div className={`text-xs shrink-0 ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>
                       {formatTimeAgo(event.created_at)}
                     </div>
                   </div>
