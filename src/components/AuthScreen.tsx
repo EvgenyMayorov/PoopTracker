@@ -6,6 +6,7 @@ export function AuthScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [usernameError, setUsernameError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -28,9 +29,25 @@ export function AuthScreen() {
         console.log('[Auth] Успешный вход:', data)
         setMessage('✅ Вход выполнен! Загрузка...')
       } else if (mode === 'register') {
-        if (!username.trim()) {
-          throw new Error('Введите никнейм')
+        const trimmedUsername = username.trim()
+        if (!trimmedUsername) {
+          setUsernameError('Введите никнейм')
+          return
         }
+
+        // Проверяем, не занят ли никнейм другим пользователем (без учёта регистра)
+        const { data: existingProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .ilike('username', trimmedUsername)
+          .limit(1)
+
+        if (existingProfiles && existingProfiles.length > 0) {
+          setUsernameError('Этот никнейм уже занят, выберите другой')
+          return
+        }
+
+        setUsernameError(null)
 
         console.log('[Auth] Регистрация...')
         const { data, error } = await supabase.auth.signUp({ email, password })
@@ -56,7 +73,7 @@ export function AuthScreen() {
               .from('profiles')
               .insert({ 
                 id: data.user.id, 
-                username: username.trim(),
+                username: trimmedUsername,
                 updated_at: new Date().toISOString()
               })
 
@@ -127,7 +144,10 @@ export function AuthScreen() {
                 <input
                   type="text"
                   value={username}
-                  onChange={e => setUsername(e.target.value)}
+                  onChange={e => {
+                    setUsername(e.target.value)
+                    if (usernameError) setUsernameError(null)
+                  }}
                   placeholder="anna_2026"
                   className="w-full px-3 py-2 text-base md:text-sm rounded-xl focus:outline-none focus:ring-1 transition-all"
                   style={{
@@ -138,6 +158,9 @@ export function AuthScreen() {
                   }}
                   required
                 />
+                {usernameError && (
+                  <p className="text-sm text-red-500 mt-1">❌ {usernameError}</p>
+                )}
               </div>
             )}
 
