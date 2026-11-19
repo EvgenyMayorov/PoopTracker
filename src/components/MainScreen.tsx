@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
+import { getDisplayName, isNicknameMissing } from '../lib/displayName'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
 
@@ -106,7 +107,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       const userIds = data.map(f => f.user_id)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar')
+        .select('id, username, email, avatar')
         .in('id', userIds)
       
       if (profiles) {
@@ -115,7 +116,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           return { 
             id: f.id, 
             user_id: f.user_id, 
-            username: p?.username || 'Unknown',
+            username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
         }))
@@ -135,7 +136,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       const followerIds = data.map(f => f.follower_id)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar')
+        .select('id, username, email, avatar')
         .in('id', followerIds)
       
       if (profiles) {
@@ -144,7 +145,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           return { 
             id: f.id, 
             user_id: f.follower_id, 
-            username: p?.username || 'Unknown',
+            username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
         }))
@@ -191,7 +192,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       const userIds = [...new Set(eventsData.map(e => e.user_id))]
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username, avatar')
+        .select('id, username, email, avatar')
         .in('id', userIds)
       
       // Объединяем данные
@@ -199,7 +200,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         const profile = profilesData?.find(p => p.id === event.user_id)
         return {
           ...event,
-          profiles: profile ? { username: profile.username, avatar: profile.avatar || '💩' } : null
+          profiles: profile ? { id: profile.id, username: profile.username, email: profile.email, avatar: profile.avatar || '💩' } : null
         }
       })
       
@@ -248,7 +249,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       const userIds = [...new Set(commentsData.map(c => c.user_id))]
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, email')
         .in('id', userIds)
       
       // Объединяем данные
@@ -257,7 +258,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         return {
           id: comment.id,
           user_id: comment.user_id,
-          username: profile?.username || 'Unknown',
+          username: profile ? getDisplayName(profile) : '',
           text: comment.comment_text,
           created_at: comment.created_at,
         }
@@ -856,7 +857,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     </div>
                     <div className="flex-1">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
-                        {event.profiles?.username || 'Unknown'}
+                        {event.profiles ? getDisplayName(event.profiles) : ''}
                       </div>
                       <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-fuchsia-400'}`}>
                         У {event.profiles?.username} вышло!
@@ -1178,7 +1179,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     }`}>
       {showSuccess && <SuccessAnimation bristolType={successBristolType} onComplete={() => setShowSuccess(false)} />}
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto pb-24">
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'people' && <PeopleTab />}
         {activeTab === 'feed' && <FeedTab />}

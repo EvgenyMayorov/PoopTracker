@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase, Profile } from './lib/supabase'
 import { AuthScreen } from './components/AuthScreen'
 import { MainScreen } from './components/MainScreen'
@@ -220,21 +220,21 @@ function App() {
   // Экран загрузки
   if (loading) {
     return (
-      <BrowserRouter>
+      <HashRouter>
         <div className="mobile-container flex items-center justify-center p-4">
           <div className="text-center">
             <img src="/logo.svg" alt="PooTrack" className="w-24 h-24 mx-auto mb-4" />
             <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
           </div>
         </div>
-      </BrowserRouter>
+      </HashRouter>
     )
   }
 
   // Экран авторизации (нет сессии или нет профиля)
   if (!session || !profile) {
     return (
-      <BrowserRouter>
+      <HashRouter>
         <>
           <AuthScreen />
           {warning && (
@@ -256,12 +256,12 @@ function App() {
             </div>
           )}
         </>
-      </BrowserRouter>
+      </HashRouter>
     )
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="mobile-container">
         <Routes>
           <Route path="/" element={<MainScreen profile={profile} onLogout={handleLogout} />} />
@@ -272,7 +272,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 

@@ -15,6 +15,7 @@ export type Profile = {
   id: string
   username: string
   avatar: string
+  email?: string | null
   updated_at: string
 }
 

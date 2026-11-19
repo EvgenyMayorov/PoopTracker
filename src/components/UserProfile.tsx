@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
+import { getDisplayName } from '../lib/displayName'
 
 type Props = {
   currentUserProfile: Profile
@@ -75,14 +76,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('follower_id', userId)
     if (data && data.length > 0) {
       const followerIds = data.map(f => f.follower_id)
-      const { data: profiles } = await supabase.from('profiles').select('id, username, avatar').in('id', followerIds)
+      const { data: profiles } = await supabase.from('profiles').select('id, username, email, avatar').in('id', followerIds)
       if (profiles) {
         setFollowers(data.map(f => {
           const p = profiles.find(p => p.id === f.follower_id)
           return {
             id: f.id,
             user_id: f.user_id,
-            username: p?.username || 'Unknown',
+            username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
         }))
@@ -97,14 +98,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     const { data } = await supabase.from('friends').select('id, user_id, follower_id').eq('user_id', userId)
     if (data && data.length > 0) {
       const userIds = data.map(f => f.follower_id)
-      const { data: profiles } = await supabase.from('profiles').select('id, username, avatar').in('id', userIds)
+      const { data: profiles } = await supabase.from('profiles').select('id, username, email, avatar').in('id', userIds)
       if (profiles) {
         setFollowing(data.map(f => {
           const p = profiles.find(p => p.id === f.follower_id)
           return {
             id: f.id,
             user_id: f.follower_id,
-            username: p?.username || 'Unknown',
+            username: p ? getDisplayName(p) : '',
             avatar: p?.avatar || '💩'
           }
         }))
@@ -143,13 +144,13 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     }
     if (commentsData && commentsData.length > 0) {
       const userIds = [...new Set(commentsData.map(c => c.user_id))]
-      const { data: profilesData } = await supabase.from('profiles').select('id, username').in('id', userIds)
+      const { data: profilesData } = await supabase.from('profiles').select('id, username, email').in('id', userIds)
       const commentsWithProfiles: Comment[] = commentsData.map(comment => {
         const p = profilesData?.find(p => p.id === comment.user_id)
         return {
           id: comment.id,
           user_id: comment.user_id,
-          username: p?.username || 'Unknown',
+          username: p ? getDisplayName(p) : '',
           text: comment.comment_text,
           created_at: comment.created_at,
         }
