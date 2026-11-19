@@ -35,6 +35,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
+  const [profileUsername, setProfileUsername] = useState(profile.username)
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
   const [friendsEvents, setFriendsEvents] = useState<any[]>([])
   const [showBristolModal, setShowBristolModal] = useState(false)
@@ -396,8 +397,9 @@ export function MainScreen({ profile, onLogout }: Props) {
         .update({ username: tempUsername.trim() })
         .eq('id', profile.id)
       
+      // Обновляем состояние профиля без перезагрузки страницы
+      setProfileUsername(tempUsername.trim())
       setEditingUsername(false)
-      window.location.reload()
     }
   }
 
@@ -749,9 +751,8 @@ export function MainScreen({ profile, onLogout }: Props) {
         ) : (
           <div className="space-y-2">
             {following.map(friend => (
-              <a
+              <div
                 key={friend.id}
-                href={`/user/${friend.id}`}
                 onClick={() => navigate(`/user/${friend.id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
                   theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
@@ -778,7 +779,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 >
                   Отписаться
                 </button>
-              </a>
+              </div>
             ))}
           </div>
         )}
@@ -793,9 +794,8 @@ export function MainScreen({ profile, onLogout }: Props) {
         ) : (
           <div className="space-y-2">
             {followers.map(follower => (
-              <a
+              <div
                 key={follower.id}
-                href={`/user/${follower.id}`}
                 onClick={() => navigate(`/user/${follower.id}`)}
                 className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
                   theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
@@ -808,7 +808,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                   <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{follower.username}</span>
                 </div>
                 <span className="text-xs text-gray-400">→</span>
-              </a>
+              </div>
             ))}
           </div>
         )}
@@ -974,7 +974,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">💩</div>
                     <div className="flex-1">
-                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.username}</div>
+                      <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
                       <div className={`text-sm ${theme === 'light' ? 'text-gray-800' : 'text-cyan-400'}`}>У меня вышло!</div>
                       {event.bristol_type && (
                         <div className={`text-xs mt-1 ${
@@ -1084,7 +1084,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                   Сохранить
                 </button>
                 <button
-                  onClick={() => { setEditingUsername(false); setTempUsername(profile.username) }}
+                  onClick={() => { setEditingUsername(false); setTempUsername(profileUsername) }}
                   className={`flex-1 py-2 rounded-lg font-semibold ${theme === 'light' ? 'bg-gray-100 text-gray-700' : 'bg-gray-500/20 text-gray-300'}`}
                 >
                   Отмена
@@ -1098,7 +1098,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                   {avatar}
                 </button>
                 <div>
-                  <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profile.username}</div>
+                  <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>{profileUsername}</div>
                   <div className={`text-xs ${theme === 'light' ? 'text-gray-500' : 'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
                 </div>
               </div>
@@ -1325,7 +1325,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       )}
 
       {/* Нижняя навигация */}
-      <div className={`w-full backdrop-blur-xl border-t ${
+      <div className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 backdrop-blur-xl border-t ${
         theme === 'light' ? 'bg-white/95 border-blue-200' : 'bg-slate-900/95 border-white/10'
       }`}>
         <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
