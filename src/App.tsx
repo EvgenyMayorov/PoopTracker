@@ -218,11 +218,10 @@ function App() {
   // Экран загрузки
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center p-4">
+      <div className="app-container flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">💩</div>
-          <p className="text-cyan-400 text-lg mb-2">Загрузка...</p>
-          <p className="text-slate-500 text-xs">Подключение к Supabase</p>
+          <img src="/logo.svg" alt="PooTrack" className="w-24 h-24 mx-auto mb-4" />
+          <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
         </div>
       </div>
     )

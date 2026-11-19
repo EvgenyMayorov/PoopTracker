@@ -1,22 +1,22 @@
 {
-  "name": "PoopTracker",
-  "short_name": "PoopTracker",
-  "description": "Отслеживай. Делись. Удивляй.",
-  "theme_color": "#e0f2fe",
-  "background_color": "#e0f2fe",
+  "name": "PooTrack",
+  "short_name": "PooTrack",
+  "description": "PooTrack - отслеживай и делись",
+  "theme_color": "#008CDF",
+  "background_color": "#F7FBFE",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "./",
   "start_url": "./",
   "icons": [
     {
-      "src": "icon-light.svg",
+      "src": "logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     }
   ],
-  "categories": ["social", "lifestyle"],
+  "categories": ["health", "lifestyle"],
   "lang": "ru",
   "dir": "ltr"
 }

@@ -15,7 +15,7 @@ interface Friend {
   id: string
   user_id: string
   username: string
-  avatar?: string
+  avatar: string
 }
 
 interface Notification {
@@ -43,6 +43,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     (localStorage.getItem('poop_theme') as 'light' | 'dark') || 'dark'
   )
   const [showSuccess, setShowSuccess] = useState(false)
+  const [successBristolType, setSuccessBristolType] = useState<number | null>(null)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
   const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
@@ -102,13 +103,18 @@ export function MainScreen({ profile, onLogout }: Props) {
       const userIds = data.map(f => f.user_id)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar')
         .in('id', userIds)
       
       if (profiles) {
         setFollowers(data.map(f => {
           const p = profiles.find(p => p.id === f.user_id)
-          return { id: f.id, user_id: f.user_id, username: p?.username || 'Unknown' }
+          return { 
+            id: f.id, 
+            user_id: f.user_id, 
+            username: p?.username || 'Unknown',
+            avatar: p?.avatar || '💩'
+          }
         }))
       }
     } else {
@@ -126,13 +132,18 @@ export function MainScreen({ profile, onLogout }: Props) {
       const followerIds = data.map(f => f.follower_id)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar')
         .in('id', followerIds)
       
       if (profiles) {
         setFollowing(data.map(f => {
           const p = profiles.find(p => p.id === f.follower_id)
-          return { id: f.id, user_id: f.follower_id, username: p?.username || 'Unknown' }
+          return { 
+            id: f.id, 
+            user_id: f.follower_id, 
+            username: p?.username || 'Unknown',
+            avatar: p?.avatar || '💩'
+          }
         }))
       }
     } else {
@@ -173,11 +184,11 @@ export function MainScreen({ profile, onLogout }: Props) {
     }
     
     if (eventsData && eventsData.length > 0) {
-      // Получаем имена пользователей для каждого события
+      // Получаем имена пользователей и аватарки для каждого события
       const userIds = [...new Set(eventsData.map(e => e.user_id))]
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username')
+        .select('id, username, avatar')
         .in('id', userIds)
       
       // Объединяем данные
@@ -185,7 +196,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         const profile = profilesData?.find(p => p.id === event.user_id)
         return {
           ...event,
-          profiles: profile ? { username: profile.username } : null
+          profiles: profile ? { username: profile.username, avatar: profile.avatar || '💩' } : null
         }
       })
       
@@ -217,22 +228,46 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   const fetchComments = async (eventId: string) => {
-    const { data } = await supabase
+    // Получаем комментарии
+    const { data: commentsData, error: commentsError } = await supabase
       .from('comments')
-      .select('*, profiles(username)')
+      .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: true })
     
-    if (data) {
+    if (commentsError) {
+      console.error('[FetchComments] Ошибка:', commentsError)
+      return
+    }
+    
+    if (commentsData && commentsData.length > 0) {
+      // Получаем имена пользователей
+      const userIds = [...new Set(commentsData.map(c => c.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds)
+      
+      // Объединяем данные
+      const commentsWithProfiles = commentsData.map(comment => {
+        const profile = profilesData?.find(p => p.id === comment.user_id)
+        return {
+          id: comment.id,
+          user_id: comment.user_id,
+          username: profile?.username || 'Unknown',
+          text: comment.comment_text,
+          created_at: comment.created_at,
+        }
+      })
+      
       setComments(prev => ({
         ...prev,
-        [eventId]: data.map(c => ({
-          id: c.id,
-          user_id: c.user_id,
-          username: c.profiles?.username || 'Unknown',
-          text: c.comment_text,
-          created_at: c.created_at,
-        }))
+        [eventId]: commentsWithProfiles
+      }))
+    } else {
+      setComments(prev => ({
+        ...prev,
+        [eventId]: []
       }))
     }
   }
@@ -425,11 +460,36 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   const handleFollowFriend = async (userId: string, username: string) => {
-    await supabase.from('friends').insert({
+    // Проверяем, не подписаны ли уже
+    const { data: existingSub } = await supabase
+      .from('friends')
+      .select('id')
+      .eq('user_id', profile.id)
+      .eq('follower_id', userId)
+      .single()
+    
+    if (existingSub) {
+      alert('Вы уже подписаны на этого пользователя')
+      return
+    }
+    
+    // Подписываемся
+    const { error: followError } = await supabase.from('friends').insert({
       user_id: profile.id,
       follower_id: userId
     })
     
+    if (followError) {
+      console.error('[FollowFriend] Ошибка подписки:', followError)
+      if (followError.code === '23505') {
+        alert('Вы уже подписаны на этого пользователя')
+      } else {
+        alert('Ошибка при подписке: ' + followError.message)
+      }
+      return
+    }
+    
+    // Отправляем уведомление
     await supabase.from('notifications').insert({
       user_id: userId,
       friend_id: profile.id,
@@ -441,6 +501,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     setShowAddFriendModal(false)
     setFriendEmail('')
     setFriendSearchResult(null)
+    alert(`Вы подписались на ${username}`)
   }
 
   // Статистика
@@ -686,7 +747,12 @@ export function MainScreen({ profile, onLogout }: Props) {
               <div key={friend.id} className={`flex items-center justify-between rounded-xl p-3 ${
                 theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
               }`}>
-                <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{friend.username}</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                    {friend.avatar}
+                  </div>
+                  <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{friend.username}</span>
+                </div>
                 <button
                   onClick={async () => {
                     await supabase.from('friends').delete().eq('id', friend.id)
@@ -715,9 +781,12 @@ export function MainScreen({ profile, onLogout }: Props) {
         ) : (
           <div className="space-y-2">
             {followers.map(follower => (
-              <div key={follower.id} className={`rounded-xl p-3 ${
+              <div key={follower.id} className={`flex items-center gap-3 rounded-xl p-3 ${
                 theme === 'light' ? 'bg-white border-2 border-blue-200' : 'bg-white/5 border border-white/10'
               }`}>
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                  {follower.avatar}
+                </div>
                 <span className={theme === 'light' ? 'text-gray-800' : 'text-white'}>{follower.username}</span>
               </div>
             ))}
@@ -763,7 +832,9 @@ export function MainScreen({ profile, onLogout }: Props) {
                   theme === 'light' ? 'bg-white border-2 border-fuchsia-200' : 'bg-white/5 border border-fuchsia-500/20'
                 }`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">💩</div>
+                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
+                      {event.profiles?.avatar || '💩'}
+                    </div>
                     <div className="flex-1">
                       <div className={`font-semibold ${theme === 'light' ? 'text-gray-800' : 'text-white'}`}>
                         {event.profiles?.username || 'Unknown'}
