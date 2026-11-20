@@ -9,30 +9,23 @@ export function PoopButton({ onPoop }: PoopButtonProps) {
   const navigate = useNavigate()
 
   return (
-    <div className="flex items-stretch gap-2.5 my-4">
+    <div className="space-y-2.5 pt-1">
       <button
         onClick={() => {
           onPoop()
           navigate('/')
         }}
-        className="flex-1 rounded-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+        className="w-full h-14 rounded-full bg-[#111827] hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-[15px] flex items-center justify-center shadow-md shadow-slate-900/10 transition-all"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M7 21h10c1.1 0 2-.9 2-2v-1c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
-          <path d="M8 16h8c1.1 0 2-.9 2-2v-1c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
-          <path d="M9 11h6c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
-          <path d="M11 6c0-1.1.9-2 2-2s2 .9 2 2" />
-          <circle cx="10" cy="14" r="0.5" fill="currentColor" />
-          <circle cx="14" cy="14" r="0.5" fill="currentColor" />
-        </svg>
-        У МЕНЯ ВЫШЛО!
+        У меня вышло!
       </button>
       <button
-        className="rounded-full h-12 px-4 bg-white text-slate-700 font-medium shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all"
+        type="button"
         onClick={() => {}}
+        className="w-full h-12 rounded-full bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(15,23,42,0.05)] border border-slate-100 transition-all"
       >
+        <span>Сбросить балласт</span>
         <span className="text-base">💨</span>
-        Сбросить балласт
       </button>
     </div>
   )

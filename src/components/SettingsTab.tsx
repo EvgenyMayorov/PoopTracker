@@ -477,14 +477,14 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
     }
   }
 
-  return (
-    <div className="min-h-[calc(100dvh-8.5rem)] flex flex-col justify-between">
-      <div className="px-4 space-y-4">
-      <div className="mb-6">
-        <h3 className={`text-sm font-semibold mb-3 ${'text-slate-900'}`}>
-          👤 Аккаунт
-        </h3>
-        <div className="rounded-xl p-4 bg-white border border-slate-200/80">
+   return (
+    <div className="min-h-[calc(100dvh-4.5rem)] flex flex-col justify-between px-4 pt-5 pb-4">
+      <div className="space-y-3">
+        <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none mb-4">
+          Настройки
+        </h1>
+
+        <div className="bg-white rounded-[20px] p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
           {editingUsername ? (
             <div className="space-y-3">
               <input
@@ -494,22 +494,19 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
                   setTempUsername(e.target.value)
                   if (usernameError) setUsernameError(null)
                 }}
-                className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3.5 text-sm text-slate-900 focus:outline-none focus:border-[#111827]"
               />
-              {usernameError && (
-                <p className="text-sm text-red-600 mt-1">❌ {usernameError}</p>
-              )}
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <p className={`text-sm mb-3 ${'text-slate-900'}`}>Выберите аватарку:</p>
-                <div className="grid grid-cols-5 gap-2 max-h-[280px] overflow-y-auto overscroll-contain pr-1">
+              {usernameError && <p className="text-xs text-rose-600">{usernameError}</p>}
+
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-slate-500 mb-2">Выберите аватар:</p>
+                <div className="grid grid-cols-5 gap-2 max-h-[240px] overflow-y-auto pr-1">
                   {avatarEmojis.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => handleSaveAvatar(emoji)}
-                      className={`text-3xl p-2 rounded-lg transition-all hover:scale-110 ${
-                        avatar === emoji
-                          ? 'bg-blue-100 border-2 border-blue-400'
-                          : 'bg-gray-50 border-2 border-gray-200'
+                      className={`text-2xl p-2 rounded-xl transition-all ${
+                        avatar === emoji ? 'bg-emerald-100 ring-2 ring-emerald-500' : 'bg-slate-50 hover:bg-slate-100'
                       }`}
                     >
                       {emoji}
@@ -517,130 +514,112 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={handleSaveUsername} className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium">
+
+              <div className="flex gap-2 pt-2">
+                <button onClick={handleSaveUsername} className="flex-1 h-10 bg-[#111827] text-white rounded-full text-xs font-bold">
                   Сохранить
                 </button>
                 <button
                   onClick={() => { setEditingUsername(false); setTempUsername(profileUsername) }}
-                  className="flex-1 h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium"
+                  className="flex-1 h-10 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold"
                 >
                   Отмена
                 </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className={`text-4xl ${'text-slate-400'}`}> {avatar} </span>
-                  <div>
-                    <div className={`font-semibold ${'text-slate-900'}`}>{profileUsername}</div>
-                    <div className={`text-xs ${'text-slate-400'}`}>{profile.id.substring(0, 8)}...</div>
-                  </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-14 h-14 rounded-full bg-emerald-100/80 flex items-center justify-center text-3xl shrink-0">
+                  {avatar}
                 </div>
-<button
-                  onClick={() => setEditingUsername(true)}
-                  className="h-10 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200"
-                >
-                  Изменить профиль
-                </button>
+                <div className="truncate">
+                  <div className="text-base font-bold text-[#111827] truncate">{profileUsername}</div>
+                  <div className="text-xs text-slate-400 truncate mt-0.5">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
+                </div>
               </div>
-              <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
-                <span className={`text-xs font-semibold ${'text-slate-400'}`}>📧 Электронная почта</span>
-                <span className={`text-sm truncate max-w-[60%] text-right ${'text-slate-900'}`}>{profile.email || '—'}</span>
-              </div>
+              <button
+                onClick={() => setEditingUsername(true)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-4 py-2 rounded-full shrink-0 transition-colors"
+              >
+                Изменить
+              </button>
             </div>
           )}
         </div>
-      </div>
 
-
-      <section className="mb-8 border-t border-slate-200 pt-6">
-        <h3 className={`text-sm font-semibold mb-3 ${'text-slate-900'}`}>Push-уведомления</h3>
-
-        <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-200/80">
-          <div>
-            <div className={`font-semibold text-sm ${'text-slate-900'}`}>Push-уведомления</div>
-            <div className={`text-xs mt-0.5 ${
-              pushStatus === 'enabled'
-                ? 'text-green-600'
-                : pushStatus === 'blocked'
-                  ? 'text-red-500'
-                  : 'text-slate-400'
-            }`}>
-              {pushStatus === 'loading' && 'Проверка...'}
-              {pushStatus === 'enabled' && 'Включены'}
-              {pushStatus === 'disabled' && 'Выключены'}
-              {pushStatus === 'blocked' && 'Заблокированы в браузере'}
-              {pushStatus === 'unsupported' && 'Не поддерживаются браузером'}
+        <div className="bg-white rounded-[20px] p-4 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3">
+            <span className="text-lg">🔔</span>
+            <div>
+              <div className="text-sm font-bold text-[#111827]">Уведомления</div>
+              <div className="text-[11px] text-slate-400">
+                {pushStatus === 'loading' && 'Проверка...'}
+                {pushStatus === 'enabled' && 'Включены'}
+                {pushStatus === 'disabled' && 'Выключены'}
+                {pushStatus === 'blocked' && 'Заблокированы в браузере'}
+                {pushStatus === 'unsupported' && 'Не поддерживаются'}
+              </div>
             </div>
           </div>
+
           <button
             type="button"
             role="switch"
             aria-checked={pushEnabled}
             onClick={() => handlePushToggle(!pushEnabled)}
             disabled={pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked'}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-              pushEnabled ? 'bg-slate-900' : 'bg-slate-200'
-            } ${pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked' ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-12 h-7 rounded-full p-0.5 transition-colors flex items-center shrink-0 ${
+              pushEnabled ? 'bg-emerald-500 justify-end' : 'bg-slate-200 justify-start'
+            } ${pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked' ? 'opacity-50' : ''}`}
           >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                pushEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
+            <span className="w-6 h-6 rounded-full bg-white shadow-sm block" />
           </button>
         </div>
 
-        {pushError && (
-          <p className="text-sm text-red-600 mt-2">{pushError}</p>
-        )}
+        {pushError && <p className="text-xs text-rose-600 px-2">{pushError}</p>}
 
-        <button
-          onClick={sendTestNotification}
-          disabled={!pushEnabled || sendingTest}
-          className={`w-full h-11 rounded-xl font-medium transition-colors ${
-            pushEnabled && !sendingTest
-              ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50'
-              : 'bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-200'
-          }`}
-        >
-          {sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}
-        </button>
-
-        {testResult && (
-          <div className={`mt-3 rounded-lg p-3 ${testResult.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-            {testResult}
-          </div>
-        )}
-
-        <button
-          onClick={handleUpdateApp}
-          className="mt-4 w-full h-11 rounded-xl text-sm font-medium transition-colors bg-white border border-slate-200 text-slate-800 hover:bg-slate-50"
-        >
-          Обновить версию приложения
-        </button>
-      </section>
-
-      </div>
-
-      <footer className="flex flex-col justify-between mt-auto border-t border-slate-200/80 pt-4 space-y-1">
-        <div className="flex items-center justify-between gap-3">
+        <div className="space-y-2.5 pt-1">
           <button
-            onClick={onLogout}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
-              'bg-red-50 border-2 border-red-200 text-red-600'
+            onClick={sendTestNotification}
+            disabled={!pushEnabled || sendingTest}
+            className={`w-full py-3.5 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors ${
+              pushEnabled && !sendingTest
+                ? 'bg-white hover:bg-slate-50 text-slate-800'
+                : 'bg-white/60 text-slate-300 cursor-not-allowed'
             }`}
           >
-            Выйти
+            <span>📨</span>
+            <span>{sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}</span>
           </button>
-          <span>PoopTrack v1.3.3</span>
+
+          {testResult && (
+            <div className={`rounded-2xl p-3 text-xs font-medium ${testResult.includes('✅') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+              {testResult}
+            </div>
+          )}
+
+          <button
+            onClick={handleUpdateApp}
+            className="w-full py-3.5 bg-white hover:bg-slate-50 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold text-slate-800 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors"
+          >
+            <span>🔄</span>
+            <span>Обновить версию приложения</span>
+          </button>
         </div>
-        <div className="text-right text-xs text-slate-400 space-y-0.5">
-          <div>Made by Evgen.</div>
-          <div>Powered by Supabase & GitHub, 2026.</div>
+      </div>
+
+      <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
+        <button
+          onClick={onLogout}
+          className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors"
+        >
+          <span>↪</span>
+          <span>Выйти</span>
+        </button>
+        <div className="text-right leading-tight">
+          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.0</div>
+          <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
         </div>
       </footer>
     </div>

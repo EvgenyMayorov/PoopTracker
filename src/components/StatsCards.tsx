@@ -8,18 +8,18 @@ interface StatsCardsProps {
 
 export function StatsCards({ todayCount, weekCount, totalCount }: StatsCardsProps) {
   return (
-    <div className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-100 grid grid-cols-3 divide-x divide-slate-100">
+    <div className="bg-white rounded-[20px] py-4 px-2 grid grid-cols-3 divide-x divide-slate-100 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
       <div className="flex flex-col items-center">
-        <div className="text-sm font-medium text-slate-500">Сегодня</div>
-        <div className="text-xl font-bold text-slate-900 tabular-nums">{todayCount}</div>
+        <div className="text-2xl font-extrabold text-[#111827] tabular-nums">{todayCount}</div>
+        <div className="text-xs font-medium text-slate-400 mt-0.5">Сегодня</div>
       </div>
       <div className="flex flex-col items-center">
-        <div className="text-sm font-medium text-slate-500">Неделя</div>
-        <div className="text-xl font-bold text-slate-900 tabular-nums">{weekCount}</div>
+        <div className="text-2xl font-extrabold text-[#111827] tabular-nums">{weekCount}</div>
+        <div className="text-xs font-medium text-slate-400 mt-0.5">Неделя</div>
       </div>
       <div className="flex flex-col items-center">
-        <div className="text-sm font-medium text-slate-500">Всего</div>
-        <div className="text-xl font-bold text-slate-900 tabular-nums">{totalCount}</div>
+        <div className="text-2xl font-extrabold text-[#111827] tabular-nums">{totalCount}</div>
+        <div className="text-xs font-medium text-slate-400 mt-0.5">Всего</div>
       </div>
     </div>
   )

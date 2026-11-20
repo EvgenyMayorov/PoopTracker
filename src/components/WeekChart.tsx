@@ -9,20 +9,33 @@ export function WeekChart({ weekData, maxCount }: WeekChartProps) {
   const maxCountForScale = Math.max(maxCount, 1)
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.1em] text-slate-400 mb-4">Активность за 7 дней</h3>
-      <div className="flex items-end justify-between gap-1 h-32">
-        {weekData.map((dayData, index) => (
-          <div key={index} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+    <div className="grid grid-cols-7 gap-2.5 items-end h-32 px-2 pt-2">
+      {weekData.map((dayData, index) => {
+        const heightPct =
+          dayData.count > 0 ? Math.max(24, Math.round((dayData.count / maxCountForScale) * 100)) : 12
+
+        return (
+          <div key={index} className="flex flex-col items-center h-full justify-end">
             <div
-              className={`w-3 rounded-t-md transition-all ${dayData.count > 0 ? 'bg-slate-800' : 'bg-slate-100'}`}
-              style={{ height: `${(dayData.count / maxCountForScale) * 100}%` }}
+              style={{ height: `${heightPct}%` }}
+              className={`w-6 rounded-xl transition-all duration-300 ${
+                dayData.count === 0
+                  ? 'bg-slate-200/70'
+                  : dayData.isToday
+                  ? 'bg-gradient-to-b from-indigo-500 to-[#111827]'
+                  : 'bg-gradient-to-b from-emerald-400 to-teal-500'
+              }`}
             />
-            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{dayData.day}</span>
-            <span className="text-xs font-bold text-slate-900 tabular-nums">{dayData.count}</span>
+            <span
+              className={`text-xs mt-2 whitespace-nowrap ${
+                dayData.isToday ? 'font-bold text-[#111827]' : 'font-medium text-slate-400'
+              }`}
+            >
+              {dayData.day}
+            </span>
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }

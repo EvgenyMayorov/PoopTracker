@@ -61,6 +61,7 @@ export function MainScreen({ profile, onLogout }: Props) {
     try { sessionStorage.setItem('pooptrack_active_tab', activeTab) } catch {}
   }, [activeTab])
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
+  const [peopleTab, setPeopleTab] = useState<'following' | 'followers'>('following')
   const [showBristolModal, setShowBristolModal] = useState(false)
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<number | null>(null)
@@ -244,107 +245,115 @@ export function MainScreen({ profile, onLogout }: Props) {
     navigate,
   }
 
-  return (
-    <div className="mobile-container bg-[#F4F5F7]">
-      <Header activeTab={activeTab} profile={profile} />
+      return (
+    <div className="mobile-container min-h-dvh bg-[#F5F7FA] text-[#111827] pb-24">
       <PWAInstallBanner />
 
       {activeTab === 'home' && (
-        <div className="p-4 pb-20 space-y-3">
-          <WeekChart weekData={weekData} maxCount={maxCount} />
+        <div className="px-4 pt-4 space-y-4">
+          <header className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-full bg-emerald-100/80 flex items-center justify-center text-xl">
+                {profile.avatar || '💩'}
+              </div>
+              <span className="text-[15px] font-bold text-[#111827]">{profile.username}</span>
+            </div>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:bg-white transition-colors"
+              aria-label="Настройки"
+            >
+              ⚙️
+            </button>
+          </header>
+
+          <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none">
+            Сводка
+          </h1>
+
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
+          <WeekChart weekData={weekData} maxCount={maxCount} />
           <PoopButton onPoop={handlePoop} />
 
-          {/* Список последних записей */}
-          {events.length === 0 ? (
-            <div className="text-center text-sm text-slate-400 py-8">
-              Записей пока нет. Нажмите «У меня вышло!», чтобы добавить первую.
+          {events.length > 0 ? (
+            <div className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                  ✓
+                </div>
+                <div className="truncate">
+                  <div className="text-sm font-bold text-[#111827]">Последняя запись</div>
+                  <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(events[0].created_at)}</div>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
+                {events[0].bristol_type ? `Тип ${events[0].bristol_type}` : 'Готово!'}
+              </span>
             </div>
           ) : (
-            <>
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">
-                Последние записи
-              </h2>
-              {events.map(event => {
-                const evProfile = {
-                  id: event.profiles?.id || profile.id,
-                  username: (event.profiles?.username && event.profiles.username.trim()) || profile.username,
-                  avatar: event.profiles?.avatar || profile.avatar,
-                }
-                return (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    profile={evProfile}
-                    reactions={reactions[event.id] || { thumbs_up: 0, heart: 0, poop: 0 }}
-                    comments={comments[event.id] || []}
-                    newComment={newComment[event.id] || ''}
-                    setNewComment={(v: string) => setNewComment({ ...newComment, [event.id]: v })}
-                    formatTimeAgo={formatTimeAgo}
-                    onReaction={handleReactionWithPush}
-                    onAddComment={handleAddCommentWithPush}
-                    onDeleteEvent={handleDeleteEvent}
-                    onEditEvent={() => {}}
-                    isOwnEvent={event.user_id === profile.id}
-                    highlightedEventId={highlightedEventId}
-                    showActions={false}
-                  />
-                )
-              })}
-            </>
+            <div className="text-center text-xs text-slate-400 py-4">
+              Записей пока нет. Нажмите «У меня вышло!»
+            </div>
           )}
         </div>
       )}
 
       {activeTab === 'people' && (
-        <div className="p-4 pb-20">
+        <div className="px-4 pt-5 space-y-3.5">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none">
+            Люди
+          </h1>
+
           <button
             onClick={handleAddFriend}
-            className="w-full h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium mb-4 transition-colors"
+            className="w-full bg-white rounded-full p-2 pl-4 flex items-center justify-between shadow-[0_2px_10px_rgba(15,23,42,0.04)] text-left"
           >
-            Добавить друга
+            <span className="text-sm text-slate-400">🔍 Поиск пользователей по email</span>
+            <span className="bg-[#111827] text-white text-xs font-semibold px-4 py-2 rounded-full">
+              Найти
+            </span>
           </button>
 
-          <div className="mb-6">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">Мои подписки</h2>
-            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
-              {following.map(f => (
-                <div
-                  key={f.id}
-                  onClick={() => navigate(`/user/${f.user_id}`)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                    {f.avatar}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
-                  </div>
-                  <span className="text-xs text-slate-400">→</span>
-                </div>
-              ))}
-            </div>
+          <div className="bg-white p-1 rounded-full grid grid-cols-2 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
+            <button
+              onClick={() => setPeopleTab('following')}
+              className={`py-2 rounded-full text-xs font-semibold transition-all ${
+                peopleTab === 'following' ? 'bg-[#111827] text-white' : 'text-slate-600'
+              }`}
+            >
+              Подписки ({following.length})
+            </button>
+            <button
+              onClick={() => setPeopleTab('followers')}
+              className={`py-2 rounded-full text-xs font-semibold transition-all ${
+                peopleTab === 'followers' ? 'bg-[#111827] text-white' : 'text-slate-600'
+              }`}
+            >
+              Подписчики ({followers.length})
+            </button>
           </div>
 
-          <div>
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">Подписчики</h2>
-            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
-              {followers.map(f => (
-                <div
-                  key={f.id}
-                  onClick={() => navigate(`/user/${f.user_id}`)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                    {f.avatar}
+          <div className="space-y-2.5">
+            {(peopleTab === 'following' ? following : followers).map((f) => (
+              <div
+                key={f.id}
+                onClick={() => navigate(`/user/${f.user_id}`)}
+                className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-2xl shrink-0">
+                    {f.avatar || '💩'}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
+                  <div className="truncate">
+                    <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
+                    <div className="text-xs text-slate-400">Открыть профиль</div>
                   </div>
-                  <span className="text-xs text-slate-400">→</span>
                 </div>
-              ))}
-            </div>
+                <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0">
+                  Профиль →
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -352,124 +361,95 @@ export function MainScreen({ profile, onLogout }: Props) {
       {activeTab === 'feed' && <FeedTabView {...feedTabProps} />}
 
       {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} />}
-
-      {/* Bristol Modal */}
       {showBristolModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-center mb-4 text-gray-800">Какой формы?</h2>
-            <p className="text-sm text-center mb-4 text-gray-600">Шкала Бристольской формы стула</p>
-
-            <div className="space-y-2 mb-6">
-              {[1, 2, 3, 4, 5, 6, 7].map(type => (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-extrabold text-center mb-1 text-[#111827]">Какой формы?</h2>
+            <p className="text-xs text-center mb-4 text-slate-400">Шкала Бристольской формы стула</p>
+            <div className="space-y-2 mb-5">
+             {[1, 2, 3, 4, 5, 6, 7].map((type) => (
                 <button
                   key={type}
                   onClick={() => handleBristolSelect(type)}
-                  className={`w-full p-3 rounded-xl text-left transition-all ${
-                    selectedType === type
-                      ? 'bg-blue-100 border-2 border-blue-500'
-                      : 'bg-gray-50 border-2 border-gray-200 hover:bg-gray-100'
+                  className={`w-full p-3 rounded-2xl text-left transition-all flex items-center gap-3 ${
+                    selectedType === type ? 'bg-indigo-50 ring-2 ring-indigo-500' : 'bg-slate-50 hover:bg-slate-100'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`text-2xl ${type <= 2 ? '🧱' : type <= 4 ? '🏆' : '☢️'}`}>
-                      {type <= 2 ? '🧱' : type <= 4 ? '🏆' : '☢️'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-800">Тип {type}</div>
-                      <div className="text-sm text-gray-600">
-                        {type === 1 && 'Отдельные твёрдые комочки'}
-                        {type === 2 && 'Комковатая и плотная'}
-                        {type === 3 && 'Колбаска с трещинами'}
-                        {type === 4 && 'Гладкая колбаска'}
-                        {type === 5 && 'Мягкие кусочки'}
-                        {type === 6 && 'Пушистые кусочки'}
-                        {type === 7 && 'Водянистый'}
-                      </div>
+                  <span className="text-2xl">{type <= 2 ? '🧱' : type <= 4 ? '🏆' : '☢️'}</span>
+                  <div>
+                    <div className="font-bold text-sm text-[#111827]">Тип {type}</div>
+                    <div className="text-xs text-slate-500">
+                      {type === 1 && 'Отдельные твёрдые комочки'}
+                      {type === 2 && 'Комковатая и плотная'}
+                      {type === 3 && 'Колбаска с трещинами'}
+                      {type === 4 && 'Гладкая колбаска'}
+                      {type === 5 && 'Мягкие кусочки'}
+                      {type === 6 && 'Пушистые кусочки'}
+                      {type === 7 && 'Водянистый'}
                     </div>
                   </div>
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={handleBristolSkip}
-              className="w-full py-2 bg-white/5 border border-white/20 rounded-xl text-gray-400 text-sm font-semibold hover:bg-white/10"
-            >
+            <button onClick={handleBristolSkip} className="w-full py-2.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
               Пропустить
             </button>
           </div>
         </div>
       )}
 
-      {/* Add Friend Modal */}
       {showAddFriendModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-center mb-4 text-slate-900">Добавить друга</h2>
-            <p className="text-sm text-center mb-4 text-slate-500">Введите email друга для поиска</p>
-
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-extrabold text-center mb-1 text-[#111827]">Добавить друга</h2>
+            <p className="text-xs text-center mb-4 text-slate-400">Введите email друга для поиска</p>
             <div className="flex gap-2 mb-4">
               <input
                 type="email"
                 value={friendEmail}
-                onChange={e => setFriendEmail(e.target.value)}
+                onChange={(e) => setFriendEmail(e.target.value)}
                 placeholder="friend@example.com"
-                className="flex-1 h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                className="flex-1 h-11 bg-slate-50 border border-slate-200 rounded-full px-4 text-sm focus:outline-none focus:border-[#111827]"
               />
               <button
                 onClick={handleSearchFriend}
                 disabled={isSearchingFriend || !friendEmail.trim()}
-                className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                className="h-11 px-5 bg-[#111827] text-white rounded-full text-xs font-bold disabled:opacity-50"
               >
                 {isSearchingFriend ? '...' : 'Искать'}
               </button>
             </div>
-
-            {friendSearchResult && (
-              <div className="rounded-xl p-4 mb-4 bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg shrink-0">
+            {friendSearchResult && !friendSearchResult.error && (
+              <div className="rounded-2xl p-4 mb-4 bg-slate-50 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shrink-0">
                     {friendSearchResult.avatar || '💩'}
                   </div>
-                  <div className="flex-1">
-                    <div className="font-semibold mb-1 text-slate-900">
-                      {friendSearchResult.username}
-                    </div>
-                    <div className="text-xs mb-3 text-slate-500">
-                      {friendSearchResult.email}
-                    </div>
+                  <div className="truncate">
+                    <div className="font-bold text-sm text-[#111827] truncate">{friendSearchResult.username}</div>
+                    <div className="text-xs text-slate-400 truncate">{friendSearchResult.email}</div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleFollowFriend(friendSearchResult.id, friendSearchResult.username)}
-                  className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-[#111827] text-white rounded-full text-xs font-bold shrink-0"
                 >
                   Подписаться
                 </button>
               </div>
             )}
-
             {friendSearchResult?.error && (
-              <div className="text-center text-sm text-red-500 mb-4">{friendSearchResult.error}</div>
+              <div className="text-center text-xs text-rose-500 mb-4">{friendSearchResult.error}</div>
             )}
-
-            <button
-              onClick={() => setShowAddFriendModal(false)}
-              className="w-full mt-4 h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium transition-colors"
-            >
+            <button onClick={() => setShowAddFriendModal(false)} className="w-full h-11 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">
               Закрыть
             </button>
           </div>
         </div>
       )}
 
-      {/* Success Animation */}
-      {showSuccess && (
-        <SuccessAnimation bristolType={successBristolType} onComplete={handleSuccessComplete} />
-      )}
+      {showSuccess && <SuccessAnimation bristolType={successBristolType} onComplete={handleSuccessComplete} />}
 
-      {/* Delete Confirm Modal */}
       <ConfirmModal
         isOpen={!!deleteConfirmEventId}
         title="Удаление записи"
@@ -478,7 +458,7 @@ export function MainScreen({ profile, onLogout }: Props) {
         cancelText="Отмена"
         onConfirm={confirmDeleteEvent}
         onCancel={() => setDeleteConfirmEventId(null)}
-        confirmClassName="bg-red-500 hover:bg-red-600 text-white"
+        confirmClassName="bg-rose-500 hover:bg-rose-600 text-white"
       />
 
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} onPoop={handlePoop} />
