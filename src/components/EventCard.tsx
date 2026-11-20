@@ -37,64 +37,42 @@ export function EventCard({
   const eventProfile = event.profiles
   const authorName = eventProfile ? (eventProfile.username || 'Unknown') : 'Unknown'
   const authorAvatar = eventProfile?.avatar || '💩'
-  const isHighlighted = highlightedEventId === event.id
 
   const bristolDesc = event.bristol_type ? getBristolDescription(event.bristol_type) : ''
 
   return (
-    <div
-      className={`rounded-2xl p-4 transition-all ${isHighlighted ? 'bg-blue-50 border-4 border-blue-500 shadow-lg scale-105' : 'bg-white border-2 border-gray-200'}`}
-      key={event.id}
-    >
+    <div className="px-4 py-3 hover:bg-slate-50/70 transition-colors">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
+        <div className="w-6 h-6 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
           {authorAvatar}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-800 truncate">{authorName}</span>
-            <span className="text-xs text-gray-500 whitespace-nowrap">{formatTimeAgo(event.created_at)}</span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-900 truncate">{authorName}</span>
+            <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</span>
           </div>
           {bristolDesc && (
-            <div className="text-sm text-gray-700 mt-1">{bristolDesc}</div>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/60 mt-1">
+              {bristolDesc}
+            </span>
           )}
         </div>
       </div>
 
-      {isOwnEvent && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
-          <button
-            onClick={() => onEditEvent(event.id)}
-            className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-blue-50 border-2 border-blue-200 text-blue-600"
-          >
-            ✏️ Редактировать
-          </button>
-          <button
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation()
-              onDeleteEvent(event.id)
-            }}
-            className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-red-50 border-2 border-red-200 text-red-600"
-          >
-            🗑️ Удалить
-          </button>
-        </div>
-      )}
-
       {(reactions.thumbs_up > 0 || reactions.heart > 0 || reactions.poop > 0) && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+        <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
           {reactions.thumbs_up > 0 && (
-            <span className="px-2 py-1 rounded-lg text-xs bg-blue-50 text-blue-600">
+            <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
               👍 {reactions.thumbs_up}
             </span>
           )}
           {reactions.heart > 0 && (
-            <span className="px-2 py-1 rounded-lg text-xs bg-red-50 text-red-600">
+            <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
               ❤️ {reactions.heart}
             </span>
           )}
           {reactions.poop > 0 && (
-            <span className="px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600">
+            <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
               💩 {reactions.poop}
             </span>
           )}
@@ -102,17 +80,17 @@ export function EventCard({
       )}
 
       {comments.length > 0 && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-2 space-y-1.5">
           {comments.map(comment => (
-            <div key={comment.id} className="rounded-lg p-2 bg-gray-50">
+            <div key={comment.id} className="rounded-lg p-2 bg-slate-50/50">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
+                <div className="w-5 h-5 rounded-full bg-slate-100 text-[10px] flex items-center justify-center shrink-0">
                   {comment.avatar || '💩'}
                 </div>
-                <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                <span className="text-xs text-gray-500">{formatTimeAgo(comment.created_at)}</span>
+                <span className="text-xs font-medium text-slate-700">{comment.username}</span>
+                <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(comment.created_at)}</span>
               </div>
-              <p className="text-sm mt-1 text-gray-700">{comment.text}</p>
+              <p className="text-sm mt-0.5 text-slate-600">{comment.text}</p>
             </div>
           ))}
         </div>
@@ -130,17 +108,37 @@ export function EventCard({
             }
           }}
           placeholder="Добавить комментарий..."
-          className="flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400"
+          className="flex-1 h-7 bg-white border border-slate-200 rounded-lg px-3 text-sm focus:outline-none focus:border-slate-900 placeholder:text-slate-400"
           autoComplete="off"
         />
         <button
           onClick={() => onAddComment(event.id)}
           disabled={!newComment.trim()}
-          className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white hover:from-cyan-600 hover:to-fuchsia-600"
+          className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Отправить
         </button>
       </div>
+
+      {isOwnEvent && (
+        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+          <button
+            onClick={() => onEditEvent(event.id)}
+            className="flex-1 h-7 px-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-xs font-medium transition-colors"
+          >
+            ✏️ Редактировать
+          </button>
+          <button
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation()
+              onDeleteEvent(event.id)
+            }}
+            className="flex-1 h-7 px-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-medium transition-colors"
+          >
+            🗑️ Удалить
+          </button>
+        </div>
+      )}
     </div>
   )
 }

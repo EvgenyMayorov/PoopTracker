@@ -22,6 +22,7 @@ import { BottomNav } from './BottomNav'
 import { StatsCards } from './StatsCards'
 import { WeekChart } from './WeekChart'
 import { PoopButton } from './PoopButton'
+import { Header } from './Header'
 
 type Props = {
   profile: Profile
@@ -233,25 +234,12 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   return (
     <div className="mobile-container">
+      <Header activeTab={activeTab} />
       <PWAInstallBanner />
 
       {activeTab === 'home' && (
         <div className="p-4 pb-20">
-          <div className="flex items-center justify-center gap-4 my-6">
-            <PoopButton onPoop={handlePoop} />
-            <button
-              onClick={() => {}}
-              className="flex flex-col items-center justify-center w-24 h-24 rounded-full shadow-2xl border-4 transition-all duration-200 hover:scale-105 active:scale-90 bg-gradient-to-br from-teal-300 via-emerald-300 to-green-300 shadow-emerald-500/40 border-emerald-300/50"
-            >
-              <span className="text-3xl">💨</span>
-              <span className="text-[10px] font-bold mt-1 text-center leading-tight text-white px-1">Сбросить балласт</span>
-            </button>
-          </div>
-
-          <div className="text-center mb-6 p-4 rounded-2xl bg-blue-50 border-2 border-blue-200">
-            <div className="text-3xl font-bold text-blue-600">{todayCount}</div>
-            <div className="text-sm text-gray-600">💩 Сегодня</div>
-          </div>
+          <PoopButton onPoop={handlePoop} />
 
           <WeekChart weekData={weekData} maxCount={maxCount} />
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
@@ -262,48 +250,48 @@ export function MainScreen({ profile, onLogout }: Props) {
         <div className="p-4 pb-20">
           <button
             onClick={handleAddFriend}
-            className="w-full py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-xl text-white font-semibold mb-4"
+            className="w-full h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium mb-4 transition-colors"
           >
             Добавить друга
           </button>
 
           <div className="mb-6">
-            <h2 className="text-lg font-bold mb-3">Мои подписки</h2>
-            <div className="space-y-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">Мои подписки</h2>
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
               {following.map(f => (
                 <div
                   key={f.id}
                   onClick={() => navigate(`/user/${f.user_id}`)}
-                  className="flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors bg-white border-2 border-blue-200"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-gray-800">{f.username}</div>
+                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
                   </div>
-                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-slate-400">→</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <h2 className="text-lg font-bold mb-3">Подписчики</h2>
-            <div className="space-y-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">Подписчики</h2>
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
               {followers.map(f => (
                 <div
                   key={f.id}
                   onClick={() => navigate(`/user/${f.user_id}`)}
-                  className="flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors bg-white border-2 border-blue-200"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold text-gray-800">{f.username}</div>
+                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
                   </div>
-                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-slate-400">→</span>
                 </div>
               ))}
             </div>
@@ -318,7 +306,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Bristol Modal */}
       {showBristolModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-6 w-full max-w-md bg-white border-2 border-blue-200">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-center mb-4 text-gray-800">Какой формы?</h2>
             <p className="text-sm text-center mb-4 text-gray-600">Шкала Бристольской формы стула</p>
 
@@ -367,9 +355,9 @@ export function MainScreen({ profile, onLogout }: Props) {
       {/* Add Friend Modal */}
       {showAddFriendModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="rounded-3xl p-6 w-full max-w-md bg-white border-2 border-blue-200">
-            <h2 className="text-xl font-bold text-center mb-4 text-gray-800">Добавить друга</h2>
-            <p className="text-sm text-center mb-4 text-gray-600">Введите email друга для поиска</p>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-center mb-4 text-slate-900">Добавить друга</h2>
+            <p className="text-sm text-center mb-4 text-slate-500">Введите email друга для поиска</p>
 
             <div className="flex gap-2 mb-4">
               <input
@@ -377,35 +365,35 @@ export function MainScreen({ profile, onLogout }: Props) {
                 value={friendEmail}
                 onChange={e => setFriendEmail(e.target.value)}
                 placeholder="friend@example.com"
-                className="flex-1 px-4 py-3 rounded-xl focus:outline-none focus:border-blue-400 bg-gray-50 border-2 border-gray-200 text-gray-800 placeholder-gray-400"
+                className="flex-1 h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
               />
               <button
                 onClick={handleSearchFriend}
                 disabled={isSearchingFriend || !friendEmail.trim()}
-                className="px-6 py-3 bg-blue-500 rounded-xl text-white font-semibold disabled:opacity-50 hover:bg-blue-600 transition-colors"
+                className="h-10 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
               >
                 {isSearchingFriend ? '...' : 'Искать'}
               </button>
             </div>
 
             {friendSearchResult && (
-              <div className="rounded-xl p-4 mb-4 bg-blue-50 border-2 border-blue-200">
+              <div className="rounded-xl p-4 mb-4 bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-2xl shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg shrink-0">
                     {friendSearchResult.avatar || '💩'}
                   </div>
                   <div className="flex-1">
-                    <div className="font-semibold mb-1 text-gray-800">
+                    <div className="font-semibold mb-1 text-slate-900">
                       {friendSearchResult.username}
                     </div>
-                    <div className="text-xs mb-3 text-gray-500">
+                    <div className="text-xs mb-3 text-slate-500">
                       {friendSearchResult.email}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleFollowFriend(friendSearchResult.id, friendSearchResult.username)}
-                  className="w-full py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-lg text-white font-semibold"
+                  className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Подписаться
                 </button>
@@ -413,12 +401,12 @@ export function MainScreen({ profile, onLogout }: Props) {
             )}
 
             {friendSearchResult?.error && (
-              <div className="text-center text-red-500 mb-4">{friendSearchResult.error}</div>
+              <div className="text-center text-sm text-red-500 mb-4">{friendSearchResult.error}</div>
             )}
 
             <button
               onClick={() => setShowAddFriendModal(false)}
-              className="w-full mt-4 py-3 rounded-xl font-semibold bg-gray-100 text-gray-700"
+              className="w-full mt-4 h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium transition-colors"
             >
               Закрыть
             </button>

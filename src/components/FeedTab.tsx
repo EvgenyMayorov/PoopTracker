@@ -81,239 +81,243 @@ export function FeedTab({
   setCurrentEventId,
   navigate,
 }: FeedTabProps) {
-  const classes = {
-    cyanFuchsiaActive: "bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white",
-    cyanFuchsiaInactive: "text-gray-400",
-    bgGray: "bg-white border-2 border-fuchsia-200",
-    bgCyan: "bg-white border-2 border-cyan-200",
-    activeBlue: "bg-blue-100 border-4 border-blue-500 shadow-lg scale-105",
-    blue50: "bg-blue-50 border-2 border-blue-200 text-blue-600",
-    red50: "bg-red-50 border-2 border-red-200 text-red-600",
-  }
-
   return (
     <div className="p-4">
-      <div className="flex bg-white/5 rounded-xl p-1 mb-4">
+      <div className="mb-4">
         <button
           onClick={() => setFeedTab('friends')}
-          className={
-            "flex-1 py-2 rounded-lg text-sm font-semibold transition-all " +
-            (feedTab === 'friends' ? classes.cyanFuchsiaActive : classes.cyanFuchsiaInactive)
-          }
+          className={`flex-1 h-7 border border-slate-200 rounded-lg text-[11px] font-medium uppercase tracking-[0.06em] transition-colors ${feedTab === 'friends' ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
         >
-          👥 Друзья
+          Друзья
         </button>
         <button
           onClick={() => setFeedTab('my')}
-          className={
-            "flex-1 py-2 rounded-lg text-sm font-semibold transition-all " +
-            (feedTab === 'my' ? classes.cyanFuchsiaActive : classes.cyanFuchsiaInactive)
-          }
+          className={`flex-1 h-7 border border-slate-200 rounded-lg text-[11px] font-medium uppercase tracking-[0.06em] transition-colors ${feedTab === 'my' ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
         >
-          💩 Моя история
+          Моя история
         </button>
       </div>
 
       {feedTab === 'friends' ? (
         <div>
           {friendsEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">👀</div>
-              <p className={'font-semibold text-gray-600'}>Пока пусто</p>
-              <p className={'text-sm mt-1 text-gray-500'}>Подпишитесь на друзей</p>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
+              <div className="text-2xl mb-2">💩</div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">Пока пусто</h3>
+              <p className="text-[11px] text-slate-400">Подпишитесь на друзей, чтобы видеть их активность</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {friendsEvents.map(event => (
-                <div key={event.id} className={'rounded-xl p-4 bg-white border-2 border-fuchsia-200'}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
-                      {event.profiles?.avatar || '💩'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={'font-semibold text-gray-800'}>
-                        {event.profiles ? getDisplayName(event.profiles) : ''}
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
+              {friendsEvents.map(event => {
+                const eventReactions = reactions[event.id] || { thumbs_up: 0, heart: 0, poop: 0 }
+                const eventComments = comments[event.id] || []
+                const isOwnEvent = event.user_id === profile.id
+                return (
+                  <div key={event.id} className="px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-[10px] flex items-center justify-center shrink-0">
+                        {event.profiles?.avatar || avatar}
                       </div>
-                      <div className={'text-sm text-gray-800'}>
-                        У {event.profiles?.username} вышло!
-                      </div>
-                      {event.bristol_type && (
-                        <div className={'text-xs mt-1 leading-snug break-words pr-1 text-slate-700'}>
-                          {getBristolDescription(event.bristol_type)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-900 truncate">
+                            {event.profiles?.username || profileUsername}
+                          </span>
+                          <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</span>
                         </div>
-                      )}
+                        {event.bristol_type && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/60 mt-1">
+                            {getBristolDescription(event.bristol_type)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className={'text-xs text-gray-500'}>
-                      {formatTimeAgo(event.created_at)}
-                    </div>
-                  </div>
 
-                  <div className={'flex gap-2 mt-3 pt-3 border-t border-gray-200'}>
-                    <button
-                      onClick={() => handleReaction(event.id, 'thumbs_up')}
-                      className={
-                        "flex items-center gap-1 px-3 py-1 rounded-lg text-sm " +
-                        (reactions[event.id]?.userReaction === 'thumbs_up'
-                          ? "bg-blue-500/20 text-blue-400"
-                          : "bg-gray-100 text-gray-600")
-                      }
-                    >
-                      👍 {reactions[event.id]?.thumbs_up || 0}
-                    </button>
-                    <button
-                      onClick={() => handleReaction(event.id, 'heart')}
-                      className={
-                        "flex items-center gap-1 px-3 py-1 rounded-lg text-sm " +
-                        (reactions[event.id]?.userReaction === 'heart'
-                          ? "bg-red-500/20 text-slate-700"
-                          : "bg-gray-100 text-gray-600")
-                      }
-                    >
-                      ❤️ {reactions[event.id]?.heart || 0}
-                    </button>
-                    <button
-                      onClick={() => handleReaction(event.id, 'poop')}
-                      className={
-                        "flex items-center gap-1 px-3 py-1 rounded-lg text-sm " +
-                        (reactions[event.id]?.userReaction === 'poop'
-                          ? "bg-amber-500/20 text-amber-400"
-                          : "bg-gray-100 text-gray-600")
-                      }
-                    >
-                      💩 {reactions[event.id]?.poop || 0}
-                    </button>
-                  </div>
+                    {(eventReactions.thumbs_up > 0 || eventReactions.heart > 0 || eventReactions.poop > 0) && (
+                      <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+                        {eventReactions.thumbs_up > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            👍 {eventReactions.thumbs_up}
+                          </span>
+                        )}
+                        {eventReactions.heart > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            ❤️ {eventReactions.heart}
+                          </span>
+                        )}
+                        {eventReactions.poop > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            💩 {eventReactions.poop}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
-                    {comments[event.id] && comments[event.id].length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        {comments[event.id].map(comment => (
-                          <div key={comment.id} className={"rounded-lg p-2 bg-gray-50"}>
+                    {eventComments.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        {eventComments.map(comment => (
+                          <div key={comment.id} className="rounded-lg p-2 bg-slate-50/50">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
-                                {comment.avatar || "💩"}
+                              <div className="w-5 h-5 rounded-full bg-slate-100 text-[10px] flex items-center justify-center shrink-0">
+                                {comment.avatar || '💩'}
                               </div>
-                              <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                              <span className={"text-xs text-gray-500"}>{formatTimeAgo(comment.created_at)}</span>
+                              <span className="text-xs font-medium text-slate-700">{comment.username}</span>
+                              <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(comment.created_at)}</span>
                             </div>
-                            <p className={"text-sm mt-1 text-gray-700"}>{comment.text}</p>
+                            <p className="text-sm mt-0.5 text-slate-600">{comment.text}</p>
                           </div>
                         ))}
                       </div>
                     )}
 
-                  <CommentInput
-                    eventId={event.id}
-                    value={newComment[event.id] || ''}
-                    onChange={(value) =>
-                      setNewComment(prev => ({ ...prev, [event.id]: value }))
-                    }
-                    onSubmit={handleAddComment}
-                  />
-                </div>
-              ))}
+                    <div className="flex gap-2 mt-3">
+                      <input
+                        type="text"
+                        value={newComment[event.id] || ''}
+                        onChange={e => setNewComment({ ...newComment, [event.id]: e.target.value })}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            handleAddComment(event.id)
+                          }
+                        }}
+                        placeholder="Добавить комментарий..."
+                        className="flex-1 h-7 bg-white border border-slate-200 rounded-lg px-3 text-sm focus:outline-none focus:border-slate-900 placeholder:text-slate-400"
+                        autoComplete="off"
+                      />
+                      <button
+                        onClick={() => handleAddComment(event.id)}
+                        disabled={!newComment[event.id]?.trim()}
+                        className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Отправить
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
       ) : (
         <div>
           {events.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">💩</div>
-              <p className={'font-semibold text-gray-600'}>Вы ещё не нажимали кнопку 💩</p>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
+              <div className="text-2xl mb-2">💩</div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-1">Вы ещё не нажимали кнопку 💩</h3>
             </div>
           ) : (
-            <div className="space-y-3">
-              {events.map(event => (
-                <div
-                  key={event.id}
-                  id={'event-' + event.id}
-                  className={
-                    "rounded-xl p-4 transition-all " +
-                    (highlightedEventId === event.id
-                      ? classes.activeBlue
-                      : classes.bgCyan)
-                  }
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
-                      {avatar}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={'font-semibold text-gray-800'}>{profileUsername}</div>
-                      <div className={'text-sm text-gray-800'}>У меня вышло!</div>
-                      {event.bristol_type && (
-                        <div className={'text-xs mt-1 leading-snug break-words pr-1 text-slate-700'}>
-                          {getBristolDescription(event.bristol_type)}
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
+              {events.map(event => {
+                const eventReactions = reactions[event.id] || { thumbs_up: 0, heart: 0, poop: 0 }
+                const eventComments = comments[event.id] || []
+                const isOwnEvent = event.user_id === profile.id
+                return (
+                  <div key={event.id} className="px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-[10px] flex items-center justify-center shrink-0">
+                        {event.profiles?.avatar || avatar}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-slate-900 truncate">{profileUsername}</span>
+                          <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</span>
                         </div>
-                      )}
+                        {event.bristol_type && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/60 mt-1">
+                            {getBristolDescription(event.bristol_type)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className={'text-xs text-gray-500'}>
-                      {formatTimeAgo(event.created_at)}
+
+                    {isOwnEvent && (
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                        <button
+                          onClick={() => {
+                            setEditingEventId(event.id)
+                            setShowBristolModal(true)
+                            setCurrentEventId(event.id)
+                          }}
+                          className="flex-1 h-7 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          ✏️ Редактировать
+                        </button>
+                        <button
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation()
+                            handleDeleteEvent(event.id)
+                          }}
+                          className="flex-1 h-7 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-medium transition-colors"
+                        >
+                          🗑️ Удалить
+                        </button>
+                      </div>
+                    )}
+
+                    {(eventReactions.thumbs_up > 0 || eventReactions.heart > 0 || eventReactions.poop > 0) && (
+                      <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+                        {eventReactions.thumbs_up > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            👍 {eventReactions.thumbs_up}
+                          </span>
+                        )}
+                        {eventReactions.heart > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            ❤️ {eventReactions.heart}
+                          </span>
+                        )}
+                        {eventReactions.poop > 0 && (
+                          <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
+                            💩 {eventReactions.poop}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {eventComments.length > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        {eventComments.map(comment => (
+                          <div key={comment.id} className="rounded-lg p-2 bg-slate-50/50">
+                            <div className="flex items-center gap-2">
+                              <div className="w-5 h-5 rounded-full bg-slate-100 text-[10px] flex items-center justify-center shrink-0">
+                                {comment.avatar || '💩'}
+                              </div>
+                              <span className="text-xs font-medium text-slate-700">{comment.username}</span>
+                              <span className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(comment.created_at)}</span>
+                            </div>
+                            <p className="text-sm mt-0.5 text-slate-600">{comment.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 mt-3">
+                      <input
+                        type="text"
+                        value={newComment[event.id] || ''}
+                        onChange={e => setNewComment({ ...newComment, [event.id]: e.target.value })}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            handleAddComment(event.id)
+                          }
+                        }}
+                        placeholder="Добавить комментарий..."
+                        className="flex-1 h-7 bg-white border border-slate-200 rounded-lg px-3 text-sm focus:outline-none focus:border-slate-900 placeholder:text-slate-400"
+                        autoComplete="off"
+                      />
+                      <button
+                        onClick={() => handleAddComment(event.id)}
+                        disabled={!newComment[event.id]?.trim()}
+                        className="h-7 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Отправить
+                      </button>
                     </div>
                   </div>
-
-                  {event.user_id === profile.id && (
-                    <div className={'flex gap-2 mt-3 pt-3 border-t border-gray-200'}>
-                      <button
-                        onClick={() => {
-                          setEditingEventId(event.id)
-                          setShowBristolModal(true)
-                          setCurrentEventId(event.id)
-                        }}
-                        className={'flex-1 px-3 py-2 rounded-lg text-sm font-semibold ' + classes.blue50}
-                      >
-                        ✏️ Редактировать
-                      </button>
-                      <button
-                        onClick={(e: React.MouseEvent) => {
-                          e.stopPropagation()
-                          handleDeleteEvent(event.id)
-                        }}
-                        className={'flex-1 px-3 py-2 rounded-lg text-sm font-semibold ' + classes.red50}
-                      >
-                        🗑️ Удалить
-                      </button>
-                    </div>
-                  )}
-
-                  {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
-                    <div className={'flex gap-2 mt-3 pt-3 border-t border-gray-200'}>
-                      {reactions[event.id].thumbs_up > 0 && (
-                        <span className={'px-2 py-1 rounded-lg text-xs bg-blue-50 text-blue-600'}>
-                          👍 {reactions[event.id].thumbs_up}
-                        </span>
-                      )}
-                      {reactions[event.id].heart > 0 && (
-                        <span className={'px-2 py-1 rounded-lg text-xs bg-red-50 text-red-600'}>
-                          ❤️ {reactions[event.id].heart}
-                        </span>
-                      )}
-                      {reactions[event.id].poop > 0 && (
-                        <span className={'px-2 py-1 rounded-lg text-xs bg-amber-50 text-amber-600'}>
-                          💩 {reactions[event.id].poop}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {comments[event.id] && comments[event.id].length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {comments[event.id].map(comment => (
-                        <div key={comment.id} className={'rounded-lg p-2 bg-gray-50'}>
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
-                              {comment.avatar || '💩'}
-                            </div>
-                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={'text-xs text-gray-500'}>{formatTimeAgo(comment.created_at)}</span>
-                          </div>
-                          <p className={'text-sm mt-1 text-gray-700'}>{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

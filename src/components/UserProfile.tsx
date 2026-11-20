@@ -643,31 +643,27 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       {activeTab === 'following' && (
         <div>
           {following.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">👀</div>
-              <p className={`font-semibold ${'text-gray-600'}`}>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
+              <div className="text-2xl mb-2">👀</div>
+              <p className="text-sm font-semibold text-slate-900">
                 {isOwner ? 'Вы ни на кого не подписаны' : 'Этот пользователь ни на кого не подписан'}
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
               {following.map(f => (
                 <div
                   key={f.id}
                   onClick={() => handleViewUser(f.user_id)}
-                  className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                    'bg-white border-2 border-blue-200'
-                  }`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className={`font-semibold ${'text-gray-800'}`}>
-                      {f.username}
-                    </div>
+                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
                   </div>
-                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-slate-400">→</span>
                 </div>
               ))}
             </div>
@@ -678,31 +674,27 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       {activeTab === 'followers' && (
         <div>
           {followers.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">💩</div>
-              <p className={`font-semibold ${'text-gray-600'}`}>
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
+              <div className="text-2xl mb-2">💩</div>
+              <p className="text-sm font-semibold text-slate-900">
                 {isOwner ? 'У вас пока нет подписчиков' : 'У этого пользователя пока нет подписчиков'}
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="bg-white border border-slate-200/80 rounded-xl divide-y divide-slate-100 overflow-hidden">
               {followers.map(f => (
                 <div
                   key={f.id}
                   onClick={() => handleViewUser(f.user_id)}
-                  className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-                    'bg-white border-2 border-blue-200'
-                  }`}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
-                    <div className={`font-semibold ${'text-gray-800'}`}>
-                      {f.username}
-                    </div>
+                    <div className="text-sm font-medium text-slate-900">{f.username}</div>
                   </div>
-                  <span className="text-xs text-gray-400">→</span>
+                  <span className="text-xs text-slate-400">→</span>
                 </div>
               ))}
             </div>

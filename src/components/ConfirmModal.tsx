@@ -25,23 +25,19 @@ export function ConfirmModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-slate-900 to-purple-950 border-2 border-cyan-500/30 rounded-3xl p-6 w-full max-w-md shadow-2xl">
-        <h2 className="text-xl font-bold text-white text-center mb-3">{title}</h2>
-        <p className="text-gray-300 text-center text-sm mb-6 leading-relaxed">{message}</p>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md">
+        <h2 className="text-xl font-bold text-center mb-3 text-slate-900">{title}</h2>
+        <p className="text-slate-600 text-center text-sm mb-6 leading-relaxed">{message}</p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-colors ${
-              confirmClassName.includes('red')
-                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-500'
-                : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-            }`}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-colors border border-slate-200 bg-white text-slate-600 hover:bg-slate-50`}
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-3 rounded-xl font-semibold transition-colors border border-white/20 ${confirmClassName}`}
+            className={`flex-1 py-3 rounded-xl font-semibold transition-colors border border-slate-200 bg-slate-900 text-white hover:bg-slate-800 ${confirmClassName}`}
           >
             {confirmText}
           </button>

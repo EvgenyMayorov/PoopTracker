@@ -129,17 +129,17 @@ export function AuthScreen() {
         {/* Logo and description */}
         <div className="text-center mb-6">
           <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-20 h-20 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--primary)' }}>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             PoopTrack
           </h1>
         </div>
 
         {/* Form card */}
-        <div className="card-soft">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+                <label className="block text-sm font-semibold mb-2 text-slate-900">
                   Уникальное имя пользователя
                 </label>
                 <input
@@ -150,13 +150,7 @@ export function AuthScreen() {
                     if (usernameError) setUsernameError(null)
                   }}
                   placeholder="anna_2026"
-                  className="w-full px-3 py-2 text-base md:text-sm rounded-xl focus:outline-none focus:ring-1 transition-all"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--input)',
-                    color: 'var(--foreground)',
-                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                  }}
+                  className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
                   required
                 />
                 {usernameError && (
@@ -166,7 +160,7 @@ export function AuthScreen() {
             )}
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+              <label className="block text-sm font-semibold mb-2 text-slate-900">
                 Email
               </label>
               <input
@@ -174,13 +168,7 @@ export function AuthScreen() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-3 py-2 text-base md:text-sm rounded-xl focus:outline-none focus:ring-1 transition-all"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--input)',
-                  color: 'var(--foreground)',
-                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                }}
+                className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
                 required
               />
             </div>
@@ -188,7 +176,7 @@ export function AuthScreen() {
             {mode !== 'reset' && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                  <label className="block text-sm font-semibold mb-2 text-slate-900">
                     Пароль
                   </label>
                   {mode === 'login' && (
@@ -199,8 +187,7 @@ export function AuthScreen() {
                         setError(null)
                         setMessage(null)
                       }}
-                      className="text-xs hover:opacity-80 transition-opacity"
-                      style={{ color: 'var(--primary)' }}
+                      className="text-xs font-medium hover:opacity-80 transition-opacity text-slate-600 hover:text-slate-900"
                     >
                       Забыли пароль?
                     </button>
@@ -211,13 +198,7 @@ export function AuthScreen() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 text-base md:text-sm rounded-xl focus:outline-none focus:ring-1 transition-all"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: '1px solid var(--input)',
-                    color: 'var(--foreground)',
-                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-                  }}
+                  className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
                   required
                   minLength={6}
                 />
@@ -225,13 +206,13 @@ export function AuthScreen() {
             )}
 
             {error && (
-              <div className="rounded-xl p-3 text-sm" style={{ backgroundColor: 'rgba(226, 73, 71, 0.1)', border: '1px solid var(--destructive)', color: 'var(--destructive)' }}>
+              <div className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">
                 ❌ {error}
               </div>
             )}
 
             {message && (
-              <div className="rounded-xl p-3 text-sm" style={{ backgroundColor: 'rgba(61, 176, 124, 0.1)', border: '1px solid var(--success)', color: 'var(--success)' }}>
+              <div className="rounded-lg p-3 text-sm bg-green-50 border border-green-200 text-green-700">
                 {message}
               </div>
             )}
@@ -239,12 +220,7 @@ export function AuthScreen() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: 'var(--primary)',
-                color: 'var(--primary-foreground)',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
-              }}
+              className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Загрузка...' : 
                mode === 'login' ? 'Войти' : 
@@ -262,8 +238,7 @@ export function AuthScreen() {
                   setError(null)
                   setMessage(null)
                 }}
-                className="text-sm font-medium hover:opacity-80 transition-opacity"
-                style={{ color: 'var(--primary)' }}
+                className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
               >
                 Нет аккаунта? Зарегистрироваться
               </button>
@@ -274,8 +249,7 @@ export function AuthScreen() {
                   setError(null)
                   setMessage(null)
                 }}
-                className="text-sm font-medium hover:opacity-80 transition-opacity"
-                style={{ color: 'var(--primary)' }}
+                className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
               >
                 {mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Вернуться назад к входу'}
               </button>

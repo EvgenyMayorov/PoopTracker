@@ -432,13 +432,13 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   return (
     <div className="min-h-[calc(100dvh-150px)] flex flex-col justify-between">
       <div className="space-y-4">
-        <h2 className={`text-xl font-bold mb-6 ${'text-gray-800'}`}>Настройки</h2>
+        <h2 className={`text-xl font-bold mb-6 ${'text-slate-900'}`}>Настройки</h2>
 
       <div className="mb-6">
-        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
+        <h3 className={`text-sm font-semibold mb-3 ${'text-slate-900'}`}>
           👤 Аккаунт
         </h3>
-        <div className={`rounded-xl p-4 ${'bg-white border-2 border-gray-200'}`}>
+        <div className="rounded-xl p-4 bg-white border border-slate-200/80">
           {editingUsername ? (
             <div className="space-y-3">
               <input
@@ -448,15 +448,13 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
                   setTempUsername(e.target.value)
                   if (usernameError) setUsernameError(null)
                 }}
-                className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-blue-400 ${
-                  'bg-gray-50 border-2 border-gray-200 text-gray-800'
-                }`}
+                className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
               />
               {usernameError && (
-                <p className="text-sm text-red-400 mt-1">❌ {usernameError}</p>
+                <p className="text-sm text-red-600 mt-1">❌ {usernameError}</p>
               )}
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className={`text-sm mb-3 ${'text-gray-600'}`}>Выберите аватарку:</p>
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <p className={`text-sm mb-3 ${'text-slate-900'}`}>Выберите аватарку:</p>
                 <div className="grid grid-cols-5 gap-2 max-h-[280px] overflow-y-auto overscroll-contain pr-1">
                   {avatarEmojis.map((emoji) => (
                     <button
@@ -474,12 +472,12 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleSaveUsername} className="flex-1 py-2 bg-blue-500 rounded-lg text-white font-semibold">
+                <button onClick={handleSaveUsername} className="flex-1 h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium">
                   Сохранить
                 </button>
                 <button
                   onClick={() => { setEditingUsername(false); setTempUsername(profileUsername) }}
-                  className={`flex-1 py-2 rounded-lg font-semibold ${'bg-gray-100 text-gray-700'}`}
+                  className="flex-1 h-10 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-medium"
                 >
                   Отмена
                 </button>
@@ -489,26 +487,22 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className={`text-4xl ${'text-gray-500'}`}> {avatar} </span>
+                  <span className={`text-4xl ${'text-slate-400'}`}> {avatar} </span>
                   <div>
-                    <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
-                    <div className={`text-xs ${'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
+                    <div className={`font-semibold ${'text-slate-900'}`}>{profileUsername}</div>
+                    <div className={`text-xs ${'text-slate-400'}`}>{profile.id.substring(0, 8)}...</div>
                   </div>
                 </div>
-                <button
+<button
                   onClick={() => setEditingUsername(true)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${
-                    'bg-blue-50 border-2 border-blue-200 text-blue-600'
-                  }`}
+                  className="h-10 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200"
                 >
                   Изменить профиль
                 </button>
               </div>
-              <div className={`flex items-center justify-between rounded-lg px-3 py-2 ${
-                'bg-gray-50 border border-gray-200'
-              }`}>
-                <span className={`text-xs font-semibold ${'text-gray-500'}`}>📧 Электронная почта</span>
-                <span className={`text-sm truncate max-w-[60%] text-right ${'text-gray-800'}`}>{profile.email || '—'}</span>
+              <div className="flex items-center justify-between rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
+                <span className={`text-xs font-semibold ${'text-slate-400'}`}>📧 Электронная почта</span>
+                <span className={`text-sm truncate max-w-[60%] text-right ${'text-slate-900'}`}>{profile.email || '—'}</span>
               </div>
             </div>
           )}
@@ -516,18 +510,18 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       </div>
 
 
-      <section className="mb-8 border-t border-gray-200 pt-6">
-        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>Push-уведомления</h3>
+      <section className="mb-8 border-t border-slate-200 pt-6">
+        <h3 className={`text-sm font-semibold mb-3 ${'text-slate-900'}`}>Push-уведомления</h3>
 
-        <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-gray-200">
+        <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-200/80">
           <div>
-            <div className={`font-semibold text-sm ${'text-gray-800'}`}>Push-уведомления</div>
+            <div className={`font-semibold text-sm ${'text-slate-900'}`}>Push-уведомления</div>
             <div className={`text-xs mt-0.5 ${
               pushStatus === 'enabled'
                 ? 'text-green-600'
                 : pushStatus === 'blocked'
                   ? 'text-red-500'
-                  : 'text-gray-500'
+                  : 'text-slate-400'
             }`}>
               {pushStatus === 'loading' && 'Проверка...'}
               {pushStatus === 'enabled' && 'Включены'}
@@ -543,7 +537,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
             onClick={() => handlePushToggle(!pushEnabled)}
             disabled={pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked'}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-              pushEnabled ? 'bg-blue-500' : 'bg-gray-300'
+              pushEnabled ? 'bg-slate-900' : 'bg-slate-200'
             } ${pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked' ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <span
@@ -555,7 +549,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         </div>
 
         {pushError && (
-          <p className="text-sm text-red-400 mt-2">{pushError}</p>
+          <p className="text-sm text-red-600 mt-2">{pushError}</p>
         )}
 
         <button
@@ -578,7 +572,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
         <button
           onClick={handleUpdateApp}
-          className="mt-4 w-full py-2 rounded-lg font-semibold transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+          className="mt-4 w-full h-10 rounded-lg text-sm font-medium transition-colors bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200"
         >
           Обновить версию приложения
         </button>
@@ -596,7 +590,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           >
             Выйти
           </button>
-          <span>PoopTrack v1.2.0</span>
+          <span>PoopTrack v1.3.0</span>
         </div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
