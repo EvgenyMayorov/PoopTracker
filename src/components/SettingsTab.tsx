@@ -41,14 +41,36 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   const [avatar, setAvatar] = useState<string>(() =>
     profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
   )
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
 
   // Push notifications state
-  const [pushEnabled, setPushEnabled] = useState(false)
+  // Восстанавливаем переключатель из localStorage, чтобы он не сбрасывался
+  // после перезагрузки или обновления страницы (до тех пор, пока не будет
+  // перепроверено реальным состоянием подписки).
+  const [pushEnabled, setPushEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('poop_push_enabled') === 'true'
+    } catch {
+      return false
+    }
+  })
   const [pushStatus, setPushStatus] = useState<'loading' | 'enabled' | 'disabled' | 'blocked' | 'unsupported'>('loading')
   const [pushError, setPushError] = useState<string | null>(null)
   const [sendingTest, setSendingTest] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
+
+  // Ключи для кэширования состояния Push-уведомлений в localStorage.
+  const PUSH_CACHE_KEY = 'poop_push_enabled'
+  const PUSH_CACHE_TS_KEY = 'poop_push_cache_ts'
+
+  // Универсальный helper: сохранить закэшированный статус.
+  const cachePushStatus = (enabled: boolean) => {
+    try {
+      localStorage.setItem(PUSH_CACHE_KEY, enabled ? 'true' : 'false')
+      localStorage.setItem(PUSH_CACHE_TS_KEY, new Date().toISOString())
+    } catch {
+      // Игнорируем ошибки доступа к localStorage (например, в приватном режиме)
+    }
+  }
 
   // Универсальный helper: получить активную регистрацию SW с безопасным таймаутом.
   // Если SW не активировался (например, на GitHub Pages), registration
@@ -87,6 +109,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setPushStatus('unsupported')
       setPushEnabled(false)
+      cachePushStatus(false)
       return
     }
 
@@ -95,32 +118,52 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       if (permission === 'denied') {
         setPushStatus('blocked')
         setPushEnabled(false)
+        cachePushStatus(false)
         return
       }
 
-      const registration = await getRegistrationWithTimeout()
-      if (!registration) {
-        // SW не активировался — не блокируем, даём пользователю включить базовые уведомления
-        setPushStatus('disabled')
-        setPushEnabled(false)
-        return
+      // 1. Активная подписка Service Worker (ブラузеру/Web Push).
+      let browserSubscription: PushSubscription | null = null
+      try {
+        const registration = await getRegistrationWithTimeout()
+        if (registration) {
+          browserSubscription = await registration.pushManager.getSubscription()
+        }
+      } catch (err) {
+        console.warn('[Push] Не удалось проверить SW-подписку:', err)
       }
 
-      const subscription = await registration.pushManager.getSubscription()
-
-      if (subscription) {
-        setPushStatus('enabled')
-        setPushEnabled(true)
-      } else {
-        setPushStatus('disabled')
-        setPushEnabled(false)
+      // 2. Запись текущего пользователя в таблице push_subscriptions в Supabase.
+      let dbSubscriptionExists = false
+      if (profile?.id) {
+        try {
+          const { data } = await supabase
+            .from('push_subscriptions')
+            .select('endpoint')
+            .eq('user_id', profile.id)
+            .limit(1)
+          dbSubscriptionExists = !!(data && data.length > 0)
+        } catch (err) {
+          console.warn('[Push] Не удалось проверить запись в push_subscriptions:', err)
+        }
       }
+
+      // Итоговый статус: включено, только если есть и SW-подписка, и запись в БД,
+      // и браузер не заблокировал уведомления.
+      const isEnabled = !!browserSubscription && dbSubscriptionExists && permission === 'granted'
+
+      // Кэшируем статус, чтобы переключатель не сбрасывался после перезагрузки.
+      cachePushStatus(isEnabled)
+
+      setPushStatus(isEnabled ? 'enabled' : 'disabled')
+      setPushEnabled(isEnabled)
     } catch (err) {
       console.error('[Push] Status check error:', err)
       setPushStatus('disabled')
       setPushEnabled(false)
+      cachePushStatus(false)
     }
-  }, [])
+  }, [profile?.id])
 
   useEffect(() => {
     updatePushStatus()
@@ -159,7 +202,6 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   const handleSaveAvatar = async (emoji: string) => {
     setAvatar(emoji)
     localStorage.setItem('poop_avatar', emoji)
-    setShowAvatarPicker(false)
 
     try {
       const { error } = await supabase
@@ -223,6 +265,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           setPushStatus('enabled')
           setPushEnabled(true)
           setPushError(null)
+          cachePushStatus(true)
           return
         } catch (pushErr: any) {
           console.error('[Push] Web Push subscribe failed, using basic notifications:', pushErr)
@@ -234,11 +277,13 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       setPushStatus('enabled')
       setPushEnabled(true)
       setPushError(null)
+      cachePushStatus(true)
     } catch (err: any) {
       console.error('[Push] Subscribe error:', err)
       setPushError('Ошибка подписки: ' + (err.message || 'Неизвестная ошибка'))
       setPushStatus('disabled')
       setPushEnabled(false)
+      cachePushStatus(false)
     }
   }
 
@@ -267,11 +312,13 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       setPushStatus('disabled')
       setPushEnabled(false)
       setPushError(null)
+      cachePushStatus(false)
     } catch (err: any) {
       console.error('[Push] Unsubscribe error:', err)
       setPushError('Ошибка отписки: ' + (err.message || 'Неизвестная ошибка'))
       setPushStatus('disabled')
       setPushEnabled(false)
+      cachePushStatus(false)
     }
   }
 
@@ -408,6 +455,24 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
               {usernameError && (
                 <p className="text-sm text-red-400 mt-1">❌ {usernameError}</p>
               )}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className={`text-sm mb-3 ${'text-gray-600'}`}>Выберите аватарку:</p>
+                <div className="grid grid-cols-5 gap-2 max-h-[280px] overflow-y-auto overscroll-contain pr-1">
+                  {avatarEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleSaveAvatar(emoji)}
+                      className={`text-3xl p-2 rounded-lg transition-all hover:scale-110 ${
+                        avatar === emoji
+                          ? 'bg-blue-100 border-2 border-blue-400'
+                          : 'bg-gray-50 border-2 border-gray-200'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveUsername} className="flex-1 py-2 bg-blue-500 rounded-lg text-white font-semibold">
                   Сохранить
@@ -424,9 +489,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setShowAvatarPicker(!showAvatarPicker)} className="text-4xl hover:scale-110 transition-transform">
-                    {avatar}
-                  </button>
+                  <span className={`text-4xl ${'text-gray-500'}`}> {avatar} </span>
                   <div>
                     <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
                     <div className={`text-xs ${'text-gray-500'}`}>{profile.id.substring(0, 8)}...</div>
@@ -449,40 +512,9 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
               </div>
             </div>
           )}
-
-          {showAvatarPicker && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className={`text-sm mb-3 ${'text-gray-600'}`}>Выберите аватарку:</p>
-              <div className="grid grid-cols-5 gap-2 max-h-[280px] overflow-y-auto overscroll-contain pr-1">
-                {avatarEmojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleSaveAvatar(emoji)}
-                    className={`text-3xl p-2 rounded-lg transition-all hover:scale-110 ${
-                      avatar === emoji
-                        ? 'bg-blue-100 border-2 border-blue-400'
-                        : 'bg-gray-50 border-2 border-gray-200'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="mb-6">
-        <button
-          onClick={onLogout}
-          className={`w-full py-3 rounded-xl font-semibold ${
-            'bg-red-50 border-2 border-red-200 text-red-600'
-          }`}
-        >
-          Выйти
-        </button>
-      </div>
 
       <section className="mb-8 border-t border-gray-200 pt-6">
         <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>Push-уведомления</h3>
@@ -531,8 +563,8 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           disabled={!pushEnabled || sendingTest}
           className={`w-full py-2 rounded-lg font-semibold transition-colors ${
             pushEnabled && !sendingTest
-              ? 'bg-blue-500 text-white hover:bg-blue-600'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-gray-50 text-gray-300 cursor-not-allowed'
           }`}
         >
           {sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}
@@ -555,7 +587,17 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       </div>
 
       <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
-        <div>PoopTrack v1.1.0</div>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={onLogout}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+              'bg-red-50 border-2 border-red-200 text-red-600'
+            }`}
+          >
+            Выйти
+          </button>
+          <span>PoopTrack v1.2.0</span>
+        </div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>

@@ -237,8 +237,15 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'home' && (
         <div className="p-4 pb-20">
-          <div className="flex justify-center my-6">
+          <div className="flex items-center justify-center gap-4 my-6">
             <PoopButton onPoop={handlePoop} />
+            <button
+              onClick={() => {}}
+              className="flex flex-col items-center justify-center w-24 h-24 rounded-full shadow-2xl border-4 transition-all duration-200 hover:scale-105 active:scale-90 bg-gradient-to-br from-teal-300 via-emerald-300 to-green-300 shadow-emerald-500/40 border-emerald-300/50"
+            >
+              <span className="text-3xl">💨</span>
+              <span className="text-[10px] font-bold mt-1 text-center leading-tight text-white px-1">Сбросить балласт</span>
+            </button>
           </div>
 
           <div className="text-center mb-6 p-4 rounded-2xl bg-blue-50 border-2 border-blue-200">
