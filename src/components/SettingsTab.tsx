@@ -636,7 +636,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           >
             Выйти
           </button>
-          <span>PoopTrack v1.3.2</span>
+          <span>PoopTrack v1.3.3</span>
         </div>
         <div className="text-right text-xs text-slate-400 space-y-0.5">
           <div>Made by Evgen.</div>

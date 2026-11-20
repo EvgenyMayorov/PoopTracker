@@ -287,6 +287,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     onEditEvent={() => {}}
                     isOwnEvent={event.user_id === profile.id}
                     highlightedEventId={highlightedEventId}
+                    showActions={false}
                   />
                 )
               })}

@@ -17,6 +17,7 @@ interface EventCardProps {
   onEditEvent: (eventId: string) => void
   isOwnEvent: boolean
   highlightedEventId?: string | null
+  showActions?: boolean
 }
 
 export function EventCard({
@@ -33,10 +34,11 @@ export function EventCard({
   onEditEvent,
   isOwnEvent,
   highlightedEventId,
+  showActions = true,
 }: EventCardProps) {
   const eventProfile = event.profiles
-  const authorName = eventProfile ? (eventProfile.username || 'Unknown') : 'Unknown'
-  const authorAvatar = eventProfile?.avatar || '💩'
+  const authorName = eventProfile?.username || profile.username || 'Unknown'
+  const authorAvatar = eventProfile?.avatar || profile.avatar || '💩'
 
   const bristolDesc = event.bristol_type ? getBristolDescription(event.bristol_type) : ''
 
@@ -120,7 +122,7 @@ export function EventCard({
         </button>
       </div>
 
-      {isOwnEvent && (
+      {isOwnEvent && showActions && (
         <div className="flex gap-2 pt-2 border-t border-slate-100">
           <button
             onClick={() => onEditEvent(event.id)}
