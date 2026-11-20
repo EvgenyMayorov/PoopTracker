@@ -223,7 +223,7 @@ function App() {
       <HashRouter>
         <div className="mobile-container flex items-center justify-center p-4">
           <div className="text-center">
-            <img src="/logo.svg" alt="PoopTrack" className="w-24 h-24 mx-auto mb-4" />
+            <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-24 h-24 mx-auto mb-4" />
             <p className="text-sm" style={{ color: 'var(--muted-foreground)' }}>Загрузка…</p>
           </div>
         </div>

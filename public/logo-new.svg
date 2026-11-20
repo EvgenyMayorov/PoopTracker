@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D9488;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#064E3B;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rollGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E6EDF3;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34D399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bgGradient)"/>
+
+  <!-- Toilet paper roll: top ellipse -->
+  <ellipse cx="256" cy="330" rx="108" ry="26" fill="url(#rollGradient)"/>
+  <!-- Toilet paper roll: body -->
+  <rect x="148" y="200" width="216" height="260" fill="url(#rollGradient)"/>
+  <!-- Toilet paper roll: bottom ellipse -->
+  <ellipse cx="256" cy="460" rx="108" ry="26" fill="url(#rollGradient)"/>
+
+  <!-- Paper texture lines on roll -->
+  <path d="M 184 200 L 184 460" stroke="#CBD5E1" stroke-width="2" opacity="0.6"/>
+  <path d="M 220 200 L 220 460" stroke="#CBD5E1" stroke-width="2" opacity="0.4"/>
+  <path d="M 256 200 L 256 460" stroke="#CBD5E1" stroke-width="2" opacity="0.5"/>
+  <path d="M 292 200 L 292 460" stroke="#CBD5E1" stroke-width="2" opacity="0.4"/>
+  <path d="M 328 200 L 328 460" stroke="#CBD5E1" stroke-width="2" opacity="0.6"/>
+
+  <!-- Unrolled paper sheet from top of roll -->
+  <path d="M 148 200 L 148 420 L 256 420 L 256 200 Z" fill="url(#rollGradient)" stroke="#E2E8F0" stroke-width="2"/>
+  <path d="M 148 420 L 256 420 L 256 480 L 148 480 Z" fill="url(#rollGradient)" stroke="#E2E8F0" stroke-width="2"/>
+
+  <!-- Paper fold lines on unrolled sheet -->
+  <path d="M 148 260 L 256 260" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
+  <path d="M 148 320 L 256 320" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
+  <path d="M 148 380 L 256 380" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
+  <path d="M 148 440 L 256 440" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Emerald green checkmark -->
+  <g transform="translate(256, 190)">
+    <!-- Checkmark background shape -->
+    <path d="M 0 -45 L 25 -15 L 55 40 L -55 -40 L -25 -15 Z" fill="url(#checkGradient)" stroke="#047857" stroke-width="3" stroke-linejoin="round"/>
+    <!-- White checkmark stroke for contrast -->
+    <path d="M -35 -5 L 0 30 L 35 -25" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Subtle highlight on roll edge -->
+  <rect x="160" y="200" width="14" height="260" rx="7" fill="#FFFFFF" opacity="0.25"/>
+</svg>

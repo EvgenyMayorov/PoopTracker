@@ -1035,7 +1035,10 @@ export function MainScreen({ profile, onLogout }: Props) {
                       ✏️ Редактировать
                     </button>
                     <button
-                      onClick={() => handleDeleteEvent(event.id)}
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation()
+                        handleDeleteEvent(event.id)
+                      }}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
                         'bg-red-50 border-2 border-red-200 text-red-600'
                       }`}
@@ -1099,6 +1102,18 @@ export function MainScreen({ profile, onLogout }: Props) {
         {activeTab === 'feed' && <FeedTab />}
         {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} />}
       </div>
+
+      {/* Модальное окно подтверждения удаления записи */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmEventId}
+        title="Удаление записи"
+        message="Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить."
+        confirmText="Удалить"
+        cancelText="Отмена"
+        onConfirm={confirmDeleteEvent}
+        onCancel={() => setDeleteConfirmEventId(null)}
+        confirmClassName="bg-red-500 hover:bg-red-600 text-white"
+      />
 
       {/* Модальное окно Бристольской шкалы */}
       {showBristolModal && (

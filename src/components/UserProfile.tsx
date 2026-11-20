@@ -379,7 +379,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       }`}>
         <button onClick={handleGoBack} className="text-lg">←</button>
         <div className="flex-1 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-fuchsia-500 rounded-full flex items-center justify-center text-lg">💩</div>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden">
+            <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-14 h-14" />
+          </div>
           <div className={`text-xl font-bold ${'text-gray-800'}`}>
             {profile.username}
           </div>
@@ -620,6 +622,20 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                       Отправить
                     </button>
                   </div>
+
+                  {isOwner && (
+                    <button
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation()
+                        handleDeleteEvent(event.id)
+                      }}
+                      className={`w-full mt-2 px-3 py-2 rounded-lg text-sm font-semibold ${
+                        'bg-red-50 border-2 border-red-200 text-red-600'
+                      }`}
+                    >
+                      🗑️ Удалить запись
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

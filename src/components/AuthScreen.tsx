@@ -127,7 +127,7 @@ export function AuthScreen() {
       <div className="w-full max-w-md">
         {/* Logo and description */}
         <div className="text-center mb-6">
-          <img src="/logo.svg" alt="PoopTrack" className="w-20 h-20 mx-auto mb-4" />
+          <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--primary)' }}>
             PoopTrack
           </h1>
