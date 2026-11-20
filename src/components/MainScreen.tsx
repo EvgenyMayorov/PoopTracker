@@ -94,20 +94,21 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Загрузка данных
   const fetchEvents = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('events')
       .select('*')
+      .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(50)
     
-    if (data) {
+    if (data && !error) {
       setEvents(data)
       data.forEach(event => {
         fetchReactions(event.id)
         fetchComments(event.id)
       })
     }
-  }, [])
+  }, [profile.id])
 
   const fetchFollowers = useCallback(async () => {
     const { data } = await supabase
@@ -1002,7 +1003,9 @@ export function MainScreen({ profile, onLogout }: Props) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">💩</div>
+                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
+                      {avatar}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
                       <div className={`text-sm ${'text-gray-800'}`}>У меня вышло!</div>
@@ -1021,31 +1024,33 @@ export function MainScreen({ profile, onLogout }: Props) {
                     </div>
                   </div>
 
-                  <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
-                    <button
-                      onClick={() => {
-                        setEditingEventId(event.id)
-                        setShowBristolModal(true)
-                        setCurrentEventId(event.id)
-                      }}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                        'bg-blue-50 border-2 border-blue-200 text-blue-600'
-                      }`}
-                    >
-                      ✏️ Редактировать
-                    </button>
-                    <button
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation()
-                        handleDeleteEvent(event.id)
-                      }}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                        'bg-red-50 border-2 border-red-200 text-red-600'
-                      }`}
-                    >
-                      🗑️ Удалить
-                    </button>
-                  </div>
+                  {event.user_id === profile.id && (
+                    <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
+                      <button
+                        onClick={() => {
+                          setEditingEventId(event.id)
+                          setShowBristolModal(true)
+                          setCurrentEventId(event.id)
+                        }}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
+                          'bg-blue-50 border-2 border-blue-200 text-blue-600'
+                        }`}
+                      >
+                        ✏️ Редактировать
+                      </button>
+                      <button
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          handleDeleteEvent(event.id)
+                        }}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
+                          'bg-red-50 border-2 border-red-200 text-red-600'
+                        }`}
+                      >
+                        🗑️ Удалить
+                      </button>
+                    </div>
+                  )}
 
                   {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
                     <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
