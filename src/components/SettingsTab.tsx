@@ -285,8 +285,9 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   }
 
   return (
-    <div className="p-4">
-      <h2 className={`text-xl font-bold mb-6 ${'text-gray-800'}`}>Настройки</h2>
+    <div className="min-h-[calc(100dvh-150px)] flex flex-col justify-between">
+      <div className="space-y-4">
+        <h2 className={`text-xl font-bold mb-6 ${'text-gray-800'}`}>Настройки</h2>
 
       <div className="mb-6">
         <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>
@@ -444,8 +445,10 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         )}
       </section>
 
-      <div className="text-center text-xs text-slate-400 space-y-1 pt-6 pb-4">
-        <div>PoopTrack v1.0.0</div>
+      </div>
+
+      <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
+        <div>PoopTrack v1.0.1</div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>
