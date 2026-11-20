@@ -555,7 +555,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       </div>
 
       <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
-        <div>PoopTrack v1.0.3</div>
+        <div>PoopTrack v1.1.0</div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>
