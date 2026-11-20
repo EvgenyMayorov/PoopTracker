@@ -12,7 +12,7 @@ export default defineConfig({
       includeAssets: ['logo.svg', 'manifest.json'],
       manifest: false,
       srcDir: 'src',
-      filename: 'custom-sw.ts',
+      filename: 'custom-sw.js',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
         runtimeCaching: [
@@ -34,7 +34,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './',
+  base: '/PoopTracker/',
   build: {
     outDir: 'docs',
     emptyOutDir: true,

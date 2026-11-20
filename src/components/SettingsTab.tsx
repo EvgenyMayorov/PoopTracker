@@ -50,6 +50,39 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   const [sendingTest, setSendingTest] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
 
+  // Универсальный helper: получить активную регистрацию SW с безопасным таймаутом.
+  // Если SW не активировался (например, на GitHub Pages), registration
+  // отбрасывается через 3 секунды, и мы продолжаем работу без него.
+  const getRegistrationWithTimeout = async (): Promise<ServiceWorkerRegistration | null> => {
+    if (!('serviceWorker' in navigator)) return null
+
+    const timeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), 3000)
+    )
+
+    try {
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        timeout
+      ])
+      return registration as ServiceWorkerRegistration | null
+    } catch {
+      return null
+    }
+  }
+
+  // Убедиться, что SW зарегистрирован (на GitHub Pages это критично).
+  const ensureServiceWorkerRegistered = async (): Promise<boolean> => {
+    if (!('serviceWorker' in navigator)) return false
+    try {
+      await navigator.serviceWorker.register('./custom-sw.js', { scope: './' })
+      return true
+    } catch (err) {
+      console.error('[SW] Ошибка регистрации:', err)
+      return false
+    }
+  }
+
   const updatePushStatus = useCallback(async () => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       setPushStatus('unsupported')
@@ -65,7 +98,14 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         return
       }
 
-      const registration = await navigator.serviceWorker.ready
+      const registration = await getRegistrationWithTimeout()
+      if (!registration) {
+        // SW не активировался — не блокируем, даём пользователю включить базовые уведомления
+        setPushStatus('disabled')
+        setPushEnabled(false)
+        return
+      }
+
       const subscription = await registration.pushManager.getSubscription()
 
       if (subscription) {
@@ -139,6 +179,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
     setPushStatus('loading')
 
     try {
+      // 1. Запрашиваем разрешение на уведомления (базовые, без SW)
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') {
         setPushError('Разрешение на уведомления не предоставлено')
@@ -147,30 +188,49 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         return
       }
 
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
-      })
+      // 2. Обеспечиваем регистрацию Service Worker (на GitHub Pages критично)
+      await ensureServiceWorkerRegistered()
 
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({
-          user_id: profile.id,
-          endpoint: subscription.endpoint,
-          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
-          auth: arrayBufferToBase64(subscription.getKey('auth')!),
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' })
+      // 3. Пробуем получить активную регистрацию SW с таймаутом
+      const registration = await getRegistrationWithTimeout()
 
-      if (error) {
-        console.error('[Push] Save subscription error:', error)
-        setPushError('Ошибка сохранения подписки: ' + error.message)
-        setPushStatus('disabled')
-        setPushEnabled(false)
-        return
+      // 4. Пытаемся создать push-подписку, если браузер поддерживает Web Push
+      if (registration && 'PushManager' in window && VAPID_PUBLIC_KEY) {
+        try {
+          const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
+          })
+
+          const { error } = await supabase
+            .from('push_subscriptions')
+            .upsert({
+              user_id: profile.id,
+              endpoint: subscription.endpoint,
+              p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+              auth: arrayBufferToBase64(subscription.getKey('auth')!),
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' })
+
+          if (error) {
+            console.error('[Push] Save subscription error:', error)
+            setPushError('Ошибка сохранения подписки: ' + error.message)
+            setPushStatus('disabled')
+            setPushEnabled(false)
+            return
+          }
+
+          setPushStatus('enabled')
+          setPushEnabled(true)
+          setPushError(null)
+          return
+        } catch (pushErr: any) {
+          console.error('[Push] Web Push subscribe failed, using basic notifications:', pushErr)
+          // Падаем ниже — включаем базовые уведомления без push-подписки
+        }
       }
 
+      // 5. Браузер не поддерживает Web Push / pushManager — включаем базовые уведомления
       setPushStatus('enabled')
       setPushEnabled(true)
       setPushError(null)
@@ -224,7 +284,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   }
 
   const showLocalTestNotification = async () => {
-    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    if (!('serviceWorker' in navigator)) {
       if (Notification.permission === 'granted') {
         new Notification(t('testNotification'), {
           body: t('testNotificationText'),
@@ -235,8 +295,12 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       } else {
         throw new Error('Notification permission not granted')
       }
-    } else {
-      const registration = await navigator.serviceWorker.ready
+      return
+    }
+
+    // Используем таймаут как в updatePushStatus — не вешаемся на .ready навсегда
+    const registration = await getRegistrationWithTimeout()
+    if (registration) {
       await registration.showNotification(t('testNotification'), {
         body: t('testNotificationText'),
         icon: '/icon-192.png',
@@ -244,6 +308,16 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         tag: 'test-notification',
         data: { test: true }
       })
+    } else if (Notification.permission === 'granted') {
+      // SW не активировался — показываем через Notification API напрямую
+      new Notification(t('testNotification'), {
+        body: t('testNotificationText'),
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'test-notification'
+      })
+    } else {
+      throw new Error('Notification permission not granted')
     }
   }
 
@@ -269,7 +343,9 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           throw error
         }
       } else {
-        setTestResult('✅ Тестовое уведомление отправлено через сервер')
+        // Edge Function сработала — всё равно показываем локально для гарантии
+        await showLocalTestNotification()
+        setTestResult('✅ Тестовое уведомление отправлено через сервер и показано локально')
       }
     } catch (err: any) {
       console.error('[Push] Test notification error:', err)
@@ -281,6 +357,28 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       }
     } finally {
       setSendingTest(false)
+    }
+  }
+
+  const handleUpdateApp = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((reg) => reg.unregister()))
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration?.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+        }
+      }
+      setPushError(null)
+      setTestResult(null)
+      // небольшая задержка, чтобы SW отчистился из реестра
+      setTimeout(() => window.location.reload(), 300)
+    } catch (err) {
+      console.error('[Settings] Ошибка обновления PWA:', err)
+      setTimeout(() => window.location.reload(), 1000)
     }
   }
 
@@ -445,12 +543,19 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
             {testResult}
           </div>
         )}
+
+        <button
+          onClick={handleUpdateApp}
+          className="mt-4 w-full py-2 rounded-lg font-semibold transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200"
+        >
+          Обновить версию приложения
+        </button>
       </section>
 
       </div>
 
       <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
-        <div>PoopTrack v1.0.2</div>
+        <div>PoopTrack v1.0.3</div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>
