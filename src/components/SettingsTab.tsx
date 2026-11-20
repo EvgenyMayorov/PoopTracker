@@ -389,41 +389,43 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       <section className="mb-8 border-t border-gray-200 pt-6">
         <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>Push-уведомления</h3>
 
-        <div className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-gray-200">
+        <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-gray-200">
+          <div>
+            <div className={`font-semibold text-sm ${'text-gray-800'}`}>Push-уведомления</div>
+            <div className={`text-xs mt-0.5 ${
+              pushStatus === 'enabled'
+                ? 'text-green-600'
+                : pushStatus === 'blocked'
+                  ? 'text-red-500'
+                  : 'text-gray-500'
+            }`}>
+              {pushStatus === 'loading' && 'Проверка...'}
+              {pushStatus === 'enabled' && 'Включены'}
+              {pushStatus === 'disabled' && 'Выключены'}
+              {pushStatus === 'blocked' && 'Заблокированы в браузере'}
+              {pushStatus === 'unsupported' && 'Не поддерживаются браузером'}
+            </div>
+          </div>
           <button
-            onClick={() => handlePushToggle(true)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pushStatus === 'enabled' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-blue-50'
-            }`}
+            type="button"
+            role="switch"
+            aria-checked={pushEnabled}
+            onClick={() => handlePushToggle(!pushEnabled)}
+            disabled={pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked'}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+              pushEnabled ? 'bg-blue-500' : 'bg-gray-300'
+            } ${pushStatus === 'loading' || pushStatus === 'unsupported' || pushStatus === 'blocked' ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Включить
-          </button>
-          <button
-            onClick={() => handlePushToggle(false)}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              pushStatus === 'disabled' ? 'bg-red-500 text-white' : 'bg-gray-100 hover:bg-red-50'
-            }`}
-          >
-            Выключить
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                pushEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
           </button>
         </div>
 
-        {pushEnabled && (
-          <div className="mt-4 flex items-center gap-3">
-            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${pushStatus === 'enabled' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {pushStatus}
-            </span>
-            {pushError && <p className="text-sm text-red-400 mt-1">{pushError}</p>}
-          </div>
-        )}
-
-        {!pushEnabled && !pushError && (
-          <div className="mt-4 flex items-center gap-3">
-            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${pushStatus === 'blocked' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
-              {pushStatus === 'blocked' ? 'Заблокирован в браузере' : 'Выключено'}
-            </span>
-            {pushError && <p className="text-sm text-red-400 mt-1">{pushError}</p>}
-          </div>
+        {pushError && (
+          <p className="text-sm text-red-400 mt-2">{pushError}</p>
         )}
 
         <button
@@ -448,7 +450,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       </div>
 
       <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
-        <div>PoopTrack v1.0.1</div>
+        <div>PoopTrack v1.0.2</div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>
