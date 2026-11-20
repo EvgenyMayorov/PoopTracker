@@ -266,7 +266,11 @@ export function MainScreen({ profile, onLogout }: Props) {
                 Последние записи
               </h2>
               {events.map(event => {
-                const evProfile = event.profiles || { id: '', username: 'Unknown', avatar: '💩' }
+                const evProfile = {
+                  id: event.profiles?.id || profile.id,
+                  username: (event.profiles?.username && event.profiles.username.trim()) || profile.username,
+                  avatar: event.profiles?.avatar || profile.avatar,
+                }
                 return (
                   <EventCard
                     key={event.id}

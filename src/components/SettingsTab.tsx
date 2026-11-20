@@ -478,10 +478,8 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-150px)] flex flex-col justify-between">
-      <div className="space-y-4">
-        <h2 className={`text-xl font-bold mb-6 ${'text-slate-900'}`}>Настройки</h2>
-
+    <div className="min-h-[calc(100dvh-8.5rem)] flex flex-col justify-between">
+      <div className="px-4 space-y-4">
       <div className="mb-6">
         <h3 className={`text-sm font-semibold mb-3 ${'text-slate-900'}`}>
           👤 Аккаунт
@@ -603,10 +601,10 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         <button
           onClick={sendTestNotification}
           disabled={!pushEnabled || sendingTest}
-          className={`w-full py-2 rounded-lg font-semibold transition-colors ${
+          className={`w-full h-11 rounded-xl font-medium transition-colors ${
             pushEnabled && !sendingTest
-              ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+              ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50'
+              : 'bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-200'
           }`}
         >
           {sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}
@@ -620,7 +618,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
         <button
           onClick={handleUpdateApp}
-          className="mt-4 w-full h-10 rounded-lg text-sm font-medium transition-colors bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200"
+          className="mt-4 w-full h-11 rounded-xl text-sm font-medium transition-colors bg-white border border-slate-200 text-slate-800 hover:bg-slate-50"
         >
           Обновить версию приложения
         </button>
@@ -628,8 +626,8 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
       </div>
 
-      <footer className="flex flex-col min-h-[calc(100dvh-7.5rem)] justify-between mt-auto border-t border-slate-200/80 pt-4 space-y-1">
-        <div className="flex items-center justify-center gap-3">
+      <footer className="flex flex-col justify-between mt-auto border-t border-slate-200/80 pt-4 space-y-1">
+        <div className="flex items-center justify-between gap-3">
           <button
             onClick={onLogout}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
@@ -638,9 +636,9 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           >
             Выйти
           </button>
-          <span>PoopTrack v1.3.1</span>
+          <span>PoopTrack v1.3.2</span>
         </div>
-        <div className="text-center text-xs text-slate-400 space-y-0.5">
+        <div className="text-right text-xs text-slate-400 space-y-0.5">
           <div>Made by Evgen.</div>
           <div>Powered by Supabase & GitHub, 2026.</div>
         </div>

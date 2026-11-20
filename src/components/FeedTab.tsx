@@ -84,18 +84,24 @@ export function FeedTab({
   return (
     <div className="p-4">
       <div className="mb-4">
-        <button
-          onClick={() => setFeedTab('friends')}
-          className={`flex-1 h-7 border border-slate-200 rounded-lg text-[11px] font-medium uppercase tracking-[0.06em] transition-colors ${feedTab === 'friends' ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-        >
-          Друзья
-        </button>
-        <button
-          onClick={() => setFeedTab('my')}
-          className={`flex-1 h-7 border border-slate-200 rounded-lg text-[11px] font-medium uppercase tracking-[0.06em] transition-colors ${feedTab === 'my' ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
-        >
-          Моя история
-        </button>
+        <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setFeedTab('friends')}
+            className={`px-4 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+              feedTab === 'friends' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Друзья
+          </button>
+          <button
+            onClick={() => setFeedTab('my')}
+            className={`px-4 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+              feedTab === 'my' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Моя история
+          </button>
+        </div>
       </div>
 
       {feedTab === 'friends' ? (
