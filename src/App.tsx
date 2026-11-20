@@ -172,6 +172,7 @@ function App() {
           .insert({ 
             id: userId, 
             username: username,
+            avatar: '💩',
             updated_at: new Date().toISOString()
           })
           .select()

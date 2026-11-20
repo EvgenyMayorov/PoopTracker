@@ -30,6 +30,7 @@ interface Notification {
   id: string
   friend_id: string
   friend_username: string
+  avatar: string
   created_at: string
 }
 
@@ -53,7 +54,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [successBristolType, setSuccessBristolType] = useState<number | null>(null)
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [reactions, setReactions] = useState<Record<string, { thumbs_up: number; heart: number; poop: number; userReaction?: string }>>({})
-  const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; text: string; created_at: string }>>>({})
+  const [comments, setComments] = useState<Record<string, Array<{ id: string; user_id: string; username: string; avatar: string; text: string; created_at: string }>>>({})
   const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
   
@@ -179,7 +180,24 @@ export function MainScreen({ profile, onLogout }: Props) {
       .order('created_at', { ascending: false })
       .limit(20)
     
-    if (data) setNotifications(data)
+    if (data && data.length > 0) {
+      const friendIds = data.map(n => n.friend_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, email, avatar')
+        .in('id', friendIds)
+      
+      const notificationsWithAvatar = data.map(notif => {
+        const p = profiles?.find(p => p.id === notif.friend_id)
+        return {
+          ...notif,
+          avatar: p?.avatar || '💩'
+        }
+      })
+      setNotifications(notificationsWithAvatar)
+    } else {
+      setNotifications(data || [])
+    }
   }, [profile.id])
 
   const fetchFriendsEvents = useCallback(async () => {
@@ -265,7 +283,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       const userIds = [...new Set(commentsData.map(c => c.user_id))]
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, username, email')
+        .select('id, username, email, avatar')
         .in('id', userIds)
       
       // Объединяем данные
@@ -275,6 +293,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           id: comment.id,
           user_id: comment.user_id,
           username: profile ? getDisplayName(profile) : '',
+          avatar: profile?.avatar || '💩',
           text: comment.comment_text,
           created_at: comment.created_at,
         }
@@ -755,14 +774,19 @@ export function MainScreen({ profile, onLogout }: Props) {
           </h3>
           <div className="space-y-2">
             {notifications.slice(0, 5).map(notif => (
-              <div key={notif.id} className={`rounded-xl p-3 ${
-                'bg-white border-2 border-cyan-200'
-              }`}>
-                <div className={`text-sm ${'text-gray-800'}`}>
-                  💩 У {notif.friend_username} вышло!
-                </div>
-                <div className={`text-xs mt-1 ${'text-gray-500'}`}>
-                  {new Date(notif.created_at).toLocaleString()}
+              <div key={notif.id} className={`rounded-xl p-3 ${'bg-white border-2 border-cyan-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
+                    {notif.avatar || '💩'}
+                  </div>
+                  <div>
+                    <div className={`text-sm ${'text-gray-800'}`}>
+                      💩 У {notif.friend_username} вышло!
+                    </div>
+                    <div className={`text-xs mt-1 ${'text-gray-500'}`}>
+                      {new Date(notif.created_at).toLocaleString()}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -800,8 +824,8 @@ export function MainScreen({ profile, onLogout }: Props) {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
-                    {friend.avatar}
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
+                    {friend.avatar || '💩'}
                   </div>
                   <span className={'text-gray-800'}>{friend.username}</span>
                 </div>
@@ -841,8 +865,8 @@ export function MainScreen({ profile, onLogout }: Props) {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
-                    {follower.avatar}
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
+                    {follower.avatar || '💩'}
                   </div>
                   <span className={'text-gray-800'}>{follower.username}</span>
                 </div>
@@ -1000,11 +1024,18 @@ export function MainScreen({ profile, onLogout }: Props) {
               <div className={`rounded-xl p-4 mb-4 ${
                 'bg-blue-50 border-2 border-blue-200'
               }`}>
-                <div className={`font-semibold mb-1 ${'text-gray-800'}`}>
-                  {friendSearchResult.username}
-                </div>
-                <div className={`text-xs mb-3 ${'text-gray-500'}`}>
-                  {friendSearchResult.email}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-2xl shrink-0">
+                    {friendSearchResult.avatar || '💩'}
+                  </div>
+                  <div className="flex-1">
+                    <div className={`font-semibold mb-1 ${'text-gray-800'}`}>
+                      {friendSearchResult.username}
+                    </div>
+                    <div className={`text-xs mb-3 ${'text-gray-500'}`}>
+                      {friendSearchResult.email}
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => handleFollowFriend(friendSearchResult.id, friendSearchResult.username)}

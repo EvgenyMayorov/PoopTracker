@@ -17,6 +17,7 @@ interface Comment {
   id: string
   user_id: string
   username: string
+  avatar: string
   text: string
   created_at: string
 }
@@ -183,19 +184,22 @@ export function FeedTab({
                     </button>
                   </div>
 
-                  {comments[event.id] && comments[event.id].length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {comments[event.id].map(comment => (
-                        <div key={comment.id} className={'rounded-lg p-2 bg-gray-50'}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={'text-xs text-gray-500'}>{formatTimeAgo(comment.created_at)}</span>
+                    {comments[event.id] && comments[event.id].length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {comments[event.id].map(comment => (
+                          <div key={comment.id} className={"rounded-lg p-2 bg-gray-50"}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
+                                {comment.avatar || "💩"}
+                              </div>
+                              <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
+                              <span className={"text-xs text-gray-500"}>{formatTimeAgo(comment.created_at)}</span>
+                            </div>
+                            <p className={"text-sm mt-1 text-gray-700"}>{comment.text}</p>
                           </div>
-                          <p className={'text-sm mt-1 text-gray-700'}>{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
 
                   <CommentInput
                     eventId={event.id}
@@ -297,6 +301,9 @@ export function FeedTab({
                       {comments[event.id].map(comment => (
                         <div key={comment.id} className={'rounded-lg p-2 bg-gray-50'}>
                           <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
+                              {comment.avatar || '💩'}
+                            </div>
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
                             <span className={'text-xs text-gray-500'}>{formatTimeAgo(comment.created_at)}</span>
                           </div>

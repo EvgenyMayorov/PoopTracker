@@ -30,6 +30,7 @@ interface Comment {
   id: string
   user_id: string
   username: string
+  avatar: string
   text: string
   created_at: string
 }
@@ -175,13 +176,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     }
     if (commentsData && commentsData.length > 0) {
       const userIds = [...new Set(commentsData.map(c => c.user_id))]
-      const { data: profilesData } = await supabase.from('profiles').select('id, username, email').in('id', userIds)
+      const { data: profilesData } = await supabase.from('profiles').select('id, username, email, avatar').in('id', userIds)
       const commentsWithProfiles: Comment[] = commentsData.map(comment => {
         const p = profilesData?.find(p => p.id === comment.user_id)
         return {
           id: comment.id,
           user_id: comment.user_id,
           username: p ? getDisplayName(p) : '',
+          avatar: p?.avatar || '💩',
           text: comment.comment_text,
           created_at: comment.created_at,
         }
@@ -380,8 +382,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       }`}>
         <button onClick={handleGoBack} className="text-lg">←</button>
         <div className="flex-1 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden">
-            <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-14 h-14" />
+          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-4xl shrink-0">
+            {profile?.avatar || '💩'}
           </div>
           <div className={`text-xl font-bold ${'text-gray-800'}`}>
             {profile.username}
@@ -595,6 +597,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                           className={`rounded-lg p-2 ${'bg-gray-50'}`}
                         >
                           <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
+                              {comment.avatar || '💩'}
+                            </div>
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
                             <span className={`text-xs ${'text-gray-500'}`}>
                               {formatTimeAgo(comment.created_at)}

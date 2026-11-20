@@ -74,6 +74,7 @@ export function AuthScreen() {
               .insert({ 
                 id: data.user.id, 
                 username: trimmedUsername,
+                avatar: '💩',
                 updated_at: new Date().toISOString()
               })
 
