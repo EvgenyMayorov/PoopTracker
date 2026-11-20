@@ -15,7 +15,7 @@ export function PoopButton({ onPoop }: PoopButtonProps) {
           onPoop()
           navigate('/')
         }}
-        className="flex-1 h-12 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white rounded-xl font-medium text-sm tracking-tight flex items-center justify-center gap-2 transition-all"
+        className="flex-1 rounded-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-md shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M7 21h10c1.1 0 2-.9 2-2v-1c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v1c0 1.1.9 2 2 2z" />
@@ -28,8 +28,8 @@ export function PoopButton({ onPoop }: PoopButtonProps) {
         У МЕНЯ ВЫШЛО!
       </button>
       <button
+        className="rounded-full h-12 px-4 bg-white text-slate-700 font-medium shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all"
         onClick={() => {}}
-        className="shrink-0 h-12 px-3.5 bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-700 border border-slate-200 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all"
       >
         <span className="text-base">💨</span>
         Сбросить балласт

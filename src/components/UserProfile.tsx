@@ -323,7 +323,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     fetchComments(eventId)
   }
 
-  const handleGoBack = () => navigate(-1)
+  const handleGoBack = () => {
+    const from = sessionStorage.getItem('pooptrack_last_tab')
+    if (from === 'people') {
+      navigate('/', { state: { fromPeople: true } })
+    } else {
+      navigate(-1)
+    }
+  }
 
   const handleViewUser = (targetUserId: string) => {
     if (targetUserId === currentUserProfile.id) return

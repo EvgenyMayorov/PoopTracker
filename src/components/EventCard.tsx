@@ -41,7 +41,7 @@ export function EventCard({
   const bristolDesc = event.bristol_type ? getBristolDescription(event.bristol_type) : ''
 
   return (
-    <div className="px-4 py-3 hover:bg-slate-50/70 transition-colors">
+    <div className="rounded-2xl p-3.5 bg-white shadow-[0_4px_16px_-4px_rgba(15,23,42,0.05)] space-y-2.5">
       <div className="flex items-start gap-3">
         <div className="w-6 h-6 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
           {authorAvatar}
@@ -60,7 +60,7 @@ export function EventCard({
       </div>
 
       {(reactions.thumbs_up > 0 || reactions.heart > 0 || reactions.poop > 0) && (
-        <div className="flex gap-2 mt-2 pt-2 border-t border-slate-100">
+        <div className="flex gap-2">
           {reactions.thumbs_up > 0 && (
             <span className="h-7 px-2 rounded-md text-xs border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50 tabular-nums flex items-center gap-1">
               👍 {reactions.thumbs_up}
@@ -80,7 +80,7 @@ export function EventCard({
       )}
 
       {comments.length > 0 && (
-        <div className="mt-2 space-y-1.5">
+        <div className="space-y-1.5">
           {comments.map(comment => (
             <div key={comment.id} className="rounded-lg p-2 bg-slate-50/50">
               <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export function EventCard({
         </div>
       )}
 
-      <div className="flex gap-2 mt-3">
+      <div className="flex gap-2">
         <input
           type="text"
           value={newComment}
@@ -121,7 +121,7 @@ export function EventCard({
       </div>
 
       {isOwnEvent && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+        <div className="flex gap-2 pt-2 border-t border-slate-100">
           <button
             onClick={() => onEditEvent(event.id)}
             className="flex-1 h-7 px-2 bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-xs font-medium transition-colors"

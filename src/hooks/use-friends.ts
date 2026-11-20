@@ -31,7 +31,7 @@ export function useFriends(profile: Profile | null) {
         const p = profilesData?.find(p => p.id === f.follower_id)
         return {
           id: f.id,
-          user_id: f.user_id,
+          user_id: f.follower_id,
           username: p ? getDisplayName(p) : 'Unknown',
           avatar: p?.avatar || '💩',
         }

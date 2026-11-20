@@ -22,6 +22,7 @@ import { BottomNav } from './BottomNav'
 import { StatsCards } from './StatsCards'
 import { WeekChart } from './WeekChart'
 import { PoopButton } from './PoopButton'
+import { EventCard } from './EventCard'
 import { Header } from './Header'
 
 type Props = {
@@ -47,7 +48,18 @@ export function MainScreen({ profile, onLogout }: Props) {
   const { weekData, todayCount, weekCount, maxCount } = useWeekStats(events)
 
   // Local UI state
-  const [activeTab, setActiveTab] = useState<Tab>('home')
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    try {
+      const saved = sessionStorage.getItem('pooptrack_active_tab')
+      return (saved === 'home' || saved === 'people' || saved === 'feed' || saved === 'settings') ? (saved as Tab) : 'home'
+    } catch {
+      return 'home'
+    }
+  })
+
+  useEffect(() => {
+    try { sessionStorage.setItem('pooptrack_active_tab', activeTab) } catch {}
+  }, [activeTab])
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
   const [showBristolModal, setShowBristolModal] = useState(false)
   const [currentEventId, setCurrentEventId] = useState<string | null>(null)
@@ -233,16 +245,49 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
   return (
-    <div className="mobile-container">
-      <Header activeTab={activeTab} />
+    <div className="mobile-container bg-[#F4F5F7]">
+      <Header activeTab={activeTab} profile={profile} />
       <PWAInstallBanner />
 
       {activeTab === 'home' && (
-        <div className="p-4 pb-20">
-          <PoopButton onPoop={handlePoop} />
-
+        <div className="p-4 pb-20 space-y-3">
           <WeekChart weekData={weekData} maxCount={maxCount} />
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
+          <PoopButton onPoop={handlePoop} />
+
+          {/* Список последних записей */}
+          {events.length === 0 ? (
+            <div className="text-center text-sm text-slate-400 py-8">
+              Записей пока нет. Нажмите «У меня вышло!», чтобы добавить первую.
+            </div>
+          ) : (
+            <>
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2">
+                Последние записи
+              </h2>
+              {events.map(event => {
+                const evProfile = event.profiles || { id: '', username: 'Unknown', avatar: '💩' }
+                return (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    profile={evProfile}
+                    reactions={reactions[event.id] || { thumbs_up: 0, heart: 0, poop: 0 }}
+                    comments={comments[event.id] || []}
+                    newComment={newComment[event.id] || ''}
+                    setNewComment={(v: string) => setNewComment({ ...newComment, [event.id]: v })}
+                    formatTimeAgo={formatTimeAgo}
+                    onReaction={handleReactionWithPush}
+                    onAddComment={handleAddCommentWithPush}
+                    onDeleteEvent={handleDeleteEvent}
+                    onEditEvent={() => {}}
+                    isOwnEvent={event.user_id === profile.id}
+                    highlightedEventId={highlightedEventId}
+                  />
+                )
+              })}
+            </>
+          )}
         </div>
       )}
 

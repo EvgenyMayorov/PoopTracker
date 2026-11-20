@@ -122,41 +122,89 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         return
       }
 
-      // 1. Активная подписка Service Worker (ブラузеру/Web Push).
+      // Инициализируем состояние сразу из localStorage (если разрешение не запрещено).
+      const saved = localStorage.getItem('poop_push_enabled') === 'true'
+      setPushEnabled(saved)
+      setPushStatus(saved ? 'enabled' : 'disabled')
+      if (!saved) return
+
+      // Фоновая проверка реальной подписки: SW -> pushManager.getSubscription() и запись в push_subscriptions.
       let browserSubscription: PushSubscription | null = null
+      let registrationObj: ServiceWorkerRegistration | null = null
       try {
-        const registration = await getRegistrationWithTimeout()
-        if (registration) {
-          browserSubscription = await registration.pushManager.getSubscription()
+        const reg = await getRegistrationWithTimeout()
+        registrationObj = reg
+        if (reg) {
+          browserSubscription = await reg.pushManager.getSubscription()
         }
       } catch (err) {
         console.warn('[Push] Не удалось проверить SW-подписку:', err)
       }
 
-      // 2. Запись текущего пользователя в таблице push_subscriptions в Supabase.
-      let dbSubscriptionExists = false
+      let dbSubscription: any = null
       if (profile?.id) {
         try {
           const { data } = await supabase
             .from('push_subscriptions')
-            .select('endpoint')
+            .select('endpoint, p256dh, auth')
             .eq('user_id', profile.id)
             .limit(1)
-          dbSubscriptionExists = !!(data && data.length > 0)
+          dbSubscription = data?.[0] || null
         } catch (err) {
           console.warn('[Push] Не удалось проверить запись в push_subscriptions:', err)
         }
       }
 
-      // Итоговый статус: включено, только если есть и SW-подписка, и запись в БД,
-      // и браузер не заблокировал уведомления.
-      const isEnabled = !!browserSubscription && dbSubscriptionExists && permission === 'granted'
+      const realEnabled = permission === 'granted' && (!!browserSubscription || !!dbSubscription)
 
-      // Кэшируем статус, чтобы переключатель не сбрасывался после перезагрузки.
-      cachePushStatus(isEnabled)
-
-      setPushStatus(isEnabled ? 'enabled' : 'disabled')
-      setPushEnabled(isEnabled)
+      if (realEnabled) {
+        // Подписка есть в браузере или в БД — не сбрасываем тумблер, тихо восстанавливаем/синхронизируем запись в БД.
+        setPushStatus('enabled')
+        setPushEnabled(true)
+        cachePushStatus(true)
+        if (browserSubscription && dbSubscription) {
+          try {
+            await supabase
+              .from('push_subscriptions')
+              .upsert({
+                user_id: profile.id,
+                endpoint: browserSubscription.endpoint,
+                p256dh: arrayBufferToBase64(browserSubscription.getKey('p256dh')!),
+                auth: arrayBufferToBase64(browserSubscription.getKey('auth')!),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+          } catch (err) {
+            console.warn('[Push] Tikhaya синхронизация push_subscriptions:', err)
+          }
+        } else if (dbSubscription && registrationObj && !browserSubscription) {
+          // Восстанавливаем подписку в браузере из записи в БД.
+          try {
+            const subscription = await registrationObj.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
+            })
+            await supabase
+              .from('push_subscriptions')
+              .upsert({
+                user_id: profile.id,
+                endpoint: subscription.endpoint,
+                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+                auth: arrayBufferToBase64(subscription.getKey('auth')!),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+          } catch (err) {
+            console.warn('[Push] Не удалось восстановить SW-подписку:', err)
+            setPushStatus('disabled')
+            setPushEnabled(false)
+            cachePushStatus(false)
+          }
+        }
+      } else {
+        // Разрешение есть, но реальной подписки нет — сбрасываем тумблер в выключенное состояние.
+        setPushStatus('disabled')
+        setPushEnabled(false)
+        cachePushStatus(false)
+      }
     } catch (err) {
       console.error('[Push] Status check error:', err)
       setPushStatus('disabled')
@@ -580,7 +628,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
       </div>
 
-      <div className="mt-auto pt-6 pb-2 text-center text-xs text-slate-400 space-y-1">
+      <footer className="flex flex-col min-h-[calc(100dvh-7.5rem)] justify-between mt-auto border-t border-slate-200/80 pt-4 space-y-1">
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={onLogout}
@@ -590,10 +638,13 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           >
             Выйти
           </button>
-          <span>PoopTrack v1.3.0</span>
+          <span>PoopTrack v1.3.1</span>
         </div>
-        <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
-      </div>
+        <div className="text-center text-xs text-slate-400 space-y-0.5">
+          <div>Made by Evgen.</div>
+          <div>Powered by Supabase & GitHub, 2026.</div>
+        </div>
+      </footer>
     </div>
   )
 }

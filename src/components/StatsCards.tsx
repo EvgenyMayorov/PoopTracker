@@ -7,19 +7,39 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ todayCount, weekCount, totalCount }: StatsCardsProps) {
+  const progressToday = Math.min((todayCount / totalCount) * 100, 100)
+  const progressWeek = Math.min((weekCount / totalCount) * 100, 100)
+
   return (
-    <div className="bg-white border border-slate-200/80 rounded-xl grid grid-cols-3 divide-x divide-slate-200/80 py-3 mb-6">
-      <div className="flex flex-col items-center justify-center px-2">
-        <div className="text-xl font-semibold text-slate-900 tabular-nums leading-tight">{todayCount}</div>
-        <div className="text-[11px] font-medium text-slate-400 mt-0.5">Сегодня</div>
+    <div className="grid grid-cols-2 gap-3">
+      {/* Today Card */}
+      <div className="bg-white rounded-3xl p-4 shadow-[0_8px_24px_-6px_rgba(15,23,42,0.06)]">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 text-sm font-medium">●</div>
+          <div className="text-sm font-medium text-slate-500">Сегодня</div>
+        </div>
+        <div className="text-2xl font-bold text-slate-900 tabular-nums">{todayCount}</div>
+        <div className="h-1.5 rounded-full bg-slate-100 mt-2 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-indigo-500 w-[{progressToday}%]"
+            style={{ width: `${progressToday}%` }}
+          />
+        </div>
       </div>
-      <div className="flex flex-col items-center justify-center px-2">
-        <div className="text-xl font-semibold text-slate-900 tabular-nums leading-tight">{weekCount}</div>
-        <div className="text-[11px] font-medium text-slate-400 mt-0.5">Неделя</div>
-      </div>
-      <div className="flex flex-col items-center justify-center px-2">
-        <div className="text-xl font-semibold text-slate-900 tabular-nums leading-tight">{totalCount}</div>
-        <div className="text-[11px] font-medium text-slate-400 mt-0.5">Всего</div>
+
+      {/* Week Card */}
+      <div className="bg-white rounded-3xl p-4 shadow-[0_8px_24px_-6px_rgba(15,23,42,0.06)]">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-sm font-medium">●</div>
+          <div className="text-sm font-medium text-slate-500">Неделя</div>
+        </div>
+        <div className="text-2xl font-bold text-slate-900 tabular-nums">{weekCount}</div>
+        <div className="h-1.5 rounded-full bg-slate-100 mt-2 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-amber-500 w-[{progressWeek}%]"
+            style={{ width: `${progressWeek}%` }}
+          />
+        </div>
       </div>
     </div>
   )
