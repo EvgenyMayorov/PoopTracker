@@ -5,6 +5,7 @@ import { getDisplayName } from '../lib/displayName'
 import { t } from '../i18n'
 import { getBristolDescription } from '../lib/bristol'
 import { ConfirmModal } from './ConfirmModal'
+import { CommentInput } from './CommentInput'
 
 type Props = {
   currentUserProfile: Profile
@@ -605,23 +606,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                     </div>
                   )}
 
-                  <div className="flex gap-2 mt-3">
-                    <input
-                      type="text"
-                      value={newComment[event.id] || ''}
-                      onChange={e => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
-                      placeholder="Добавить комментарий..."
-                      className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 ${
-                        'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
-                      }`}
-                    />
-                    <button
-                      onClick={() => handleAddComment(event.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-lg text-white text-sm font-semibold"
-                    >
-                      Отправить
-                    </button>
-                  </div>
+                  <CommentInput
+                    eventId={event.id}
+                    value={newComment[event.id] || ''}
+                    onChange={(value) =>
+                      setNewComment(prev => ({ ...prev, [event.id]: value }))
+                    }
+                    onSubmit={handleAddComment}
+                  />
 
                   {isOwner && (
                     <button

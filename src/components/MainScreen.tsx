@@ -8,6 +8,8 @@ import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
 import { SettingsTab } from './SettingsTab'
 import { ConfirmModal } from './ConfirmModal'
+import { CommentInput } from './CommentInput'
+import { FeedTab as FeedTabView } from './FeedTab'
 
 type Props = {
   profile: Profile
@@ -853,246 +855,6 @@ export function MainScreen({ profile, onLogout }: Props) {
     </div>
   )
 
-  const FeedTab = () => (
-    <div className="p-4">
-      <div className="flex bg-white/5 rounded-xl p-1 mb-4">
-        <button
-          onClick={() => setFeedTab('friends')}
-          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-            feedTab === 'friends' ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white' : 'text-gray-400'
-          }`}
-        >
-          👥 Друзья
-        </button>
-        <button
-          onClick={() => setFeedTab('my')}
-          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-            feedTab === 'my' ? 'bg-gradient-to-r from-cyan-500 to-fuchsia-500 text-white' : 'text-gray-400'
-          }`}
-        >
-          💩 Моя история
-        </button>
-      </div>
-
-      {feedTab === 'friends' ? (
-        <div>
-          {friendsEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">👀</div>
-              <p className={`font-semibold ${'text-gray-600'}`}>Пока пусто</p>
-              <p className={`text-sm mt-1 ${'text-gray-500'}`}>Подпишитесь на друзей</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {friendsEvents.map(event => (
-                <div key={event.id} className={`rounded-xl p-4 ${
-                  'bg-white border-2 border-fuchsia-200'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-fuchsia-500 to-purple-500 rounded-full flex items-center justify-center text-lg">
-                      {event.profiles?.avatar || '💩'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-semibold ${'text-gray-800'}`}>
-                        {event.profiles ? getDisplayName(event.profiles) : ''}
-                      </div>
-                      <div className={`text-sm ${'text-gray-800'}`}>
-                        У {event.profiles?.username} вышло!
-                      </div>
-                      {event.bristol_type && (
-                        <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
-                          event.bristol_type <= 2 ? 'text-slate-700' :
-                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-slate-700' :
-                          'text-slate-700'
-                        }`}>
-                          {getBristolDescription(event.bristol_type)}
-                        </div>
-                      )}
-                    </div>
-                    <div className={`text-xs ${'text-gray-500'}`}>
-                      {formatTimeAgo(event.created_at)}
-                    </div>
-                  </div>
-
-                  <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
-                    <button
-                      onClick={() => handleReaction(event.id, 'thumbs_up')}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                        reactions[event.id]?.userReaction === 'thumbs_up'
-                          ? 'bg-blue-500/20 text-blue-400'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      👍 {reactions[event.id]?.thumbs_up || 0}
-                    </button>
-                    <button
-                      onClick={() => handleReaction(event.id, 'heart')}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                        reactions[event.id]?.userReaction === 'heart'
-                          ? 'bg-red-500/20 text-slate-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      ❤️ {reactions[event.id]?.heart || 0}
-                    </button>
-                    <button
-                      onClick={() => handleReaction(event.id, 'poop')}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                        reactions[event.id]?.userReaction === 'poop'
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      💩 {reactions[event.id]?.poop || 0}
-                    </button>
-                  </div>
-
-                  {comments[event.id] && comments[event.id].length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {comments[event.id].map(comment => (
-                        <div key={comment.id} className={`rounded-lg p-2 ${'bg-gray-50'}`}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={`text-xs ${'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
-                          </div>
-                          <p className={`text-sm mt-1 ${'text-gray-700'}`}>{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 mt-3">
-                    <input
-                      type="text"
-                      value={newComment[event.id] || ''}
-                      onChange={(e) => setNewComment(prev => ({ ...prev, [event.id]: e.target.value }))}
-                      placeholder="Добавить комментарий..."
-                      className={`flex-1 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500 ${
-                        'bg-white border-2 border-gray-200 text-gray-800 placeholder-gray-400'
-                      }`}
-                    />
-                    <button
-                      onClick={() => handleAddComment(event.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-fuchsia-500 rounded-lg text-white text-sm font-semibold"
-                    >
-                      Отправить
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          {events.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">💩</div>
-              <p className={`font-semibold ${'text-gray-600'}`}>Вы ещё не нажимали кнопку 💩</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {events.map(event => (
-                <div 
-                  key={event.id} 
-                  id={`event-${event.id}`}
-                  className={`rounded-xl p-4 transition-all ${
-                    highlightedEventId === event.id
-                      ? 'bg-blue-100 border-4 border-blue-500 shadow-lg scale-105'
-                      : 'bg-white border-2 border-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg">
-                      {avatar}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`font-semibold ${'text-gray-800'}`}>{profileUsername}</div>
-                      <div className={`text-sm ${'text-gray-800'}`}>У меня вышло!</div>
-                      {event.bristol_type && (
-                        <div className={`text-xs mt-1 leading-snug break-words pr-1 ${
-                          event.bristol_type <= 2 ? 'text-slate-700' :
-                          event.bristol_type === 3 || event.bristol_type === 4 ? 'text-slate-700' :
-                          'text-slate-700'
-                        }`}>
-                          {getBristolDescription(event.bristol_type)}
-                        </div>
-                      )}
-                    </div>
-                    <div className={`text-xs ${'text-gray-500'}`}>
-                      {formatTimeAgo(event.created_at)}
-                    </div>
-                  </div>
-
-                  {event.user_id === profile.id && (
-                    <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
-                      <button
-                        onClick={() => {
-                          setEditingEventId(event.id)
-                          setShowBristolModal(true)
-                          setCurrentEventId(event.id)
-                        }}
-                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                          'bg-blue-50 border-2 border-blue-200 text-blue-600'
-                        }`}
-                      >
-                        ✏️ Редактировать
-                      </button>
-                      <button
-                        onClick={(e: React.MouseEvent) => {
-                          e.stopPropagation()
-                          handleDeleteEvent(event.id)
-                        }}
-                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold ${
-                          'bg-red-50 border-2 border-red-200 text-red-600'
-                        }`}
-                      >
-                        🗑️ Удалить
-                      </button>
-                    </div>
-                  )}
-
-                  {reactions[event.id] && (reactions[event.id].thumbs_up > 0 || reactions[event.id].heart > 0 || reactions[event.id].poop > 0) && (
-                    <div className={`flex gap-2 mt-3 pt-3 border-t ${'border-gray-200'}`}>
-                      {reactions[event.id].thumbs_up > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-blue-50 text-blue-600'}`}>
-                          👍 {reactions[event.id].thumbs_up}
-                        </span>
-                      )}
-                      {reactions[event.id].heart > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-red-50 text-red-600'}`}>
-                          ❤️ {reactions[event.id].heart}
-                        </span>
-                      )}
-                      {reactions[event.id].poop > 0 && (
-                        <span className={`px-2 py-1 rounded-lg text-xs ${'bg-amber-50 text-amber-600'}`}>
-                          💩 {reactions[event.id].poop}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {comments[event.id] && comments[event.id].length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {comments[event.id].map(comment => (
-                        <div key={comment.id} className={`rounded-lg p-2 ${'bg-gray-50'}`}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
-                            <span className={`text-xs ${'text-gray-500'}`}>{formatTimeAgo(comment.created_at)}</span>
-                          </div>
-                          <p className={`text-sm mt-1 ${'text-gray-700'}`}>{comment.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
 
 
   return (
@@ -1104,7 +866,31 @@ export function MainScreen({ profile, onLogout }: Props) {
       <div className="flex-1 overflow-y-auto pb-24">
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'people' && <PeopleTab />}
-        {activeTab === 'feed' && <FeedTab />}
+        {activeTab === 'feed' && (
+          <FeedTabView
+            feedTab={feedTab}
+            setFeedTab={setFeedTab}
+            friendsEvents={friendsEvents}
+            events={events}
+            profile={profile}
+            profileUsername={profileUsername}
+            avatar={avatar}
+            reactions={reactions}
+            comments={comments}
+            newComment={newComment}
+            setNewComment={setNewComment}
+            formatTimeAgo={formatTimeAgo}
+            handleReaction={handleReaction}
+            handleAddComment={handleAddComment}
+            fetchFriendsEvents={fetchFriendsEvents}
+            handleDeleteEvent={handleDeleteEvent}
+            highlightedEventId={highlightedEventId}
+            setEditingEventId={setEditingEventId}
+            setShowBristolModal={setShowBristolModal}
+            setCurrentEventId={setCurrentEventId}
+            navigate={navigate}
+          />
+        )}
         {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} />}
       </div>
 
