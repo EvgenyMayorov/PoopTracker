@@ -1,54 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0D9488;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#064E3B;stop-opacity:1" />
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
     </linearGradient>
-    <linearGradient id="rollGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#E6EDF3;stop-opacity:1" />
+    <linearGradient id="rollShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="70%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
     </linearGradient>
-    <linearGradient id="checkGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#34D399;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
-    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#022C22" flood-opacity="0.22"/>
+    </filter>
   </defs>
 
-  <!-- Background rounded square -->
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bgGradient)"/>
+  <!-- Фон иконки -->
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bgGrad)"/>
 
-  <!-- Toilet paper roll: top ellipse -->
-  <ellipse cx="256" cy="330" rx="108" ry="26" fill="url(#rollGradient)"/>
-  <!-- Toilet paper roll: body -->
-  <rect x="148" y="200" width="216" height="260" fill="url(#rollGradient)"/>
-  <!-- Toilet paper roll: bottom ellipse -->
-  <ellipse cx="256" cy="460" rx="108" ry="26" fill="url(#rollGradient)"/>
+  <g filter="url(#softShadow)">
+    <!-- Свисающая лента бумаги, переходящая в нижнюю часть с галочкой -->
+    <path d="M 140 165 L 140 365 C 140 385 154 398 174 398 L 318 398 C 338 398 352 385 352 365 L 352 165 Z" fill="#FFFFFF"/>
 
-  <!-- Paper texture lines on roll -->
-  <path d="M 184 200 L 184 460" stroke="#CBD5E1" stroke-width="2" opacity="0.6"/>
-  <path d="M 220 200 L 220 460" stroke="#CBD5E1" stroke-width="2" opacity="0.4"/>
-  <path d="M 256 200 L 256 460" stroke="#CBD5E1" stroke-width="2" opacity="0.5"/>
-  <path d="M 292 200 L 292 460" stroke="#CBD5E1" stroke-width="2" opacity="0.4"/>
-  <path d="M 328 200 L 328 460" stroke="#CBD5E1" stroke-width="2" opacity="0.6"/>
+    <!-- Линия перфорации на ленте -->
+    <line x1="156" y1="242" x2="336" y2="242" stroke="#CBD5E1" stroke-width="4" stroke-dasharray="10 10" stroke-linecap="round"/>
 
-  <!-- Unrolled paper sheet from top of roll -->
-  <path d="M 148 200 L 148 420 L 256 420 L 256 200 Z" fill="url(#rollGradient)" stroke="#E2E8F0" stroke-width="2"/>
-  <path d="M 148 420 L 256 420 L 256 480 L 148 480 Z" fill="url(#rollGradient)" stroke="#E2E8F0" stroke-width="2"/>
+    <!-- Изумрудно-зелёная галочка (Checkmark) на размотанном листе -->
+    <path d="M 196 316 L 234 354 L 306 276" fill="none" stroke="#10B981" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Paper fold lines on unrolled sheet -->
-  <path d="M 148 260 L 256 260" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
-  <path d="M 148 320 L 256 320" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
-  <path d="M 148 380 L 256 380" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
-  <path d="M 148 440 L 256 440" stroke="#CBD5E1" stroke-width="1.5" opacity="0.5"/>
+    <!-- Основной цилиндр рулона сверху -->
+    <rect x="140" y="114" width="232" height="106" rx="34" fill="url(#rollShade)"/>
+    <ellipse cx="338" cy="167" rx="34" ry="53" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="3"/>
 
-  <!-- Emerald green checkmark -->
-  <g transform="translate(256, 190)">
-    <!-- Checkmark background shape -->
-    <path d="M 0 -45 L 25 -15 L 55 40 L -55 -40 L -25 -15 Z" fill="url(#checkGradient)" stroke="#047857" stroke-width="3" stroke-linejoin="round"/>
-    <!-- White checkmark stroke for contrast -->
-    <path d="M -35 -5 L 0 30 L 35 -25" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Картонная втулка с торца рулона -->
+    <ellipse cx="338" cy="167" rx="16" ry="26" fill="#D97706"/>
+    <ellipse cx="340" cy="167" rx="11" ry="19" fill="#92400E"/>
   </g>
-
-  <!-- Subtle highlight on roll edge -->
-  <rect x="160" y="200" width="14" height="260" rx="7" fill="#FFFFFF" opacity="0.25"/>
 </svg>
