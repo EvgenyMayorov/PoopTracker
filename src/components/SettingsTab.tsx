@@ -1,9 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
+import { t } from '../i18n'
 
 interface SettingsTabProps {
   profile: Profile
   onLogout: () => void
+}
+
+// VAPID public key (safe to embed in client)
+const VAPID_PUBLIC_KEY = 'BB9szPlMVlU9KtLpwYqFYOMOLpNo-Nb-xsbP3y18lAIM-29drXGSm0_-6RlzIfHvwj0V8VHX0wSt1Ym2LBRNDaE'
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return window.btoa(binary)
 }
 
 // Животные и птицы (сохраняем существующие, добавляем новые без дублирования)
@@ -18,6 +42,49 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
     profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
   )
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+
+  // Push notifications state
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushStatus, setPushStatus] = useState<'loading' | 'enabled' | 'disabled' | 'blocked' | 'unsupported'>('loading')
+  const [pushError, setPushError] = useState<string | null>(null)
+  const [sendingTest, setSendingTest] = useState(false)
+  const [testResult, setTestResult] = useState<string | null>(null)
+
+  const updatePushStatus = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setPushStatus('unsupported')
+      setPushEnabled(false)
+      return
+    }
+
+    try {
+      const permission = Notification.permission
+      if (permission === 'denied') {
+        setPushStatus('blocked')
+        setPushEnabled(false)
+        return
+      }
+
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+
+      if (subscription) {
+        setPushStatus('enabled')
+        setPushEnabled(true)
+      } else {
+        setPushStatus('disabled')
+        setPushEnabled(false)
+      }
+    } catch (err) {
+      console.error('[Push] Status check error:', err)
+      setPushStatus('disabled')
+      setPushEnabled(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    updatePushStatus()
+  }, [updatePushStatus])
 
   const handleSaveUsername = async () => {
     const trimmedUsername = tempUsername.trim()
@@ -64,6 +131,156 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       }
     } catch (err) {
       console.error('[Settings] Исключение при сохранении аватара:', err)
+    }
+  }
+
+  const subscribeToPush = async () => {
+    setPushError(null)
+    setPushStatus('loading')
+
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        setPushError('Разрешение на уведомления не предоставлено')
+        setPushStatus('blocked')
+        setPushEnabled(false)
+        return
+      }
+
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
+      })
+
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: profile.id,
+          endpoint: subscription.endpoint,
+          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+          auth: arrayBufferToBase64(subscription.getKey('auth')!),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+
+      if (error) {
+        console.error('[Push] Save subscription error:', error)
+        setPushError('Ошибка сохранения подписки: ' + error.message)
+        setPushStatus('disabled')
+        setPushEnabled(false)
+        return
+      }
+
+      setPushStatus('enabled')
+      setPushEnabled(true)
+      setPushError(null)
+    } catch (err: any) {
+      console.error('[Push] Subscribe error:', err)
+      setPushError('Ошибка подписки: ' + (err.message || 'Неизвестная ошибка'))
+      setPushStatus('disabled')
+      setPushEnabled(false)
+    }
+  }
+
+  const unsubscribeFromPush = async () => {
+    setPushError(null)
+    setPushStatus('loading')
+
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+
+      if (subscription) {
+        await subscription.unsubscribe()
+      }
+
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', profile.id)
+
+      if (error) {
+        console.error('[Push] Delete subscription error:', error)
+        setPushError('Ошибка удаления подписки: ' + error.message)
+      }
+
+      setPushStatus('disabled')
+      setPushEnabled(false)
+      setPushError(null)
+    } catch (err: any) {
+      console.error('[Push] Unsubscribe error:', err)
+      setPushError('Ошибка отписки: ' + (err.message || 'Неизвестная ошибка'))
+      setPushStatus('disabled')
+      setPushEnabled(false)
+    }
+  }
+
+  const handlePushToggle = async (enabled: boolean) => {
+    if (enabled) {
+      await subscribeToPush()
+    } else {
+      await unsubscribeFromPush()
+    }
+  }
+
+  const showLocalTestNotification = async () => {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+      if (Notification.permission === 'granted') {
+        new Notification(t('testNotification'), {
+          body: t('testNotificationText'),
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: 'test-notification'
+        })
+      } else {
+        throw new Error('Notification permission not granted')
+      }
+    } else {
+      const registration = await navigator.serviceWorker.ready
+      await registration.showNotification(t('testNotification'), {
+        body: t('testNotificationText'),
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'test-notification',
+        data: { test: true }
+      })
+    }
+  }
+
+  const sendTestNotification = async () => {
+    setSendingTest(true)
+    setTestResult(null)
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push', {
+        body: {
+          userId: profile.id,
+          title: t('testNotification'),
+          body: t('testNotificationText'),
+          data: { test: true }
+        }
+      })
+
+      if (error) {
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          await showLocalTestNotification()
+          setTestResult('✅ Тестовое уведомление показано локально (Edge Function не развернута)')
+        } else {
+          throw error
+        }
+      } else {
+        setTestResult('✅ Тестовое уведомление отправлено через сервер')
+      }
+    } catch (err: any) {
+      console.error('[Push] Test notification error:', err)
+      try {
+        await showLocalTestNotification()
+        setTestResult('✅ Тестовое уведомление показано локально')
+      } catch (localErr) {
+        setTestResult('❌ Ошибка: ' + (err.message || 'Неизвестная ошибка'))
+      }
+    } finally {
+      setSendingTest(false)
     }
   }
 
@@ -168,8 +385,67 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         </button>
       </div>
 
+      <section className="mb-8 border-t border-gray-200 pt-6">
+        <h3 className={`text-sm font-semibold mb-3 ${'text-gray-600'}`}>Push-уведомления</h3>
+
+        <div className="flex items-center justify-between bg-white rounded-lg px-4 py-3 border border-gray-200">
+          <button
+            onClick={() => handlePushToggle(true)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pushStatus === 'enabled' ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-blue-50'
+            }`}
+          >
+            Включить
+          </button>
+          <button
+            onClick={() => handlePushToggle(false)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pushStatus === 'disabled' ? 'bg-red-500 text-white' : 'bg-gray-100 hover:bg-red-50'
+            }`}
+          >
+            Выключить
+          </button>
+        </div>
+
+        {pushEnabled && (
+          <div className="mt-4 flex items-center gap-3">
+            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${pushStatus === 'enabled' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {pushStatus}
+            </span>
+            {pushError && <p className="text-sm text-red-400 mt-1">{pushError}</p>}
+          </div>
+        )}
+
+        {!pushEnabled && !pushError && (
+          <div className="mt-4 flex items-center gap-3">
+            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${pushStatus === 'blocked' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+              {pushStatus === 'blocked' ? 'Заблокирован в браузере' : 'Выключено'}
+            </span>
+            {pushError && <p className="text-sm text-red-400 mt-1">{pushError}</p>}
+          </div>
+        )}
+
+        <button
+          onClick={sendTestNotification}
+          disabled={!pushEnabled || sendingTest}
+          className={`w-full py-2 rounded-lg font-semibold transition-colors ${
+            pushEnabled && !sendingTest
+              ? 'bg-blue-500 text-white hover:bg-blue-600'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          {sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}
+        </button>
+
+        {testResult && (
+          <div className={`mt-3 rounded-lg p-3 ${testResult.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {testResult}
+          </div>
+        )}
+      </section>
+
       <div className="text-center text-xs text-slate-400 space-y-1 pt-6 pb-4">
-        <div>PoopTrack v0.9.2</div>
+        <div>PoopTrack v1.0.0</div>
         <div>Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
       </div>
     </div>

@@ -19,6 +19,15 @@ export type Profile = {
   updated_at: string
 }
 
+export type PushSubscription = {
+  id?: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  updated_at?: string
+}
+
 export type PoopEvent = {
   id: string
   user_id: string

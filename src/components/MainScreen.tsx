@@ -11,6 +11,21 @@ import { ConfirmModal } from './ConfirmModal'
 import { CommentInput } from './CommentInput'
 import { FeedTab as FeedTabView } from './FeedTab'
 
+// VAPID public key для push-подписок (безопасно хранить в клиенте)
+const VAPID_PUBLIC_KEY = 'BB9szPlMVlU9KtLpwYqFYOMOLpNo-Nb-xsbP3y18lAIM-29drXGSm0_-6RlzIfHvwj0V8VHX0wSt1Ym2LBRNDaE'
+
+// Отправляет push конкретному пользователю через Edge Function.
+// Если функция не развёрнута — ошибка логируется, но не прерывает основной сценарий.
+async function sendPushToUser(userId: string, title: string, body: string) {
+  try {
+    await supabase.functions.invoke('send-push', {
+      body: { userId, title, body }
+    })
+  } catch (err) {
+    console.warn('[Push] Не удалось отправить push:', err)
+  }
+}
+
 type Props = {
   profile: Profile
   onLogout: () => void
@@ -356,6 +371,26 @@ export function MainScreen({ profile, onLogout }: Props) {
     
     if (!editingEventId) {
       setShowSuccess(true)
+      // Уведомляем всех подписчиков о новой записи
+      const pushBody = type <= 2
+        ? `${getDisplayName(profile)} сбросил кирпичи 🧱`
+        : type <= 4
+          ? `У ${getDisplayName(profile)} идеальный стул! 🏆`
+          : `${getDisplayName(profile)} сбросил термоядерные отходы ☢️`
+      try {
+        const { data: followersData } = await supabase
+          .from('friends')
+          .select('follower_id')
+          .eq('user_id', profile.id)
+        const followersList = (followersData || []) as any[]
+        for (const f of followersList) {
+          const followerId = f.follower_id
+          if (followerId === profile.id) continue
+          await sendPushToUser(followerId, 'PoopTrack', pushBody)
+        }
+      } catch (err) {
+        console.warn('[Push] Ошибка отправки подписчикам:', err)
+      }
     }
   }
 
@@ -368,38 +403,57 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   const handleReaction = async (eventId: string, reactionType: 'thumbs_up' | 'heart' | 'poop') => {
     const currentReaction = reactions[eventId]?.userReaction
-    
+
     if (currentReaction === reactionType) {
+      // Убираем реакцию
       await supabase
         .from('reactions')
         .delete()
         .eq('event_id', eventId)
         .eq('user_id', profile.id)
     } else {
-      if (currentReaction) {
-        await supabase
-          .from('reactions')
-          .update({ reaction_type: reactionType })
-          .eq('event_id', eventId)
-          .eq('user_id', profile.id)
-      } else {
-        await supabase
-          .from('reactions')
-          .insert({
-            event_id: eventId,
-            user_id: profile.id,
-            reaction_type: reactionType,
-          })
+      // Добавляем/меняем реакцию
+      await supabase
+        .from('reactions')
+        .upsert({
+          event_id: eventId,
+          user_id: profile.id,
+          reaction_type: reactionType,
+        }, { onConflict: 'event_id, user_id' })
+
+      // Отправляем push-уведомление владельцу записи
+      try {
+        const { data: eventData } = await supabase
+          .from('events')
+          .select('user_id')
+          .eq('id', eventId)
+          .single()
+
+        if (eventData && eventData.user_id && eventData.user_id !== profile.id) {
+          const ownerId = eventData.user_id
+
+          const reactNames: Record<'thumbs_up' | 'heart' | 'poop', string> = {
+            thumbs_up: '👍',
+            heart: '❤️',
+            poop: '💩',
+          }
+          const actorName = getDisplayName(profile)
+          const bodyText = `${actorName} ${currentReaction ? 'обновил' : 'поставил'} реакцию ${reactNames[reactionType]} под записью`
+
+          await sendPushToUser(ownerId, 'Реакция на запись', bodyText)
+        }
+      } catch (err) {
+        console.warn('[Push] Ошибка при отправке push реакции:', err)
       }
     }
-    
+
     fetchReactions(eventId)
   }
 
   const handleAddComment = async (eventId: string) => {
     const text = newComment[eventId]?.trim()
     if (!text) return
-    
+
     await supabase
       .from('comments')
       .insert({
@@ -407,9 +461,29 @@ export function MainScreen({ profile, onLogout }: Props) {
         user_id: profile.id,
         comment_text: text,
       })
-    
+
     setNewComment(prev => ({ ...prev, [eventId]: '' }))
     fetchComments(eventId)
+
+    // Отправляем push-уведомление владельцу записи
+    try {
+      const { data: eventData } = await supabase
+        .from('events')
+        .select('user_id')
+        .eq('id', eventId)
+        .single()
+
+      if (eventData && eventData.user_id && eventData.user_id !== profile.id) {
+        const ownerId = eventData.user_id
+
+        const actorName = getDisplayName(profile)
+        const bodyText = `${actorName} оставил комментарий: "${text}"`
+
+        await sendPushToUser(ownerId, 'Комментарий к записи', bodyText)
+      }
+    } catch (err) {
+      console.warn('[Push] Ошибка при отправке push комментария:', err)
+    }
   }
 
   const handleDeleteEvent = async (eventId: string) => {
