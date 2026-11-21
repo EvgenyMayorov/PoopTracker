@@ -528,7 +528,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   }
 
    return (
-    <div className="min-h-[calc(100dvh-4.5rem)] flex flex-col justify-between px-4 pt-5 pb-28">
+    <div className="min-h-[calc(100dvh-4.5rem)] flex flex-col justify-between px-4 pt-5 pb-36">
       <div className="space-y-3">
         <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none mb-4">
           Настройки
@@ -660,15 +660,17 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         </div>
       </div>
 
-      <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
-        <div className="text-left leading-tight">
-          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.7</div>
-          <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
+      <footer className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[640px] z-30 px-4 py-2.5 bg-transparent pointer-events-none">
+        <div className="pointer-events-auto flex items-center justify-between gap-3 text-slate-600 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+          <div className="text-left leading-tight">
+            <div className="text-xs font-semibold text-slate-700">PoopTrack v1.4.8</div>
+            <div className="text-[10px] text-slate-600">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
+          </div>
+          <button onClick={onLogout} className="pointer-events-auto bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">
+            <span>↪</span>
+            <span>Выйти</span>
+          </button>
         </div>
-        <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">
-          <span>↪</span>
-          <span>Выйти</span>
-        </button>
       </footer>
     </div>
   )
