@@ -7,3 +7,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+// Глобальная константа версии, проброшенная через define в vite.config.js
+declare const __APP_VERSION__: string;

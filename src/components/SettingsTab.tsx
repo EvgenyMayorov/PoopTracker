@@ -6,6 +6,7 @@ import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl } from './UserAvata
 interface SettingsTabProps {
   profile: Profile
   onLogout: () => void
+  onApplyUpdate?: () => void
 }
 
 // VAPID public key (safe to embed in client)
@@ -35,7 +36,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 // Новые 3D-аватары используются через ключ: 'dino', 'wolf' и т.д.
 /* const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️', '🐱', '🐈', '🐶', '🐕', '🐯', '🐅', '🐓', '🐔', '🐨', '🐺', '🐷', '🐮', '🐵', '🐰', '🐹', '🦉', '🐧', '🦆', '🦖'] */
 
-export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
+export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabProps) {
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
   const [profileUsername, setProfileUsername] = useState(profile.username)
@@ -428,49 +429,24 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
     }
   }
 
-  const showLocalTestNotification = async () => {
-    if (!('serviceWorker' in navigator)) {
-      if (Notification.permission === 'granted') {
-        new Notification(t('testNotification'), {
-          body: t('testNotificationText'),
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          tag: 'test-notification'
-        })
-      } else {
-        throw new Error('Notification permission not granted')
-      }
-      return
-    }
-
-    // Используем таймаут как в updatePushStatus — не вешаемся на .ready навсегда
-    const registration = await getRegistrationWithTimeout()
-    if (registration) {
-      await registration.showNotification(t('testNotification'), {
-        body: t('testNotificationText'),
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag: 'test-notification',
-        data: { test: true }
-      })
-    } else if (Notification.permission === 'granted') {
-      // SW не активировался — показываем через Notification API напрямую
-      new Notification(t('testNotification'), {
-        body: t('testNotificationText'),
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag: 'test-notification'
-      })
-    } else {
-      throw new Error('Notification permission not granted')
-    }
-  }
-
   const sendTestNotification = async () => {
     setSendingTest(true)
     setTestResult(null)
 
     try {
+      // 1. Проверяем, есть ли подписка в БД
+      const { data: subData, error: subError } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', profile.id)
+        .single()
+
+      if (subError || !subData) {
+        setTestResult('❌ Подписка на пуш-уведомления не найдена. Включите уведомления в настройках и попробуйте снова.')
+        return
+      }
+
+      // 2. Отправляем реальный серверный push через Edge Function send-push
       const { data, error } = await supabase.functions.invoke('send-push', {
         body: {
           userId: profile.id,
@@ -481,31 +457,25 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       })
 
       if (error) {
-        if (error.message?.includes('404') || error.message?.includes('not found')) {
-          await showLocalTestNotification()
-          setTestResult('✅ Тестовое уведомление показано локально (Edge Function не развернута)')
-        } else {
-          throw error
-        }
-      } else {
-        // Edge Function сработала — всё равно показываем локально для гарантии
-        await showLocalTestNotification()
-        setTestResult('✅ Тестовое уведомление отправлено через сервер и показано локально')
+        setTestResult('❌ Ошибка отправки: ' + (error.message || 'Неизвестная ошибка'))
+        return
       }
+
+      setTestResult('✅ Серверное Push-уведомление отправлено!')
     } catch (err: any) {
       console.error('[Push] Test notification error:', err)
-      try {
-        await showLocalTestNotification()
-        setTestResult('✅ Тестовое уведомление показано локально')
-      } catch (localErr) {
-        setTestResult('❌ Ошибка: ' + (err.message || 'Неизвестная ошибка'))
-      }
+      setTestResult('❌ Ошибка: ' + (err.message || 'Неизвестная ошибка'))
     } finally {
       setSendingTest(false)
     }
   }
 
   const handleUpdateApp = async () => {
+    if (onApplyUpdate) {
+      await onApplyUpdate()
+      return
+    }
+    // Fallback: очистка кэшей и обновление SW без пропса
     try {
       if ('serviceWorker' in navigator) {
         const keys = await caches.keys()
@@ -519,7 +489,6 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       }
       setPushError(null)
       setTestResult(null)
-      // небольшая задержка, чтобы SW отчистился из реестра
       setTimeout(() => window.location.reload(), 300)
     } catch (err) {
       console.error('[Settings] Ошибка обновления PWA:', err)
@@ -663,7 +632,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       <footer className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[640px] z-30 px-4 py-2.5 bg-transparent pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-3 text-slate-600 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
           <div className="text-left leading-tight">
-            <div className="text-xs font-semibold text-slate-700">PoopTrack v1.4.9</div>
+            <div className="text-xs font-semibold text-slate-700">PoopTrack v{__APP_VERSION__}</div>
             <div className="text-[10px] text-slate-600">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
           </div>
           <button onClick={onLogout} className="pointer-events-auto bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">

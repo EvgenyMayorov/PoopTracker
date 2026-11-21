@@ -18,6 +18,7 @@ import { useFriendsEvents } from '../hooks/use-friends-events'
 import { useWeekStats } from '../hooks/use-week-stats'
 import { useTimeAgo } from '../hooks/use-time-ago'
 import { usePush } from '../hooks/use-push'
+import { useAppUpdate } from '../hooks/use-app-update'
 import { BottomNav } from './BottomNav'
 import { StatsCards } from './StatsCards'
 import { WeekChart } from './WeekChart'
@@ -33,6 +34,29 @@ type Props = {
 
 type Tab = 'home' | 'people' | 'feed' | 'settings'
 type FeedTab = 'friends' | 'my'
+
+// VAPID public key (safe to embed in client)
+const VAPID_PUBLIC_KEY = 'BB9szPlMVlU9KtLpwYqFYOMOLpNo-Nb-xsbP3y18lAIM-29drXGSm0_-6RlzIfHvwj0V8VHX0wSt1Ym2LBRNDaE'
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return window.btoa(binary)
+}
 
 export function MainScreen({ profile, onLogout }: Props) {
   const navigate = useNavigate()
@@ -131,6 +155,87 @@ export function MainScreen({ profile, onLogout }: Props) {
       })
     }
   }, [events])
+
+  // Хук автоматической проверки обновлений
+  const { updateAvailable, remoteVersion, applyUpdate, dismiss: dismissUpdate } = useAppUpdate()
+
+  // Push-уведомления: баннер запроса разрешения и автоподписка при старте
+  const [pushBannerShow, setPushBannerShow] = useState(false)
+
+  // Убедиться, что push-подписка создана и сохранена в БД
+  const ensurePushSubscription = useCallback(async () => {
+    if (!profile) return
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const existing = await registration.pushManager.getSubscription()
+      if (existing) return
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource,
+      })
+
+      await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: profile.id,
+          endpoint: subscription.endpoint,
+          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
+          auth: arrayBufferToBase64(subscription.getKey('auth')!),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+    } catch (err) {
+      console.warn('[Push] Не удалось создать подписку при старте:', err)
+    }
+  }, [profile])
+
+  // Инициализация пушей при входе авторизованного пользователя
+  useEffect(() => {
+    if (!profile) return
+    let cancelled = false
+
+    const initPush = async () => {
+      // Проверка поддержки Push API
+      if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return
+      }
+
+      const permission = Notification.permission
+
+      if (permission === 'default') {
+        // Попытка автоматического запроса (iOS Safari блокирует без клика)
+        try {
+          const p = await Notification.requestPermission()
+          if (p === 'granted') {
+            await ensurePushSubscription()
+          } else if (!cancelled) {
+            setPushBannerShow(true) // показать ненавязчивый баннер
+          }
+        } catch {
+          if (!cancelled) setPushBannerShow(true)
+        }
+      } else if (permission === 'granted') {
+        await ensurePushSubscription()
+      }
+    }
+
+    initPush()
+    return () => { cancelled = true }
+  }, [profile, ensurePushSubscription])
+
+  // Обработчик кнопки «Разрешить уведомления» в баннере
+  const handleAllowNotifications = useCallback(async () => {
+    try {
+      const p = await Notification.requestPermission()
+      if (p === 'granted') {
+        await ensurePushSubscription()
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPushBannerShow(false)
+    }
+  }, [ensurePushSubscription])
 
   // Handlers
   const handlePoop = async () => {
@@ -305,8 +410,60 @@ export function MainScreen({ profile, onLogout }: Props) {
     navigate,
   }
 
-      return (
+  return (
     <div className="mobile-container min-h-dvh bg-transparent text-[#111827] pb-24">
+      <PWAInstallBanner />
+
+      {/* Баннер запроса разрешения на уведомления (permission === 'default') */}
+      {pushBannerShow && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[60] px-4">
+          <div className="flex items-center gap-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-[20px] p-3.5 shadow-[0_8px_30px_rgba(15,23,42,0.12)]">
+            <span className="text-2xl">🔔</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-slate-900">Разрешите уведомления</div>
+              <div className="text-[11px] text-slate-500 leading-tight">
+                Включите пуш-уведомления, чтобы не пропустить важные обновления.
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleAllowNotifications}
+              className="shrink-0 bg-[#111827] hover:bg-[#1f2937] text-white text-xs font-bold px-3.5 py-2 rounded-full transition-colors"
+            >
+              Разрешить уведомления
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно обновления приложения */}
+      {updateAvailable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="bg-black/40 backdrop-blur-sm rounded-[24px] p-6 w-full max-w-md text-center shadow-2xl">
+            <div className="text-4xl mb-2">🎉</div>
+            <h2 className="text-xl font-extrabold text-white mb-2">Вышло обновление!</h2>
+            <p className="text-sm text-slate-100 mb-5">
+              Доступна новая версия приложения (v{remoteVersion}). Обновите приложение, чтобы получить свежие улучшения.
+            </p>
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={applyUpdate}
+                className="flex-1 bg-white text-slate-900 py-3 rounded-full text-sm font-bold shadow-[0_4px_14px_rgba(15,23,42,0.18)] transition-colors hover:bg-slate-100"
+              >
+                Обновить
+              </button>
+              <button
+                type="button"
+                onClick={dismissUpdate}
+                className="px-5 py-3 rounded-full bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-colors"
+              >
+                Позже
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <PWAInstallBanner />
 
       {activeTab === 'home' && (
@@ -406,7 +563,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'feed' && <FeedTabView {...feedTabProps} />}
 
-      {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} />}
+      {activeTab === 'settings' && <SettingsTab profile={profile} onLogout={onLogout} onApplyUpdate={applyUpdate} />}
       {showBristolModal && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
