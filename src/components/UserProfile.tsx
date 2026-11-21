@@ -385,42 +385,33 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
 
   return (
     <div className="mobile-container">
-      <header className={`p-4 rounded-2xl mb-4 flex items-center justify-between ${
+      <header className={`p-4 rounded-2xl mb-4 flex items-center justify-between gap-3 ${
         'bg-white border-2 border-blue-200'
       }`}>
-        <button onClick={handleGoBack} className="text-lg">←</button>
-        <div className="flex-1 flex flex-col items-center text-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={handleGoBack} className="text-lg shrink-0">←</button>
           <div className="w-16 h-16 rounded-full overflow-hidden shrink-0">
             <UserAvatar avatar={profile?.avatar || null} className="w-16 h-16 rounded-full overflow-hidden" />
           </div>
-          <div className={`text-xl font-bold ${'text-gray-800'}`}>
-            {profile.username}
+          <div className="min-w-0">
+            <div className="text-2xl font-extrabold text-slate-900 truncate">{profile.username}</div>
           </div>
-          <div className={`text-xs ${'text-gray-600'}`}>
-            {isOwner ? 'Ваш профиль' : profile.id.substring(0, 8) + '...'}
-          </div>
-          {!isOwner && (
-            <button
-              onClick={handleToggleFollow}
-              className={`mt-3 px-4 py-1.5 rounded-lg text-sm font-semibold ${
-                'bg-red-50 border-2 border-red-200 text-red-600'
-              }`}
-            >
-              {isFollowing ? 'Отписаться' : 'Подписаться'}
-            </button>
-          )}
-          {isOwner && (
-            <button
-              onClick={onLogout}
-              className={`mt-3 px-4 py-1.5 rounded-lg text-sm font-semibold ${
-                'bg-gray-100 text-gray-700'
-              }`}
-            >
-              Выйти
-            </button>
-          )}
         </div>
-        <div className="w-10" />
+        {isOwner ? (
+          <button
+            onClick={onLogout}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700"
+          >
+            Выйти
+          </button>
+        ) : (
+          <button
+            onClick={handleToggleFollow}
+            className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold bg-red-50 border-2 border-red-200 text-red-600`}
+          >
+            {isFollowing ? 'Отписаться' : 'Подписаться'}
+          </button>
+        )}
       </header>
 
       {/* Статистика */}

@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router-dom'
 
 interface PoopButtonProps {
   onPoop: () => void
+  onResetBallast?: () => void
+  isSendingBallast?: boolean
 }
 
-export function PoopButton({ onPoop }: PoopButtonProps) {
+export function PoopButton({
+  onPoop,
+  onResetBallast,
+  isSendingBallast = false,
+}: PoopButtonProps) {
   const navigate = useNavigate()
 
   return (
@@ -21,8 +27,9 @@ export function PoopButton({ onPoop }: PoopButtonProps) {
       </button>
       <button
         type="button"
-        onClick={() => {}}
-        className="w-full h-12 rounded-full bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(15,23,42,0.05)] border border-slate-100 transition-all"
+        onClick={() => onResetBallast?.()}
+        disabled={isSendingBallast}
+        className={`w-full h-12 rounded-full bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(15,23,42,0.05)] border border-slate-100 transition-all ${isSendingBallast ? 'opacity-60' : ''}`}
       >
         <span>Сбросить балласт</span>
         <span className="text-base">💨</span>

@@ -60,6 +60,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   useEffect(() => {
     try { sessionStorage.setItem('pooptrack_active_tab', activeTab) } catch {}
   }, [activeTab])
+
   const [feedTab, setFeedTab] = useState<FeedTab>('friends')
   const [peopleTab, setPeopleTab] = useState<'following' | 'followers'>('following')
   const [showBristolModal, setShowBristolModal] = useState(false)
@@ -67,6 +68,15 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [selectedType, setSelectedType] = useState<number | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
   const [successBristolType, setSuccessBristolType] = useState<number | null>(null)
+  const [isSendingBallast, setIsSendingBallast] = useState(false)
+  const [showBallastToast, setShowBallastToast] = useState(false)
+
+  // Авто-скрытие баннера «Сбросить балласт» через 4 секунды
+  useEffect(() => {
+    if (!showBallastToast) return
+    const timer = setTimeout(() => setShowBallastToast(false), 4000)
+    return () => clearTimeout(timer)
+  }, [showBallastToast])
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null)
   const [showAddFriendModal, setShowAddFriendModal] = useState(false)
@@ -116,6 +126,43 @@ export function MainScreen({ profile, onLogout }: Props) {
       setCurrentEventId(eventId)
       setShowBristolModal(true)
       setSelectedType(null)
+    }
+  }
+
+  // Балластный сброс: НЕ создаёт запись в таблице events (не попадает в ленту друзей,
+  // мою историю и счётчики Сегодня / Неделя / Всего).
+  // Лёгкий кулдаун защищает от двойного клика и спама пушами.
+  const BALLAST_COOLDOWN_MS = 2500
+  const handleResetBallast = async () => {
+    if (isSendingBallast) return
+    setIsSendingBallast(true)
+    try {
+      const rawUsername = (profile.username ?? '').trim()
+      const senderName =
+        rawUsername && rawUsername.toLowerCase() !== 'unknown' ? rawUsername : 'Друг'
+      const pushBody =
+        'Внимание! Газовая атака, воздушный балласт успешно сброшен 💨'
+      // Подписчики текущего пользователя (строка friends, где user_id = текущий пользователь)
+      const { data: followersData } = await supabase
+        .from('friends')
+        .select('follower_id')
+        .eq('user_id', profile.id)
+      const followersList = (followersData || []) as Array<{ follower_id: string }>
+      for (const f of followersList) {
+        if (f.follower_id === profile.id) continue
+        await sendPushToUser(
+          f.follower_id,
+          `${senderName} объявляет газовую атаку!`,
+          pushBody
+        )
+      }
+    } catch (err) {
+      console.warn('[Ballast] Ошибка отправки push подписчикам:', err)
+    } finally {
+      // Баннер показывается всегда, даже если подписчиков нет
+      setShowBallastToast(true)
+      // Кулдаун после отправки, чтобы не спамить пушами при случайном двойном тапе
+      setTimeout(() => setIsSendingBallast(false), BALLAST_COOLDOWN_MS)
     }
   }
 
@@ -273,7 +320,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
           <WeekChart weekData={weekData} maxCount={maxCount} />
-          <PoopButton onPoop={handlePoop} />
+          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} />
 
           {events.length > 0 ? (
             <div className="space-y-2">
@@ -465,6 +512,26 @@ export function MainScreen({ profile, onLogout }: Props) {
       )}
 
       {showSuccess && <SuccessAnimation bristolType={successBristolType} onComplete={handleSuccessComplete} />}
+
+      {/* Баннер «Сбросить балласт» — поверх контента, исчезает через 4 секунды */}
+      {showBallastToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 sm:px-6 w-full max-w-md">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 border border-orange-400/60 rounded-2xl p-4 shadow-2xl shadow-orange-500/40 flex items-center gap-3 animate-slide-up">
+            <span className="text-2xl shrink-0">💨</span>
+            <p className="flex-1 text-sm font-bold text-white leading-snug">
+              Внимание! Газовая атака, воздушный балласт успешно сброшен
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowBallastToast(false)}
+              className="shrink-0 text-white/80 hover:text-white text-lg leading-none"
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={!!deleteConfirmEventId}

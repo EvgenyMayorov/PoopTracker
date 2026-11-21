@@ -647,7 +647,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
       <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
         <div className="text-left leading-tight">
-          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.2</div>
+          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.3</div>
           <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
         </div>
         <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">
