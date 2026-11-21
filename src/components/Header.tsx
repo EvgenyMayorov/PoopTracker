@@ -26,32 +26,24 @@ export function Header({ activeTab, profile }: HeaderProps) {
     }
   }, [profile])
 
-  const tabTitles: Record<string, string> = {
-    home: 'Сводка активности',
-    people: 'Люди',
-    feed: 'Лента',
-    settings: 'Настройки',
-  }
-
   return (
-    <header className="h-20 px-4 bg-transparent flex flex-col justify-center gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-20 h-20 rounded-full bg-slate-200/80 flex items-center justify-center text-lg shrink-0">
-            <UserAvatar avatar={avatar || '💩'} className="w-20 h-20 rounded-full overflow-hidden shrink-0" />
+    <header className="px-4 bg-transparent">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start min-w-0">
+          <div className="text-lg font-bold text-slate-700 leading-tight mb-0.5 truncate">
+            {displayName || 'Пользователь'}
           </div>
-          <div className="min-w-0">
-            <div className="text-lg font-bold text-slate-900 truncate">
-              {displayName || 'Пользователь'}
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-semibold">
-              PoopTrack
-            </div>
+          <div className="text-[34px] font-extrabold text-slate-900 leading-none tracking-tight">
+            Сводка
           </div>
         </div>
-      </div>
-      <div className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
-        {tabTitles[activeTab] || 'Сводка активности'}
+        <div className="shrink-0">
+          <UserAvatar
+            avatar={avatar || '💩'}
+            className="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-md ring-2 ring-white/70"
+            style={{ width: 96, height: 96 }}
+          />
+        </div>
       </div>
     </header>
   )

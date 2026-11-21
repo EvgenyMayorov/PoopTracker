@@ -51,6 +51,7 @@ interface UserAvatarProps {
   avatar: string | null | undefined
   className?: string
   containerClassName?: string
+  style?: React.CSSProperties
 }
 
 // Страховка размеров: если размер не передан, всегда w-10 h-10 (40px),
@@ -63,23 +64,34 @@ function hasSizeClass(cls: string | undefined): boolean {
   return /(^|\s)(w-|h-)/.test(cls)
 }
 
-export function UserAvatar({ avatar, className, containerClassName }: UserAvatarProps) {
+// Определяет итоговый класс контейнера: если в className или containerClassName есть w-/h-,
+// используем их (не добавляем дефолтные w-10 h-10).
+function resolveContainerClass(className: string | undefined, containerClassName: string | undefined): string {
+  const hasExplicitSize = hasSizeClass(className) || hasSizeClass(containerClassName)
+  const base = hasExplicitSize ? '' : DEFAULT_CONTAINER_CLASS
+  const extra = [className, containerClassName].filter(Boolean).join(' ')
+  return [base, extra].filter(Boolean).join(' ')
+}
+
+export function UserAvatar({ avatar, className, containerClassName, style }: UserAvatarProps) {
   const fallbackAvatar = avatar || '💩'
+  // className предназначен для внутреннего <img> (или <span> для эмодзи).
+  // Если в className переданы размеры — они применяются к img/span,
+  // но для контейнера используем resolveContainerClass.
   const imgClass = className
     ? hasSizeClass(className)
       ? `object-cover block ${className}`
       : DEFAULT_IMG_CLASS
     : DEFAULT_IMG_CLASS
 
+  const containerClass = resolveContainerClass(className, containerClassName)
+
   if (is3DAvatarKey(fallbackAvatar)) {
     const avatarInfo = AVATARS_3D.find((a) => a.id === fallbackAvatar)
     const fileName = avatarInfo ? avatarInfo.fileName : 'Dino.png'
-    const containerClass = hasSizeClass(containerClassName)
-      ? (containerClassName as string)
-      : `${DEFAULT_CONTAINER_CLASS} ${containerClassName ?? ''}`.trim()
 
     return (
-      <div className={containerClass}>
+      <div className={containerClass} style={style}>
         <img
           src={getAvatarUrl(fileName)}
           alt={avatarInfo?.label || fallbackAvatar}
@@ -92,12 +104,8 @@ export function UserAvatar({ avatar, className, containerClassName }: UserAvatar
   }
 
   // Старый эмодзи-аватар или дефолтный — рендерим текст как раньше
-  const containerClass = hasSizeClass(containerClassName)
-    ? `flex items-center justify-center ${containerClassName}`
-    : `${DEFAULT_CONTAINER_CLASS} flex items-center justify-center ${containerClassName ?? ''}`.trim()
-
   return (
-    <div className={containerClass}>
+    <div className={containerClass} style={style}>
       <span className={`text-center ${className ?? ''}`}>{fallbackAvatar}</span>
     </div>
   )

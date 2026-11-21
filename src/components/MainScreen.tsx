@@ -311,18 +311,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'home' && (
         <div className="px-4 pt-4 space-y-4">
-          <header className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
-                <UserAvatar avatar={profile.avatar || null} className="w-full h-full object-cover" />
-              </div>
-              <span className="text-[15px] font-bold text-[#111827]">{profile.username}</span>
-            </div>
-          </header>
-
-          <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none">
-            Сводка
-          </h1>
+          <Header activeTab="home" profile={profile} />
 
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
           <WeekChart weekData={weekData} maxCount={maxCount} />
