@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
 import { getDisplayName } from '../lib/displayName'
 import { getBristolDescription } from '../lib/bristol'
@@ -36,6 +36,7 @@ type FeedTab = 'friends' | 'my'
 
 export function MainScreen({ profile, onLogout }: Props) {
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Hooks
   const { events, fetchEvents, addEvent, updateEventBristol, deleteEvent } = useMyEvents(profile)
@@ -50,6 +51,17 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Local UI state
   const [activeTab, setActiveTab] = useState<Tab>(() => {
+    // 1) Приоритет — вкладка, переданная при навигации из профиля друга
+    //    (например, через BottomNav внутри UserProfile.tsx).
+    try {
+      const fromState = (location.state as any)?.activeTab
+      if (typeof fromState === 'string' && ['home', 'people', 'feed', 'settings'].includes(fromState)) {
+        return fromState as Tab
+      }
+    } catch {
+      // ignore
+    }
+    // 2) Иначе — сохранённая ранее вкладка из sessionStorage.
     try {
       const saved = sessionStorage.getItem('pooptrack_active_tab')
       return (saved === 'home' || saved === 'people' || saved === 'feed' || saved === 'settings') ? (saved as Tab) : 'home'
@@ -301,18 +313,11 @@ export function MainScreen({ profile, onLogout }: Props) {
         <div className="px-4 pt-4 space-y-4">
           <header className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-full bg-emerald-100/80 flex items-center justify-center text-xl">
-                {profile.avatar || '💩'}
+              <div className="w-12 h-12 rounded-full overflow-hidden shrink-0">
+                <UserAvatar avatar={profile.avatar || null} className="w-full h-full object-cover" />
               </div>
               <span className="text-[15px] font-bold text-[#111827]">{profile.username}</span>
             </div>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:bg-white transition-colors"
-              aria-label="Настройки"
-            >
-              ⚙️
-            </button>
           </header>
 
           <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none">

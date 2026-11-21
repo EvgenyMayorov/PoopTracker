@@ -132,6 +132,10 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
     try {
       const permission = Notification.permission
+
+      // Тумблер можно сбросить в false ТОЛЬКО в двух случаях:
+      // 1) пользователь сам выключил его (localStorage 'false'),
+      // 2) разрешение уведомлений == 'denied'.
       if (permission === 'denied') {
         setPushStatus('blocked')
         setPushEnabled(false)
@@ -139,74 +143,73 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
         return
       }
 
-      // Инициализируем состояние из localStorage, но если разрешение уже предоставлено — всегда включаем.
-// Это гарантирует, что тумблер не сбросится в false при повторном входе в Настройки.
       const stored = localStorage.getItem('poop_push_enabled')
-      const isGranted = typeof Notification !== 'undefined' && permission === 'granted'
+
+      // Пользователь явно выключил уведомления ранее — не включаем автоматически.
       if (stored === 'false') {
         setPushEnabled(false)
         setPushStatus('disabled')
         return
       }
-      if (isGranted) {
+
+      // Если разрешение granted — всегда держим тумблер включённым (ON),
+      // даже если временная проверка подписки вернула null. Пользователь уже
+      // дал согласие, поэтому молча переподписываем устройство и синхронизируем
+      // push_subscriptions в Supabase, не сбрасывая тумблер.
+      if (permission === 'granted') {
         setPushEnabled(true)
         setPushStatus('enabled')
-      } else {
-        setPushEnabled(false)
-        setPushStatus('disabled')
-      }
-      return
-
-      // Фоновая проверка реальной подписки: SW -> pushManager.getSubscription() и запись в push_subscriptions.
-      let browserSubscription: PushSubscription | null = null
-      let registrationObj: ServiceWorkerRegistration | null = null
-      try {
-        const reg = await getRegistrationWithTimeout()
-        registrationObj = reg
-        if (reg) {
-          browserSubscription = await reg!.pushManager.getSubscription()
-        }
-      } catch (err) {
-        console.warn('[Push] Не удалось проверить SW-подписку:', err)
-      }
-
-      let dbSubscription: any = null
-      if (profile?.id) {
-        try {
-          const { data } = await supabase
-            .from('push_subscriptions')
-            .select('endpoint, p256dh, auth')
-            .eq('user_id', profile.id)
-            .limit(1)
-          dbSubscription = data?.[0] || null
-        } catch (err) {
-          console.warn('[Push] Не удалось проверить запись в push_subscriptions:', err)
-        }
-      }
-
-      const realEnabled = permission === 'granted' && (!!browserSubscription || !!dbSubscription)
-
-      if (realEnabled) {
-        // Подписка есть в браузере или в БД — не сбрасываем тумблер, тихо восстанавливаем/синхронизируем запись в БД.
-        setPushStatus('enabled')
-        setPushEnabled(true)
         cachePushStatus(true)
-        if (browserSubscription && dbSubscription) {
-          try {
-            await supabase
-              .from('push_subscriptions')
-              .upsert({
-                user_id: profile.id,
-                endpoint: browserSubscription!.endpoint,
-                p256dh: arrayBufferToBase64(browserSubscription!.getKey('p256dh')!),
-                auth: arrayBufferToBase64(browserSubscription!.getKey('auth')!),
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' })
-          } catch (err) {
-            console.warn('[Push] Tikhaya синхронизация push_subscriptions:', err)
+
+        let browserSubscription: PushSubscription | null = null
+        let registrationObj: ServiceWorkerRegistration | null = null
+        try {
+          const reg = await getRegistrationWithTimeout()
+          registrationObj = reg
+          if (reg) {
+            browserSubscription = await reg!.pushManager.getSubscription()
           }
-        } else if (dbSubscription && registrationObj && !browserSubscription) {
-          // Восстанавливаем подписку в браузере из записи в БД.
+        } catch (err) {
+          console.warn('[Push] Не удалось проверить SW-подписку:', err)
+        }
+
+        let dbSubscription: any = null
+        if (profile?.id) {
+          try {
+            const { data } = await supabase
+              .from('push_subscriptions')
+              .select('endpoint, p256dh, auth')
+              .eq('user_id', profile.id)
+              .limit(1)
+            dbSubscription = data?.[0] || null
+          } catch (err) {
+            console.warn('[Push] Не удалось проверить запись в push_subscriptions:', err)
+          }
+        }
+
+        // 1) Подписка уже есть в браузере — просто синхронизируем запись в БД.
+        if (browserSubscription) {
+          if (profile?.id) {
+            try {
+              await supabase
+                .from('push_subscriptions')
+                .upsert({
+                  user_id: profile.id,
+                  endpoint: browserSubscription!.endpoint,
+                  p256dh: arrayBufferToBase64(browserSubscription!.getKey('p256dh')!),
+                  auth: arrayBufferToBase64(browserSubscription!.getKey('auth')!),
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' })
+            } catch (err) {
+              console.warn('[Push] Tikhaya синхронизация push_subscriptions:', err)
+            }
+          }
+          return
+        }
+
+        // 2) Подписки в браузере нет, но есть запись в БД — восстанавливаем
+        //    подписку в браузере из записи в БД (если SW доступен).
+        if (dbSubscription && registrationObj && profile?.id) {
           try {
             const subscription = await registrationObj!.pushManager.subscribe({
               userVisibleOnly: true,
@@ -223,25 +226,19 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
               }, { onConflict: 'user_id' })
           } catch (err) {
             console.warn('[Push] Не удалось восстановить SW-подписку:', err)
-            setPushStatus('disabled')
-            setPushEnabled(false)
-            cachePushStatus(false)
           }
+          return
         }
-      } else if (permission === 'granted') {
-        // Разрешение granted, но реальной подписки нет — переподписываем устройство
-        // и обновляем запись в push_subscriptions в Supabase, сохраняя тумблер включённым.
-        setPushStatus('enabled')
-        setPushEnabled(true)
-        cachePushStatus(true)
 
-        if (registrationObj) {
+        // 3) Ни подписки в браузере, ни записи в БД нет, но разрешение granted —
+        //    молча переподписываем устройство и создаём запись в push_subscriptions.
+        if (!dbSubscription && registrationObj && profile?.id) {
           try {
             const newSubscription = await registrationObj!.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
             })
-            const { error } = await supabase
+            await supabase
               .from('push_subscriptions')
               .upsert({
                 user_id: profile.id,
@@ -250,19 +247,19 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
                 auth: arrayBufferToBase64(newSubscription.getKey('auth')!),
                 updated_at: new Date().toISOString()
               }, { onConflict: 'user_id' })
-            if (error) {
-              console.warn('[Push] Auto-resubscribe DB error:', error)
-            }
           } catch (err) {
             console.warn('[Push] Auto-resubscribe failed:', err)
           }
         }
+        return
       }
+
+      // Разрешение не granted и не denied (например, 'default') — тумблер выключен.
+      setPushEnabled(false)
+      setPushStatus('disabled')
     } catch (err) {
       console.error('[Push] Status check error:', err)
-      setPushStatus('disabled')
-      setPushEnabled(false)
-      cachePushStatus(false)
+      // НЕ сбрасываем тумблер при ошибке проверки — оставляем сохранённое состояние.
     }
   }, [profile?.id])
 
@@ -586,7 +583,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           ) : (
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
-                <UserAvatar avatar={avatar} className="w-24 h-24 rounded-full overflow-hidden" />
+                <UserAvatar avatar={avatar} containerClassName="w-24 h-24 overflow-hidden rounded-full" className="w-full h-full object-cover" />
                 <div className="truncate">
                   <div className="text-base font-bold text-[#111827] truncate">{profileUsername}</div>
                   <div className="text-xs text-slate-400 truncate mt-0.5">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
@@ -665,7 +662,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
       <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
         <div className="text-left leading-tight">
-          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.5</div>
+          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.6</div>
           <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
         </div>
         <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">

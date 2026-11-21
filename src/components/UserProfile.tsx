@@ -60,6 +60,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   // Состояния для подтверждения удаления записи
   const [deleteConfirmEventId, setDeleteConfirmEventId] = useState<string | null>(null)
   const [isDeletingEvent, setIsDeletingEvent] = useState(false)
+  const [mainTab, setMainTab] = useState<'home' | 'people' | 'feed' | 'settings'>('home')
 
   const weekData = useMemo(() => {
     const data: Array<{ day: string; count: number; isToday: boolean }> = []
@@ -337,6 +338,14 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const handleViewUser = (targetUserId: string) => {
     if (targetUserId === currentUserProfile.id) return
     navigate(`/user/${targetUserId}`)
+  }
+
+  // Навигация из BottomNav внутри профиля друга: переключаем экран Главной
+  // на выбранную вкладку через navigate('/') + location.state.activeTab,
+  // который MainScreen.tsx считывает при монтировании.
+  const handleBottomNavTabChange = (tab: 'home' | 'people' | 'feed' | 'settings') => {
+    setMainTab(tab)
+    navigate('/', { state: { activeTab: tab } })
   }
 
   const formatTimeAgo = (dateString: string): string => {
@@ -732,7 +741,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             </div>
           </div>
         )}
-        <BottomNav activeTab="home" setActiveTab={() => {}} onPoop={() => {}} />
+        <BottomNav activeTab={mainTab} setActiveTab={handleBottomNavTabChange} onPoop={() => {}} />
       </div>
   )
 }
