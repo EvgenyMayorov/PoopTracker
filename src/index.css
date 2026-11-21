@@ -57,9 +57,9 @@
 /* Base styles */
 html, body {
   color-scheme: light;
-  background-color: var(--background);
-  background-image: linear-gradient(to bottom, #F3FCFF 0%, #FFFFFF 45%);
-  background-attachment: fixed;
+  background-color: transparent !important;
+  background-image: none !important;
+  background-attachment: fixed !important;
   -webkit-tap-highlight-color: transparent;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
@@ -95,6 +95,12 @@ html, body {
   position: relative;
 }
 
+/* Root element stacking context above live background */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
 /* Mobile container - full width on mobile, centered with shadow on desktop */
 .mobile-container {
   width: 100%;
@@ -102,9 +108,8 @@ html, body {
   max-width: 448px;
   margin: 0 auto;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 10px 40px -10px rgba(0, 0, 0, 0.1);
-  background-color: var(--background);
-  background-image: linear-gradient(to bottom, #F3FCFF 0%, #FFFFFF 45%);
-  background-attachment: fixed;
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
 /* On desktop (min-width: 768px), add shadow-xl equivalent */
@@ -380,6 +385,55 @@ body {
 @keyframes hazardScroll {
   0% { background-position: 0 0; }
   100% { background-position: 40px 0; }
+}
+
+/* ============ LIVE GRADIENT BACKGROUND ============ */
+
+.live-bg {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #00a8cc 0%, #6acbe0 45%, #d8e2e8 78%, #f5ebe6 100%);
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wave {
+  position: absolute;
+  left: -25%;
+  width: 150%;
+  height: 140px;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 68%);
+  filter: blur(22px);
+  animation: drift 6s ease-in-out infinite alternate;
+}
+
+.wave:nth-child(1) {
+  top: 20%;
+  animation-duration: 5s;
+}
+
+.wave:nth-child(2) {
+  top: 48%;
+  animation-duration: 7s;
+  animation-delay: -2s;
+}
+
+.wave:nth-child(3) {
+  top: 72%;
+  animation-duration: 6s;
+  animation-delay: -4s;
+}
+
+@keyframes drift {
+  0% {
+    transform: translateY(-45px) scaleX(0.9) rotate(-3deg);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(45px) scaleX(1.1) rotate(3deg);
+    opacity: 1;
+  }
 }
 
 /* ============ ANIMATION CLASSES ============ */

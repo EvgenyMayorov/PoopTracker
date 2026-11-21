@@ -246,7 +246,7 @@ export function MainScreen({ profile, onLogout }: Props) {
   }
 
       return (
-    <div className="mobile-container min-h-dvh bg-[#F5F7FA] text-[#111827] pb-24">
+    <div className="mobile-container min-h-dvh bg-transparent text-[#111827] pb-24">
       <PWAInstallBanner />
 
       {activeTab === 'home' && (
@@ -267,7 +267,7 @@ export function MainScreen({ profile, onLogout }: Props) {
             </button>
           </header>
 
-          <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
             Сводка
           </h1>
 
@@ -300,7 +300,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'people' && (
         <div className="px-4 pt-5 space-y-3.5">
-          <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
             Люди
           </h1>
 
@@ -375,9 +375,21 @@ export function MainScreen({ profile, onLogout }: Props) {
                     selectedType === type ? 'bg-indigo-50 ring-2 ring-indigo-500' : 'bg-slate-50 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-2xl">{type <= 2 ? '🧱' : type <= 4 ? '🏆' : '☢️'}</span>
+                  <span
+                  className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                    type === 1 ? 'bg-amber-700' : type === 2 ? 'bg-amber-500' : type === 3 ? 'bg-emerald-500' : type === 4 ? 'bg-emerald-600' : type === 5 ? 'bg-orange-400' : type === 6 ? 'bg-orange-500' : 'bg-rose-500'
+                  }`}
+                />
                   <div>
-                    <div className="font-bold text-sm text-[#111827]">Тип {type}</div>
+                    <div className="font-bold text-sm text-[#111827]">
+                      {type === 1 && 'Запор'}
+                      {type === 2 && 'Склонность к запору'}
+                      {type === 3 && 'Норма'}
+                      {type === 4 && 'Идеал'}
+                      {type === 5 && 'Склонность к диарее'}
+                      {type === 6 && 'Диарея'}
+                      {type === 7 && 'Сильная диарея'}
+                    </div>
                     <div className="text-xs text-slate-500">
                       {type === 1 && 'Отдельные твёрдые комочки'}
                       {type === 2 && 'Комковатая и плотная'}
