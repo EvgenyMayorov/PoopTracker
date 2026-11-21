@@ -20,44 +20,80 @@ registerRoute(
   })
 )
 
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(self.clients.claim())
+})
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
+const DEFAULT_PUSH_TITLE = 'PoopTrack'
+const DEFAULT_PUSH_BODY = 'Новое уведомление!'
+const PUSH_TAG = 'pooptrack-push'
+
+async function extractPushPayload(event) {
+  if (!event.data) {
+    return { title: DEFAULT_PUSH_TITLE, body: DEFAULT_PUSH_BODY, tag: PUSH_TAG, data: {} }
+  }
+
+  try {
+    const json = await event.data.json()
+    return {
+      title: json.title || DEFAULT_PUSH_TITLE,
+      body: json.body || DEFAULT_PUSH_BODY,
+      tag: PUSH_TAG,
+      data: json.data || {},
+    }
+  } catch {
+    try {
+      const text = await event.data.text()
+      return {
+        title: DEFAULT_PUSH_TITLE,
+        body: text || DEFAULT_PUSH_BODY,
+        tag: PUSH_TAG,
+        data: {},
+      }
+    } catch {
+      return { title: DEFAULT_PUSH_TITLE, body: DEFAULT_PUSH_BODY, tag: PUSH_TAG, data: {} }
+    }
+  }
+}
+
 self.addEventListener('push', (event) => {
-  let title = 'PoopTrack'
-  let options = {
-    body: '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: 'poop-notification',
-    data: {},
-    vibrate: [200, 100, 200],
-  }
+  event.waitUntil((async () => {
+    const payload = await extractPushPayload(event)
 
-  if (event.data) {
-    event.waitUntil(
-      event.data.text().then((payloadText) => {
-        let parsed = {}
-        try {
-          parsed = JSON.parse(payloadText)
-        } catch {
-          parsed = { body: payloadText }
-        }
+    const options = {
+      body: payload.body,
+      tag: PUSH_TAG,
+      renotify: true,
+      data: payload.data,
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      vibrate: [200, 100, 200],
+    }
 
-        title = parsed.title || 'PoopTrack'
-        options.body = parsed.body || payloadText
-        options.tag = parsed.tag || 'poop-notification'
-        options.data = parsed.data || {}
-        options.vibrate = parsed.vibrate || [200, 100, 200]
-      }).then(() =>
-        self.registration.showNotification(title, options)
-      )
-    )
-  } else {
-    event.waitUntil(self.registration.showNotification(title, options))
-  }
+    try {
+      await self.registration.showNotification(payload.title, options)
+    } catch (err) {
+      // iOS Safari may reject unknown options; retry without them
+      try {
+        await self.registration.showNotification(payload.title, { body: payload.body, tag: PUSH_TAG, renotify: true, data: payload.data })
+      } catch (err2) {
+        console.error('[SW] Push notification failed:', err2)
+      }
+    }
+  })())
 })
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  event.waitUntil(
-    self.clients.openWindow('/')
-  )
+  event.waitUntil(self.clients.openWindow('/'))
 })

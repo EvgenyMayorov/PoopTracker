@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
 import { t } from '../i18n'
 import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl } from './UserAvatar'
+import { usePush, PUSH_PERMISSION_HINT } from '../hooks/use-push'
 
 interface SettingsTabProps {
   profile: Profile
@@ -76,6 +77,11 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   const [pushError, setPushError] = useState<string | null>(null)
   const [sendingTest, setSendingTest] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
+  const [devicePermission, setDevicePermission] = useState<NotificationPermission | 'unsupported'>(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
+  const [deviceSubscriptionActive, setDeviceSubscriptionActive] = useState(false)
+  const [reconnecting, setReconnecting] = useState(false)
+  const [reconnectResult, setReconnectResult] = useState<string | null>(null)
+  const { requestPermissionAndSubscribe, getDeviceState: fetchDeviceState } = usePush()
 
   // Ключи для кэширования состояния Push-уведомлений в localStorage.
   const PUSH_CACHE_KEY = 'poop_push_enabled'
@@ -320,65 +326,27 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
     setPushStatus('loading')
 
     try {
-      // 1. Запрашиваем разрешение на уведомления (базовые, без SW)
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        setPushError('Разрешение на уведомления не предоставлено')
-        setPushStatus('blocked')
+      const result = await requestPermissionAndSubscribe(profile.id)
+      // Обновить статус устройства после подписки
+      try {
+        const state = await fetchDeviceState()
+        setDevicePermission(state.permission)
+        setDeviceSubscriptionActive(state.subscriptionActive)
+      } catch {
+        // ignore
+      }
+
+      if (!result.ok) {
+        setPushError(result.message || PUSH_PERMISSION_HINT)
+        setPushStatus(result.permission === 'denied' ? 'blocked' : 'disabled')
         setPushEnabled(false)
+        cachePushStatus(false)
         return
       }
-
-      // 2. Обеспечиваем регистрацию Service Worker (на GitHub Pages критично)
-      await ensureServiceWorkerRegistered()
-
-      // 3. Пробуем получить активную регистрацию SW с таймаутом
-      const registration = await getRegistrationWithTimeout()
-
-      // 4. Пытаемся создать push-подписку, если браузер поддерживает Web Push
-      if (registration && 'PushManager' in window && VAPID_PUBLIC_KEY) {
-        try {
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
-          })
-
-          const { error } = await supabase
-            .from('push_subscriptions')
-            .upsert({
-              user_id: profile.id,
-              endpoint: subscription.endpoint,
-              p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
-              auth: arrayBufferToBase64(subscription.getKey('auth')!),
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'user_id' })
-
-          if (error) {
-            console.error('[Push] Save subscription error:', error)
-            setPushError('Ошибка сохранения подписки: ' + error.message)
-            setPushStatus('disabled')
-            setPushEnabled(false)
-            return
-          }
-
-          setPushStatus('enabled')
-          setPushEnabled(true)
-          setPushError(null)
-          cachePushStatus(true)
-          return
-        } catch (pushErr: any) {
-          console.error('[Push] Web Push subscribe failed, using basic notifications:', pushErr)
-          // Падаем ниже — включаем базовые уведомления без push-подписки
-        }
-      }
-
-      // 5. Браузер не поддерживает Web Push / pushManager — включаем базовые уведомления
       setPushStatus('enabled')
       setPushEnabled(true)
-      setPushError(null)
       cachePushStatus(true)
     } catch (err: any) {
-      console.error('[Push] Subscribe error:', err)
       setPushError('Ошибка подписки: ' + (err.message || 'Неизвестная ошибка'))
       setPushStatus('disabled')
       setPushEnabled(false)
@@ -418,6 +386,40 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       setPushStatus('disabled')
       setPushEnabled(false)
       cachePushStatus(false)
+    }
+  }
+
+  const handleReconnectDevice = async () => {
+    setPushError(null)
+    setReconnectResult(null)
+    setReconnecting(true)
+    setPushStatus('loading')
+
+    try {
+      const result = await requestPermissionAndSubscribe(profile.id, true)
+      // Обновить статус устройства после переподключения
+      try {
+        const state = await fetchDeviceState()
+        setDevicePermission(state.permission)
+        setDeviceSubscriptionActive(state.subscriptionActive)
+      } catch {
+        // ignore
+      }
+
+      if (!result.ok) {
+        setPushError(result.message || PUSH_PERMISSION_HINT)
+        setReconnectResult('❌ ' + (result.message || 'Подписка не создана'))
+        setPushStatus(result.permission === 'denied' ? 'blocked' : 'disabled')
+        setPushEnabled(false)
+        cachePushStatus(false)
+        return
+      }
+      setPushStatus('enabled')
+      setPushEnabled(true)
+      cachePushStatus(true)
+      setReconnectResult('✅ Это устройство переподключено: подписка пересоздана и сохранена')
+    } finally {
+      setReconnecting(false)
     }
   }
 
@@ -630,6 +632,20 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
             <span className="w-6 h-6 rounded-full bg-white shadow-sm block" />
           </button>
         </div>
+
+        <div className="text-[11px] text-slate-400 px-1">
+          Права браузера: {devicePermission === 'unsupported' ? 'неизвестно' : devicePermission} | Подписка этого устройства: {deviceSubscriptionActive ? 'Активна' : 'Не создана'}
+        </div>
+        <button
+          onClick={handleReconnectDevice}
+          disabled={reconnecting}
+          className={`w-full py-3 rounded-full text-[10px] px-4 flex items-center justify-center gap-1 text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 ${reconnecting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          {reconnecting ? 'Переподключаем…' : '🔗 Переподключить это устройство'}
+        </button>
+        {reconnectResult && (
+          <p className={`text-xs px-2 ${reconnectResult.startsWith('✅') ? 'text-emerald-600' : 'text-rose-600'}`}>{reconnectResult}</p>
+        )}
 
         {pushError && <p className="text-xs text-rose-600 px-2">{pushError}</p>}
 
