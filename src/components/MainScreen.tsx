@@ -24,6 +24,7 @@ import { WeekChart } from './WeekChart'
 import { PoopButton } from './PoopButton'
 import { EventCard } from './EventCard'
 import { Header } from './Header'
+import { UserAvatar } from './UserAvatar'
 
 type Props = {
   profile: Profile
@@ -485,8 +486,8 @@ export function MainScreen({ profile, onLogout }: Props) {
             {friendSearchResult && !friendSearchResult.error && (
               <div className="rounded-2xl p-4 mb-4 bg-slate-50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-[52px] h-[52px] rounded-full bg-white flex items-center justify-center text-2xl shrink-0">
-                    {friendSearchResult.avatar || '💩'}
+                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
+                    <UserAvatar avatar={friendSearchResult.avatar || null} className="w-[52px] h-[52px] rounded-full overflow-hidden" />
                   </div>
                   <div className="truncate">
                     <div className="font-bold text-sm text-[#111827] truncate">{friendSearchResult.username}</div>

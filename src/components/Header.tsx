@@ -38,7 +38,7 @@ export function Header({ activeTab, profile }: HeaderProps) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-12 h-12 rounded-full bg-slate-200/80 flex items-center justify-center text-lg shrink-0">
-            <UserAvatar avatar={avatar || '💩'} className="w-12 h-12 rounded-full overflow-hidden" />
+            <UserAvatar avatar={avatar || '💩'} className="w-11 h-11 rounded-full overflow-hidden" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900 truncate">
@@ -49,12 +49,6 @@ export function Header({ activeTab, profile }: HeaderProps) {
             </div>
           </div>
         </div>
-        <button
-          aria-label="Настройки"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
-        >
-          ⚙️
-        </button>
       </div>
       <div className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
         {tabTitles[activeTab] || 'Сводка активности'}

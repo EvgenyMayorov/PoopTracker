@@ -7,6 +7,7 @@ import { getBristolDescription } from '../lib/bristol'
 import { ConfirmModal } from './ConfirmModal'
 import { CommentInput } from './CommentInput'
 import { UserAvatar } from './UserAvatar'
+import { BottomNav } from './BottomNav'
 
 type Props = {
   currentUserProfile: Profile
@@ -384,7 +385,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   }
 
   return (
-    <div className="mobile-container">
+    <div className="mobile-container pb-28">
       <header className={`p-4 rounded-2xl mb-4 flex items-center justify-between gap-3 ${
         'bg-white border-2 border-blue-200'
       }`}>
@@ -656,8 +657,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   onClick={() => handleViewUser(f.user_id)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-[52px] h-[52px] rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                    {f.avatar}
+                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
+                    <UserAvatar avatar={f.avatar || null} className="w-[52px] h-[52px] rounded-full overflow-hidden" />
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-slate-900">{f.username}</div>
@@ -687,8 +688,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   onClick={() => handleViewUser(f.user_id)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-[52px] h-[52px] rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                    {f.avatar}
+                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
+                    <UserAvatar avatar={f.avatar || null} className="w-[52px] h-[52px] rounded-full overflow-hidden" />
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-slate-900">{f.username}</div>
@@ -731,6 +732,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             </div>
           </div>
         )}
+        <BottomNav activeTab="home" setActiveTab={() => {}} onPoop={() => {}} />
       </div>
   )
 }
