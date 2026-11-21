@@ -28,8 +28,9 @@ export function AuthScreen() {
         }
         console.log('[Auth] Успешный вход:', data)
         setMessage('✅ Вход выполнен! Загрузка...')
-      } else if (mode === 'register') {
+} else if (mode === 'register') {
         const trimmedUsername = username.trim()
+        const trimmedEmail = email.trim().toLowerCase()
         if (!trimmedUsername) {
           setUsernameError('Введите никнейм')
           return
@@ -50,7 +51,7 @@ export function AuthScreen() {
         setUsernameError(null)
 
         console.log('[Auth] Регистрация...')
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({ email: trimmedEmail, password })
         if (error) {
           console.error('[Auth] Ошибка регистрации:', error)
           throw error
@@ -74,7 +75,8 @@ export function AuthScreen() {
               .insert({ 
                 id: data.user.id, 
                 username: trimmedUsername,
-                avatar: '💩',
+                avatar: 'Panda',
+                email: trimmedEmail,
                 updated_at: new Date().toISOString()
               })
 

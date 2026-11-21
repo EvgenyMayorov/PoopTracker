@@ -7,9 +7,23 @@
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
-  avatar TEXT NOT NULL DEFAULT '💩',
+  avatar TEXT NOT NULL DEFAULT 'Panda',
+  email TEXT,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Добавляем колонку email, если её нет (для миграций существующих баз)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'profiles'
+    AND column_name = 'email'
+  ) THEN
+    ALTER TABLE public.profiles ADD COLUMN email TEXT;
+  END IF;
+END $$;
 
 -- 2. Создаём таблицу events
 CREATE TABLE IF NOT EXISTS public.events (
@@ -265,8 +279,12 @@ CREATE POLICY "Service role can read all push subscriptions"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, avatar)
-  VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || substr(NEW.id::text, 1, 8)), '💩');
+  INSERT INTO public.profiles (id, username, avatar, email)
+  VALUES (NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || substr(NEW.id::text, 1, 8)),
+    'Panda',
+    LOWER(TRIM(COALESCE(NEW.email, '')))
+  );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

@@ -197,9 +197,37 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     }
   }
 
-  const handleToggleFollow = () => {
+  const handleToggleFollow = async () => {
     if (isOwner || !userId) return
-    setShowUnfollowConfirm(true)
+
+    if (isFollowing) {
+      // Отписка
+      setShowUnfollowConfirm(true)
+    } else {
+      // Подписка
+      await followUser()
+    }
+  }
+
+  const followUser = async () => {
+    if (!userId) return
+    setErrorMessage(null)
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .insert({ user_id: userId, follower_id: currentUserProfile.id })
+      if (error) {
+        console.error('[Follow] Ошибка:', error)
+        setErrorMessage(`Ошибка при подписке: ${error.message || 'Неизвестная ошибка'}`)
+        return
+      }
+      setIsFollowing(true)
+      fetchFollowers()
+      fetchFollowing()
+    } catch (err: any) {
+      console.error('[Follow] Исключение:', err)
+      setErrorMessage(`Ошибка при подписке: ${err.message || 'Неизвестная ошибка'}`)
+    }
   }
 
   const confirmUnfollow = async () => {
@@ -362,12 +390,19 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   }
 
   useEffect(() => {
-    fetchProfile()
-    fetchEvents()
-    fetchFollowers()
-    fetchFollowing()
-    checkIsFollowing()
-    setLoading(false)
+    let cancelled = false
+
+    const load = async () => {
+      await fetchProfile()
+      fetchEvents()
+      fetchFollowers()
+      fetchFollowing()
+      checkIsFollowing()
+      if (!cancelled) setLoading(false)
+    }
+
+    load()
+    return () => { cancelled = true }
   }, [fetchProfile, fetchEvents, fetchFollowers, fetchFollowing, checkIsFollowing])
 
   if (loading) {

@@ -71,26 +71,47 @@ export function useFriends(profile: Profile | null) {
 
   const followUser = useCallback(async (targetUserId: string) => {
     if (!profile) return
-    await supabase.from('friends').insert({ user_id: targetUserId, follower_id: profile.id })
+    const { error } = await supabase.from('friends').insert({ user_id: targetUserId, follower_id: profile.id })
+    if (error) {
+      console.error('[Friends] Ошибка при подписке:', error)
+      throw error
+    }
     fetchFollowing()
     fetchFollowers()
   }, [profile, fetchFollowing, fetchFollowers])
 
   const unfollowUser = useCallback(async (targetUserId: string) => {
     if (!profile) return
-    await supabase.from('friends').delete().eq('user_id', targetUserId).eq('follower_id', profile.id)
+    const { error } = await supabase.from('friends').delete().eq('user_id', targetUserId).eq('follower_id', profile.id)
+    if (error) {
+      console.error('[Friends] Ошибка при отписке:', error)
+      throw error
+    }
     fetchFollowing()
     fetchFollowers()
   }, [profile, fetchFollowing, fetchFollowers])
 
   const searchUserByEmail = useCallback(async (email: string) => {
-    const { data } = await supabase
+    const trimmedEmail = email.trim().toLowerCase()
+    if (!trimmedEmail) return null
+
+    let query = supabase
       .from('profiles')
       .select('id, username, email, avatar')
-      .ilike('email', email)
-      .limit(1)
+      .ilike('email', trimmedEmail)
+
+    // Исключаем самого текущего пользователя из результатов поиска
+    if (profile?.id) {
+      query = query.neq('id', profile.id)
+    }
+
+    const { data, error } = await query.limit(1)
+    if (error) {
+      console.error('[Friends] Ошибка поиска по email:', error)
+      return null
+    }
     return data?.[0] || null
-  }, [])
+  }, [profile])
 
   const isFollowing = useCallback(
     (userId: string) => following.some(f => f.user_id === userId),

@@ -7,7 +7,7 @@ import { Friend } from './types'
 export function useProfile(profile: Profile | null, onLogout: () => void) {
   const [profileUsername, setProfileUsername] = useState(profile?.username || '')
   const [avatar, setAvatar] = useState<string>(() =>
-    profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
+    profile?.avatar || localStorage.getItem('poop_avatar') || 'Panda'
   )
   const [usernameError, setUsernameError] = useState<string | null>(null)
 

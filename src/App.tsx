@@ -24,6 +24,12 @@ function App() {
         if (newSession?.user) {
           console.log('[PoopTracker] Загрузка профиля для:', newSession.user.id)
           await fetchProfile(newSession.user.id)
+          // Синхронизируем email в профиле после регистрации/входа
+          const { data: profile } = await supabase.from('profiles').select('email').eq('id', newSession.user.id).maybeSingle()
+          if (profile && !profile.email && newSession.user.email) {
+            await supabase.from('profiles').update({ email: newSession.user.email.trim().toLowerCase() }).eq('id', newSession.user.id)
+            console.log('[PoopTracker] Email синхронизирован в профиле:', newSession.user.email)
+          }
         } else {
           console.log('[PoopTracker] Сессия отсутствует')
           setProfile(null)
@@ -95,6 +101,12 @@ function App() {
       if (currentSession?.user && !session) {
         setSession(currentSession)
         await fetchProfile(currentSession.user.id)
+        // Синхронизируем email в профиле
+        const { data: profile } = await supabase.from('profiles').select('email').eq('id', currentSession.user.id).maybeSingle()
+        if (profile && !profile.email && currentSession.user.email) {
+          await supabase.from('profiles').update({ email: currentSession.user.email.trim().toLowerCase() }).eq('id', currentSession.user.id)
+          console.log('[PoopTracker] Email синхронизирован в профиле при checkSession:', currentSession.user.email)
+        }
       } else if (!currentSession) {
         setLoading(false)
       }
@@ -172,7 +184,7 @@ function App() {
           .insert({ 
             id: userId, 
             username: username,
-            avatar: '💩',
+            avatar: 'Panda',
             updated_at: new Date().toISOString()
           })
           .select()

@@ -543,8 +543,8 @@ export function MainScreen({ profile, onLogout }: Props) {
                 className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-[52px] h-[52px] rounded-full bg-amber-50 flex items-center justify-center text-2xl shrink-0">
-                    {f.avatar || '💩'}
+                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
+                    <UserAvatar avatar={f.avatar || null} className="w-full h-full rounded-full object-cover" />
                   </div>
                   <div className="truncate">
                     <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
