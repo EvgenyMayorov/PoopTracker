@@ -39,13 +39,13 @@ export function is3DAvatarKey(value: string | null | undefined): value is string
  * Единый компонент отрисовки аватара пользователя.
  *
  * Поддерживает:
- * - 3D-аватары (ключи: 'dino', 'wolf' и т.д.) — рендерит  с картинкой из public/avatars/
+ * - 3D-аватары (ключи: 'dino', 'wolf' и т.д.) — рендерит с картинкой из public/avatars/
  * - Старые эмодзи-аватары ('💩', '🦖' и т.д.) — рендерит текст эмодзи
  * - null / пустую строку — рендерит дефолтный эмодзи '💩'
  *
  * @param avatar  Значение поля profiles.avatar (ключ 3D-аватара, эмодзи или null)
- * @param className Tailwind-классы для контейнера (размер и т.п.)
- * @param containerClassName Дополнительные классы контейнера
+ * @param className Tailwind-классы для внутреннего <img>
+ * @param containerClassName Tailwind-классы для контейнера (размер и т.п.)
  */
 interface UserAvatarProps {
   avatar: string | null | undefined
@@ -53,18 +53,37 @@ interface UserAvatarProps {
   containerClassName?: string
 }
 
+// Страховка размеров: если размер не передан, всегда w-10 h-10 (40px),
+// чтобы ни одна картинка 512×512 не могла раздуться на пол-экрана.
+const DEFAULT_CONTAINER_CLASS = 'w-10 h-10 rounded-full overflow-hidden shrink-0'
+const DEFAULT_IMG_CLASS = 'w-full h-full object-cover rounded-full block'
+
+function hasSizeClass(cls: string | undefined): boolean {
+  if (!cls) return false
+  return /(^|\s)(w-|h-)/.test(cls)
+}
+
 export function UserAvatar({ avatar, className, containerClassName }: UserAvatarProps) {
   const fallbackAvatar = avatar || '💩'
+  const imgClass = className
+    ? hasSizeClass(className)
+      ? `object-cover block ${className}`
+      : DEFAULT_IMG_CLASS
+    : DEFAULT_IMG_CLASS
 
   if (is3DAvatarKey(fallbackAvatar)) {
     const avatarInfo = AVATARS_3D.find((a) => a.id === fallbackAvatar)
     const fileName = avatarInfo ? avatarInfo.fileName : 'Dino.png'
+    const containerClass = hasSizeClass(containerClassName)
+      ? (containerClassName as string)
+      : `${DEFAULT_CONTAINER_CLASS} ${containerClassName ?? ''}`.trim()
+
     return (
-      <div className={`rounded-full overflow-hidden shrink-0 ${containerClassName ?? ''}`}>
+      <div className={containerClass}>
         <img
           src={getAvatarUrl(fileName)}
           alt={avatarInfo?.label || fallbackAvatar}
-          className={`w-full h-full object-cover rounded-full ${className ?? ''}`}
+          className={imgClass}
           loading="lazy"
           decoding="async"
         />
@@ -73,8 +92,12 @@ export function UserAvatar({ avatar, className, containerClassName }: UserAvatar
   }
 
   // Старый эмодзи-аватар или дефолтный — рендерим текст как раньше
+  const containerClass = hasSizeClass(containerClassName)
+    ? `flex items-center justify-center ${containerClassName}`
+    : `${DEFAULT_CONTAINER_CLASS} flex items-center justify-center ${containerClassName ?? ''}`.trim()
+
   return (
-    <div className={`rounded-full overflow-hidden shrink-0 flex items-center justify-center ${containerClassName ?? ''}`}>
+    <div className={containerClass}>
       <span className={`text-center ${className ?? ''}`}>{fallbackAvatar}</span>
     </div>
   )

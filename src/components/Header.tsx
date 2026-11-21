@@ -37,11 +37,11 @@ export function Header({ activeTab, profile }: HeaderProps) {
     <header className="h-20 px-4 bg-transparent flex flex-col justify-center gap-2">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-12 h-12 rounded-full bg-slate-200/80 flex items-center justify-center text-lg shrink-0">
-            <UserAvatar avatar={avatar || '💩'} className="w-12 h-12 rounded-full overflow-hidden" />
+          <div className="w-20 h-20 rounded-full bg-slate-200/80 flex items-center justify-center text-lg shrink-0">
+            <UserAvatar avatar={avatar || '💩'} className="w-20 h-20 rounded-full overflow-hidden shrink-0" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-slate-900 truncate">
+            <div className="text-lg font-bold text-slate-900 truncate">
               {displayName || 'Пользователь'}
             </div>
             <div className="text-[10px] uppercase tracking-[0.14em] text-slate-400 font-semibold">

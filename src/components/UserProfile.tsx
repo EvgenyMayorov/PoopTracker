@@ -400,8 +400,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       }`}>
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={handleGoBack} className="text-lg shrink-0">←</button>
-          <div className="w-16 h-16 rounded-full overflow-hidden shrink-0">
-            <UserAvatar avatar={profile?.avatar || null} className="w-16 h-16 rounded-full overflow-hidden" />
+          <div className="w-14 h-14 rounded-full overflow-hidden shrink-0">
+            <UserAvatar avatar={profile?.avatar || null} className="w-14 h-14 rounded-full overflow-hidden shrink-0" />
           </div>
           <div className="min-w-0">
             <div className="text-2xl font-extrabold text-slate-900 truncate">{profile.username}</div>
@@ -540,8 +540,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                      <UserAvatar avatar={profile.avatar || null} className="w-10 h-10 rounded-full overflow-hidden" />
+                    <div className="w-11 h-11 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
+                      <UserAvatar avatar={profile.avatar || null} className="w-11 h-11 rounded-full overflow-hidden shrink-0" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${'text-gray-800'}`}>
@@ -607,7 +607,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                         >
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
-                              <UserAvatar avatar={comment.avatar || null} className="w-7 h-7 rounded-full overflow-hidden" />
+                              <UserAvatar avatar={comment.avatar || null} className="w-7 h-7 rounded-full overflow-hidden shrink-0" />
                             </div>
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
                             <span className={`text-xs ${'text-gray-500'}`}>
