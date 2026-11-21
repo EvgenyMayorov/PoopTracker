@@ -18,7 +18,18 @@ interface SendPushRequest {
   data?: any
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight request
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     const body = (await req.json()) as SendPushRequest
     const { userId, title, body: notificationBody, data } = body
@@ -33,7 +44,10 @@ Deno.serve(async (req) => {
     if (subError || !subscription) {
       return new Response(
         JSON.stringify({ error: "No push subscription found for user" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        { 
+          status: 404, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
       )
     }
 
@@ -67,7 +81,7 @@ Deno.serve(async (req) => {
       }),
       { 
         status: 200, 
-        headers: { "Content-Type": "application/json" } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     )
 
@@ -78,7 +92,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         status: 500, 
-        headers: { "Content-Type": "application/json" } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     )
   }

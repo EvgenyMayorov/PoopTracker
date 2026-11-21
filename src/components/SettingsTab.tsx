@@ -464,7 +464,14 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       setTestResult('✅ Серверное Push-уведомление отправлено!')
     } catch (err: any) {
       console.error('[Push] Test notification error:', err)
-      setTestResult('❌ Ошибка: ' + (err.message || 'Неизвестная ошибка'))
+      
+      // Extract detailed error info: message + stack trace / context
+      let details = err?.message || 'Неизвестная ошибка'
+      if (err?.stack) {
+        const stackLines = err.stack ? err.stack.split('\n').slice(0, 5).join('\n') : ''
+        details += '\n' + stackLines
+      }
+      setTestResult(`❌ Ошибка: ${details}`)
     } finally {
       setSendingTest(false)
     }

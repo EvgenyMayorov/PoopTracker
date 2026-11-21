@@ -464,7 +464,6 @@ export function MainScreen({ profile, onLogout }: Props) {
           </div>
         </div>
       )}
-      <PWAInstallBanner />
 
       {activeTab === 'home' && (
         <div className="px-4 pt-4 space-y-4">
