@@ -10,7 +10,7 @@ interface BottomNavProps {
 
 export function BottomNav({ activeTab, setActiveTab }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] h-16 bg-white/95 backdrop-blur-md border-t border-slate-100 grid grid-cols-4 items-center z-30 px-2">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[640px] h-16 bg-white/95 backdrop-blur-md border-t border-slate-100 grid grid-cols-4 items-center z-30 px-2">
       <button
         onClick={() => setActiveTab('home')}
         aria-label="Главная"

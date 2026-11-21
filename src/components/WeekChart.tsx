@@ -21,16 +21,10 @@ export function WeekChart({ weekData, maxCount }: WeekChartProps) {
               className={`w-6 rounded-xl transition-all duration-300 ${
                 dayData.count === 0
                   ? 'bg-slate-200/70'
-                  : dayData.isToday
-                  ? 'bg-gradient-to-b from-indigo-500 to-[#111827]'
-                  : 'bg-gradient-to-b from-emerald-400 to-teal-500'
+                  : 'bg-gradient-to-b from-indigo-500 to-[#111827]'
               }`}
             />
-            <span
-              className={`text-xs mt-2 whitespace-nowrap ${
-                dayData.isToday ? 'font-bold text-[#111827]' : 'font-medium text-slate-400'
-              }`}
-            >
+            <span className="text-xs mt-2 whitespace-nowrap font-semibold text-slate-900">
               {dayData.day}
             </span>
           </div>

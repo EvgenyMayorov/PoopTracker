@@ -48,6 +48,12 @@ export function Header({ activeTab, profile }: HeaderProps) {
             </div>
           </div>
         </div>
+        <button
+          aria-label="Настройки"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white/90 hover:text-white transition-colors"
+        >
+          ⚙️
+        </button>
       </div>
       <div className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
         {tabTitles[activeTab] || 'Сводка активности'}

@@ -276,19 +276,23 @@ export function MainScreen({ profile, onLogout }: Props) {
           <PoopButton onPoop={handlePoop} />
 
           {events.length > 0 ? (
-            <div className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
-                  ✓
+            <div className="space-y-2">
+              {events.slice(0, 7).map((event) => (
+                <div key={event.id} className="bg-white rounded-[20px] p-3.5 border border-slate-200/70 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                      ✓
+                    </div>
+                    <div className="truncate">
+                      <div className="text-sm font-bold text-[#111827]">Последняя запись</div>
+                      <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</div>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
+                    {event.bristol_type ? `Тип ${event.bristol_type}` : 'Готово!'}
+                  </span>
                 </div>
-                <div className="truncate">
-                  <div className="text-sm font-bold text-[#111827]">Последняя запись</div>
-                  <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(events[0].created_at)}</div>
-                </div>
-              </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
-                {events[0].bristol_type ? `Тип ${events[0].bristol_type}` : 'Готово!'}
-              </span>
+              ))}
             </div>
           ) : (
             <div className="text-center text-xs text-slate-400 py-4">

@@ -199,11 +199,35 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
             cachePushStatus(false)
           }
         }
-      } else {
-        // Разрешение есть, но реальной подписки нет — сбрасываем тумблер в выключенное состояние.
-        setPushStatus('disabled')
-        setPushEnabled(false)
-        cachePushStatus(false)
+      } else if (permission === 'granted') {
+        // Разрешение granted, но реальной подписки нет — переподписываем устройство
+        // и обновляем запись в push_subscriptions в Supabase, сохраняя тумблер включённым.
+        setPushStatus('enabled')
+        setPushEnabled(true)
+        cachePushStatus(true)
+
+        if (registrationObj) {
+          try {
+            const newSubscription = await registrationObj.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as unknown as BufferSource
+            })
+            const { error } = await supabase
+              .from('push_subscriptions')
+              .upsert({
+                user_id: profile.id,
+                endpoint: newSubscription.endpoint,
+                p256dh: arrayBufferToBase64(newSubscription.getKey('p256dh')!),
+                auth: arrayBufferToBase64(newSubscription.getKey('auth')!),
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' })
+            if (error) {
+              console.warn('[Push] Auto-resubscribe DB error:', error)
+            }
+          } catch (err) {
+            console.warn('[Push] Auto-resubscribe failed:', err)
+          }
+        }
       }
     } catch (err) {
       console.error('[Push] Status check error:', err)
@@ -610,17 +634,14 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
       </div>
 
       <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
-        <button
-          onClick={onLogout}
-          className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors"
-        >
+        <div className="text-left leading-tight">
+          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.1</div>
+          <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
+        </div>
+        <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">
           <span>↪</span>
           <span>Выйти</span>
         </button>
-        <div className="text-right leading-tight">
-          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.0</div>
-          <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
-        </div>
       </footer>
     </div>
   )

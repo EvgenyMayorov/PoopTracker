@@ -89,9 +89,9 @@ html, body {
 
 /* App container max width */
 .app-container {
-  max-width: 448px;
+  max-width: 640px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
 }
 
@@ -104,8 +104,8 @@ html, body {
 /* Mobile container - full width on mobile, centered with shadow on desktop */
 .mobile-container {
   width: 100%;
-  min-height: 100vh;
-  max-width: 448px;
+  min-height: 100dvh;
+  max-width: 640px;
   margin: 0 auto;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 10px 40px -10px rgba(0, 0, 0, 0.1);
   background-color: transparent !important;

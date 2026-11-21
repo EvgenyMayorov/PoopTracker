@@ -54,7 +54,7 @@ export function EventCard({
   }
 
   return (
-    <div className="bg-white rounded-[20px] p-4 space-y-3 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+    <div className="bg-white rounded-[20px] p-4 space-y-3 border border-slate-200/90 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-lg shrink-0">
