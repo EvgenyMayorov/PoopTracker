@@ -72,10 +72,10 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [isSendingBallast, setIsSendingBallast] = useState(false)
   const [showBallastToast, setShowBallastToast] = useState(false)
 
-  // Авто-скрытие баннера «Сбросить балласт» через 4 секунды
+  // Авто-скрытие баннера «Сбросить балласт» через 3.5 секунды
   useEffect(() => {
     if (!showBallastToast) return
-    const timer = setTimeout(() => setShowBallastToast(false), 4000)
+    const timer = setTimeout(() => setShowBallastToast(false), 3500)
     return () => clearTimeout(timer)
   }, [showBallastToast])
   const [editingEventId, setEditingEventId] = useState<string | null>(null)
@@ -516,20 +516,77 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {/* Баннер «Сбросить балласт» — поверх контента, исчезает через 4 секунды */}
       {showBallastToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 sm:px-6 w-full max-w-md">
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 border border-orange-400/60 rounded-2xl p-4 shadow-2xl shadow-orange-500/40 flex items-center gap-3 animate-slide-up">
-            <span className="text-2xl shrink-0">💨</span>
-            <p className="flex-1 text-sm font-bold text-white leading-snug">
-              Внимание! Газовая атака, воздушный балласт успешно сброшен
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowBallastToast(false)}
-              className="shrink-0 text-white/80 hover:text-white text-lg leading-none"
-              aria-label="Закрыть"
-            >
-              ✕
-            </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+          onClick={() => setShowBallastToast(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="ballast-modal-card ballast-card-gradient relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-6 pb-6 pt-2 text-center">
+              <h2 className="text-xl font-bold uppercase tracking-widest mb-2 text-lime-400">
+                Внимание! Газовая атака!
+              </h2>
+              <p className="text-lg font-medium text-white leading-relaxed mb-4">
+                Воздушный балласт успешно сброшен
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowBallastToast(false)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white/80 hover:bg-white text-sm text-slate-800 px-3 py-1.5 mt-4"
+                aria-label="Закрыть"
+              >
+                ✕
+              </button>
+            </div>
+            {/* Gas stream SVG animations */}
+            <svg className="absolute top-0 left-0 right-0 bottom-0 pointer-events-none w-full h-full" aria-hidden="true">
+              <g className="gas-stream">
+                <path
+                  stroke="rgba(163, 230, 53, 0.45)"
+                  strokeWidth="2"
+                  fill="none"
+                  className="gas-stream"
+                  d="M 20 190 Q 40 90, 80 40 Q 120 10, 160 0"
+                />
+                <path
+                  stroke="rgba(250, 204, 21, 0.35)"
+                  strokeWidth="2"
+                  fill="none"
+                  className="gas-stream"
+                  d="M 50 200 Q 80 100, 130 50 Q 180 20, 230 5"
+                />
+                <path
+                  stroke="rgba(16, 185, 129, 0.4)"
+                  strokeWidth="2"
+                  fill="none"
+                  className="gas-stream"
+                  d="M 80 210 Q 110 110, 160 60 Q 210 30, 260 15"
+                />
+              </g>
+            </svg>
+            {/* Flying 💨 emoji icons around the card */}
+            <div className="gas-puff absolute top-8 left-8 text-3xl" style={{ animation: 'gasPuff 3s ease-in-out 0.2s infinite', fontSize: '2rem' }}>💨</div>
+            <div className="gas-puff absolute top-4 right-10 text-3xl" style={{ animation: 'gasPuff 3s ease-in-out 1s infinite', fontSize: '2rem' }}>💨</div>
+            <div className="gas-puff absolute bottom-8 left-10 text-3xl" style={{ animation: 'gasPuff 3s ease-in-out 1.8s infinite', fontSize: '2rem' }}>💨</div>
+            <div className="gas-puff absolute bottom-4 right-8 text-3xl" style={{ animation: 'gasPuff 3s ease-in-out 2.6s infinite', fontSize: '2rem' }}>💨</div>
+            {/* Floating gas clouds */}
+            <div
+              className="gas-cloud absolute top-1/2 left-1/4 w-24 h-24 rounded-full bg-yellow-400/30 -translate-x-1/2 -translate-y-1/2"
+              style={{ animation: 'gasFloat 4s ease-in-out infinite' }}
+            />
+            <div
+              className="gas-cloud absolute top-1/4 right-1/5 w-32 h-32 rounded-full bg-lime-400/20 blur-lg -translate-x-1/2 -translate-y-1/2"
+              style={{ animation: 'gasFloat 5s ease-in-out 1.2s infinite' }}
+            />
+            <div
+              className="gas-cloud absolute bottom-1/3 left-1/6 w-36 h-36 rounded-full bg-emerald-400/20 blur-xl -translate-x-1/2 -translate-y-1/2"
+              style={{ animation: 'gasDrift 6s ease-in-out 2.4s infinite' }}
+            />
           </div>
         </div>
       )}
