@@ -57,7 +57,7 @@ export function EventCard({
     <div className="bg-white rounded-[20px] p-4 space-y-3 border border-slate-200/90 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-lg shrink-0">
+          <div className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center text-lg shrink-0">
             {authorAvatar}
           </div>
           <div className="truncate text-sm">
@@ -130,7 +130,7 @@ export function EventCard({
           {comments.map(comment => (
             <div key={comment.id} className="rounded-xl px-3 py-2 bg-slate-50">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs">{comment.avatar || '💩'}</span>
+                <span className="text-xs w-7 h-7 rounded-full overflow-hidden flex items-center justify-center shrink-0">{comment.avatar || '💩'}</span>
                 <span className="text-xs font-bold text-slate-800">{comment.username}</span>
                 <span className="text-[11px] text-slate-400 tabular-nums">· {formatTimeAgo(comment.created_at)}</span>
               </div>

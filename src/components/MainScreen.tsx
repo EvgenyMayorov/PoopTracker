@@ -267,7 +267,7 @@ export function MainScreen({ profile, onLogout }: Props) {
             </button>
           </header>
 
-          <h1 className="text-[32px] font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none">
             Сводка
           </h1>
 
@@ -304,7 +304,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'people' && (
         <div className="px-4 pt-5 space-y-3.5">
-          <h1 className="text-[32px] font-extrabold tracking-tight text-white drop-shadow-sm leading-none">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none">
             Люди
           </h1>
 
@@ -345,7 +345,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                 className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-2xl shrink-0">
+                  <div className="w-[52px] h-[52px] rounded-full bg-amber-50 flex items-center justify-center text-2xl shrink-0">
                     {f.avatar || '💩'}
                   </div>
                   <div className="truncate">
@@ -438,7 +438,7 @@ export function MainScreen({ profile, onLogout }: Props) {
             {friendSearchResult && !friendSearchResult.error && (
               <div className="rounded-2xl p-4 mb-4 bg-slate-50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shrink-0">
+                  <div className="w-[52px] h-[52px] rounded-full bg-white flex items-center justify-center text-2xl shrink-0">
                     {friendSearchResult.avatar || '💩'}
                   </div>
                   <div className="truncate">

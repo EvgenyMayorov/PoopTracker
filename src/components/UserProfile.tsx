@@ -6,6 +6,7 @@ import { t } from '../i18n'
 import { getBristolDescription } from '../lib/bristol'
 import { ConfirmModal } from './ConfirmModal'
 import { CommentInput } from './CommentInput'
+import { UserAvatar } from './UserAvatar'
 
 type Props = {
   currentUserProfile: Profile
@@ -389,8 +390,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       }`}>
         <button onClick={handleGoBack} className="text-lg">←</button>
         <div className="flex-1 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-4xl shrink-0">
-            {profile?.avatar || '💩'}
+          <div className="w-16 h-16 rounded-full overflow-hidden shrink-0">
+            <UserAvatar avatar={profile?.avatar || null} className="w-16 h-16 rounded-full overflow-hidden" />
           </div>
           <div className={`text-xl font-bold ${'text-gray-800'}`}>
             {profile.username}
@@ -538,8 +539,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-lg shrink-0">
-                      {profile.avatar || '💩'}
+                    <div className="w-10 h-10 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
+                      <UserAvatar avatar={profile.avatar || null} className="w-10 h-10 rounded-full overflow-hidden" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`font-semibold ${'text-gray-800'}`}>
@@ -604,8 +605,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                           className={`rounded-lg p-2 ${'bg-gray-50'}`}
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-xs shrink-0">
-                              {comment.avatar || '💩'}
+                            <div className="w-7 h-7 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
+                              <UserAvatar avatar={comment.avatar || null} className="w-7 h-7 rounded-full overflow-hidden" />
                             </div>
                             <span className="text-xs font-semibold text-cyan-400">{comment.username}</span>
                             <span className={`text-xs ${'text-gray-500'}`}>
@@ -664,7 +665,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   onClick={() => handleViewUser(f.user_id)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
+                  <div className="w-[52px] h-[52px] rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">
@@ -695,7 +696,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
                   onClick={() => handleViewUser(f.user_id)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
+                  <div className="w-[52px] h-[52px] rounded-full bg-slate-100 text-xs flex items-center justify-center shrink-0">
                     {f.avatar}
                   </div>
                   <div className="flex-1">

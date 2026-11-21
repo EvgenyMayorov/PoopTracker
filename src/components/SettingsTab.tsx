@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
 import { t } from '../i18n'
+import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl } from './UserAvatar'
 
 interface SettingsTabProps {
   profile: Profile
@@ -30,17 +31,27 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return window.btoa(binary)
 }
 
-// Животные и птицы (сохраняем существующие, добавляем новые без дублирования)
-const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️', '🐱', '🐈', '🐶', '🐕', '🐯', '🐅', '🐓', '🐔', '🐨', '🐺', '🐷', '🐮', '🐵', '🐰', '🐹', '🦉', '🐧', '🦆', '🦖']
+// Животные и птицы (существующие эмодзи оставляем для совместимости при просмотре старых данных)
+// Новые 3D-аватары используются через ключ: 'dino', 'wolf' и т.д.
+/* const avatarEmojis = ['💩', '🧻', '🚽', '😎', '🦊', '🐻', '🐸', '🦁', '🐼', '🦄', '👽', '🤖', '👻', '🔥', '🌟', '👑', '🥑', '🌶️', '🐱', '🐈', '🐶', '🐕', '🐯', '🐅', '🐓', '🐔', '🐨', '🐺', '🐷', '🐮', '🐵', '🐰', '🐹', '🦉', '🐧', '🦆', '🦖'] */
 
 export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
   const [editingUsername, setEditingUsername] = useState(false)
   const [tempUsername, setTempUsername] = useState(profile.username)
   const [profileUsername, setProfileUsername] = useState(profile.username)
   const [usernameError, setUsernameError] = useState<string | null>(null)
-  const [avatar, setAvatar] = useState<string>(() =>
-    profile?.avatar || localStorage.getItem('poop_avatar') || '💩'
-  )
+  const [avatar, setAvatar] = useState<string>(() => {
+    // Если profile.avatar является ключом нового 3D-аватара — используем его напрямую,
+    // иначе проверяем localStorage, а старые эмодзи или null дают дефолтный аватар.
+    if (profile?.avatar && AVATAR_3D_IDS.has(profile.avatar)) {
+      return profile.avatar
+    }
+    const stored = localStorage.getItem('poop_avatar')
+    if (stored && AVATAR_3D_IDS.has(stored)) {
+      return stored
+    }
+    return stored || profile?.avatar || '💩'
+  })
 
   // Push notifications state
   // Восстанавливаем переключатель из localStorage, чтобы он не сбрасывался
@@ -504,7 +515,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
    return (
     <div className="min-h-[calc(100dvh-4.5rem)] flex flex-col justify-between px-4 pt-5 pb-4">
       <div className="space-y-3">
-        <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none mb-4">
+        <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none mb-4">
           Настройки
         </h1>
 
@@ -522,18 +533,21 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
               />
               {usernameError && <p className="text-xs text-rose-600">{usernameError}</p>}
 
+
               <div className="pt-2">
                 <p className="text-xs font-semibold text-slate-500 mb-2">Выберите аватар:</p>
-                <div className="grid grid-cols-5 gap-2 max-h-[240px] overflow-y-auto pr-1">
-                  {avatarEmojis.map((emoji) => (
+                <div className="grid grid-cols-4 gap-3 max-h-[280px] overflow-y-auto pr-1">
+                  {AVATARS_3D.map((avatarInfo) => (
                     <button
-                      key={emoji}
-                      onClick={() => handleSaveAvatar(emoji)}
-                      className={`text-2xl p-2 rounded-xl transition-all ${
-                        avatar === emoji ? 'bg-emerald-100 ring-2 ring-emerald-500' : 'bg-slate-50 hover:bg-slate-100'
-                      }`}
+                      key={avatarInfo.id}
+                      onClick={() => handleSaveAvatar(avatarInfo.id)}
+                      className={`flex items-center justify-center rounded-full overflow-hidden w-14 h-14 transition-colors cursor-pointer select-none ${avatar === avatarInfo.id ? 'ring-2 ring-emerald-500 ring-offset-2' : ''}`}
                     >
-                      {emoji}
+                      <img
+                        src={getAvatarUrl(avatarInfo.fileName)}
+                        alt={avatarInfo.label}
+                        className="w-10 h-10 object-cover rounded-full"
+                      />
                     </button>
                   ))}
                 </div>
@@ -554,9 +568,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
           ) : (
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-14 h-14 rounded-full bg-emerald-100/80 flex items-center justify-center text-3xl shrink-0">
-                  {avatar}
-                </div>
+                <UserAvatar avatar={avatar} className="w-16 h-16 rounded-full overflow-hidden" />
                 <div className="truncate">
                   <div className="text-base font-bold text-[#111827] truncate">{profileUsername}</div>
                   <div className="text-xs text-slate-400 truncate mt-0.5">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
@@ -635,7 +647,7 @@ export function SettingsTab({ profile, onLogout }: SettingsTabProps) {
 
       <footer className="mt-auto pt-6 flex items-center justify-between gap-3">
         <div className="text-left leading-tight">
-          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.1</div>
+          <div className="text-xs font-semibold text-slate-500">PoopTrack v1.4.2</div>
           <div className="text-[10px] text-slate-400">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
         </div>
         <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 shrink-0 transition-colors">

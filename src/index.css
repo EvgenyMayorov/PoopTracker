@@ -392,7 +392,7 @@ body {
 .live-bg {
   position: fixed;
   inset: 0;
-  background: linear-gradient(180deg, #00a8cc 0%, #6acbe0 45%, #d8e2e8 78%, #f5ebe6 100%);
+  background: linear-gradient(180deg, #5cd2e6 0%, #a8e3f0 45%, #e4edf2 78%, #f8f2ef 100%);
   z-index: 0;
   overflow: hidden;
   pointer-events: none;

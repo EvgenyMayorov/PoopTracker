@@ -85,7 +85,7 @@ export function FeedTab({
 }: FeedTabProps) {
     return (
     <div className="px-4 pt-5 pb-24 space-y-3.5">
-      <h1 className="text-[32px] font-extrabold tracking-tight text-[#111827] leading-none">
+      <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none">
         Лента
       </h1>
 
