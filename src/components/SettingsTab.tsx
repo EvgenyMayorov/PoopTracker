@@ -75,12 +75,15 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   })
   const [pushStatus, setPushStatus] = useState<'loading' | 'enabled' | 'disabled' | 'blocked' | 'unsupported'>('loading')
   const [pushError, setPushError] = useState<string | null>(null)
-  const [sendingTest, setSendingTest] = useState(false)
-  const [testResult, setTestResult] = useState<string | null>(null)
-  const [devicePermission, setDevicePermission] = useState<NotificationPermission | 'unsupported'>(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
-  const [deviceSubscriptionActive, setDeviceSubscriptionActive] = useState(false)
-  const [reconnecting, setReconnecting] = useState(false)
-  const [reconnectResult, setReconnectResult] = useState<string | null>(null)
+
+  // === Модалка диагностики Push-уведомлений ===
+  const [isPushDiagnosticOpen, setIsPushDiagnosticOpen] = useState(false)
+  const [modalSendingTest, setModalSendingTest] = useState(false)
+  const [modalTestResult, setModalTestResult] = useState<string | null>(null)
+  const [modalDevicePermission, setModalDevicePermission] = useState<NotificationPermission | 'unsupported'>(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
+  const [modalDeviceSubscriptionActive, setModalDeviceSubscriptionActive] = useState(false)
+  const [modalReconnecting, setModalReconnecting] = useState(false)
+  const [modalReconnectResult, setModalReconnectResult] = useState<string | null>(null)
   const { requestPermissionAndSubscribe, getDeviceState: fetchDeviceState } = usePush()
 
   // Ключи для кэширования состояния Push-уведомлений в localStorage.
@@ -330,8 +333,8 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       // Обновить статус устройства после подписки
       try {
         const state = await fetchDeviceState()
-        setDevicePermission(state.permission)
-        setDeviceSubscriptionActive(state.subscriptionActive)
+        setModalDevicePermission(state.permission)
+        setModalDeviceSubscriptionActive(state.subscriptionActive)
       } catch {
         // ignore
       }
@@ -391,8 +394,8 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
 
   const handleReconnectDevice = async () => {
     setPushError(null)
-    setReconnectResult(null)
-    setReconnecting(true)
+    setModalReconnectResult(null)
+    setModalReconnecting(true)
     setPushStatus('loading')
 
     try {
@@ -400,15 +403,15 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       // Обновить статус устройства после переподключения
       try {
         const state = await fetchDeviceState()
-        setDevicePermission(state.permission)
-        setDeviceSubscriptionActive(state.subscriptionActive)
+        setModalDevicePermission(state.permission)
+        setModalDeviceSubscriptionActive(state.subscriptionActive)
       } catch {
         // ignore
       }
 
       if (!result.ok) {
         setPushError(result.message || PUSH_PERMISSION_HINT)
-        setReconnectResult('❌ ' + (result.message || 'Подписка не создана'))
+        setModalReconnectResult('❌ ' + (result.message || 'Подписка не создана'))
         setPushStatus(result.permission === 'denied' ? 'blocked' : 'disabled')
         setPushEnabled(false)
         cachePushStatus(false)
@@ -417,9 +420,9 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       setPushStatus('enabled')
       setPushEnabled(true)
       cachePushStatus(true)
-      setReconnectResult('✅ Это устройство переподключено: подписка пересоздана и сохранена')
+      setModalReconnectResult('✅ Это устройство переподключено: подписка пересоздана и сохранена')
     } finally {
-      setReconnecting(false)
+      setModalReconnecting(false)
     }
   }
 
@@ -432,8 +435,9 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   }
 
   const sendTestNotification = async () => {
-    setSendingTest(true)
-    setTestResult(null)
+    setIsPushDiagnosticOpen(true)
+    setModalSendingTest(true)
+    setModalTestResult(null)
 
     try {
       // 1. Убедиться, что подписка актуальна в БД (upsert текущей подписки браузера)
@@ -463,7 +467,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
         .single()
 
       if (subError || !subData) {
-        setTestResult('❌ Подписка на пуш-уведомления не найдена в БД. Включите уведомления в настройках и попробуйте снова.')
+        setModalTestResult('❌ Подписка на пуш-уведомления не найдена в БД. Включите уведомления в настройках и попробуйте снова.')
         return
       }
 
@@ -478,7 +482,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       })
 
       if (error) {
-        setTestResult('❌ Ошибка отправки: ' + (error.message || 'Неизвестная ошибка'))
+        setModalTestResult('❌ Ошибка отправки: ' + (error.message || 'Неизвестная ошибка'))
         return
       }
 
@@ -488,21 +492,21 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       const errors = data?.errors ?? []
 
       if (sent > 0) {
-        setTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent})`)
+        setModalTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent})`)
       } else if (found === 0) {
-        setTestResult(`❌ Подписка не найдена в БД. Включите уведомления в настройках и попробуйте снова.`)
+        setModalTestResult(`❌ Подписка не найдена в БД. Включите уведомления в настройках и попробуйте снова.`)
       } else if (errors.length > 0) {
-        setTestResult(`❌ Ошибка доставки: ${errors[0]}. Найдено подписок в БД: ${found}.`)
+        setModalTestResult(`❌ Ошибка доставки: ${errors[0]}. Найдено подписок в БД: ${found}.`)
       } else {
-        setTestResult(`❌ Уведомление не доставлено. Найдено подписок в БД: ${found}.`)
+        setModalTestResult(`❌ Уведомление не доставлено. Найдено подписок в БД: ${found}.`)
       }
     } catch (err: any) {
       console.error('[Push] Test notification error:', err)
 
       let details = err?.message || 'Неизвестная ошибка'
-      setTestResult(`❌ Ошибка: ${details}`)
+      setModalTestResult(`❌ Ошибка: ${details}`)
     } finally {
-      setSendingTest(false)
+      setModalSendingTest(false)
     }
   }
 
@@ -524,7 +528,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
         }
       }
       setPushError(null)
-      setTestResult(null)
+      setModalTestResult(null)
       setTimeout(() => window.location.reload(), 300)
     } catch (err) {
       console.error('[Settings] Ошибка обновления PWA:', err)
@@ -633,51 +637,27 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           </button>
         </div>
 
-        <div className="text-[11px] text-slate-400 px-1">
-          Права браузера: {devicePermission === 'unsupported' ? 'неизвестно' : devicePermission} | Подписка этого устройства: {deviceSubscriptionActive ? 'Активна' : 'Не создана'}
-        </div>
+      <div className="space-y-2.5 pt-1">
         <button
-          onClick={handleReconnectDevice}
-          disabled={reconnecting}
-          className={`w-full py-3 rounded-full text-[10px] px-4 flex items-center justify-center gap-1 text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 ${reconnecting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          onClick={sendTestNotification}
+          disabled={!pushEnabled}
+          className={`w-full py-3.5 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors ${
+            pushEnabled ? 'bg-white hover:bg-slate-50 text-slate-800' : 'bg-white/60 text-slate-300 cursor-not-allowed'
+          }`}
         >
-          {reconnecting ? 'Переподключаем…' : '🔗 Переподключить это устройство'}
+          <span>📨</span>
+          <span>Отправить тестовое уведомление</span>
         </button>
-        {reconnectResult && (
-          <p className={`text-xs px-2 ${reconnectResult.startsWith('✅') ? 'text-emerald-600' : 'text-rose-600'}`}>{reconnectResult}</p>
-        )}
 
-        {pushError && <p className="text-xs text-rose-600 px-2">{pushError}</p>}
-
-        <div className="space-y-2.5 pt-1">
-          <button
-            onClick={sendTestNotification}
-            disabled={!pushEnabled || sendingTest}
-            className={`w-full py-3.5 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors ${
-              pushEnabled && !sendingTest
-                ? 'bg-white hover:bg-slate-50 text-slate-800'
-                : 'bg-white/60 text-slate-300 cursor-not-allowed'
-            }`}
-          >
-            <span>📨</span>
-            <span>{sendingTest ? 'Отправка...' : 'Отправить тестовое уведомление'}</span>
-          </button>
-
-          {testResult && (
-            <div className={`rounded-2xl p-3 text-xs font-medium ${testResult.includes('✅') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-              {testResult}
-            </div>
-          )}
-
-          <button
-            onClick={handleUpdateApp}
-            className="w-full py-3.5 bg-white hover:bg-slate-50 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold text-slate-800 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors"
-          >
-            <span>🔄</span>
-            <span>Обновить версию приложения</span>
-          </button>
-        </div>
+        <button
+          onClick={handleUpdateApp}
+          className="w-full py-3.5 bg-white hover:bg-slate-50 rounded-full px-5 flex items-center justify-center gap-2.5 text-sm font-semibold text-slate-800 shadow-[0_2px_10px_rgba(15,23,42,0.04)] transition-colors"
+        >
+          <span>🔄</span>
+          <span>Обновить версию приложения</span>
+        </button>
       </div>
+    </div>
 
       <footer className="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[640px] z-30 px-4 py-2.5 bg-transparent pointer-events-none">
         <div className="pointer-events-auto flex items-center justify-between gap-3 text-slate-600 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
@@ -691,6 +671,88 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           </button>
         </div>
       </footer>
+
+    {/* Модальное окно диагностики Push-уведомлений */}
+    {isPushDiagnosticOpen && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setIsPushDiagnosticOpen(false)
+        }}
+      >
+        {/* Затемнённый фон */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        {/* Модалка */}
+        <div className="relative bg-white rounded-[20px] p-5 shadow-2xl border border-slate-200 w-full max-w-md max-h-[85vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-slate-900">Диагностика Push-уведомлений</h2>
+            <button
+              onClick={() => setIsPushDiagnosticOpen(false)}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Статус отправки тестового уведомления */}
+          <div className="space-y-3 mb-5">
+            <div className="text-sm font-semibold text-slate-700">Тестовое уведомление</div>
+            {modalSendingTest ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+                <div className="w-3 h-3 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+                <span className="text-sm text-blue-700">Отправка тестового пуша…</span>
+              </div>
+            ) : null}
+            {modalTestResult && (
+              <div className={`rounded-xl p-3 text-xs font-medium ${modalTestResult.includes('✅') ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                {modalTestResult}
+              </div>
+            )}
+          </div>
+
+          {/* Блок состояния устройства */}
+          <div className="space-y-3 mb-5">
+            <div className="text-sm font-semibold text-slate-700">Состояние устройства</div>
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div className="text-xs text-slate-500 leading-relaxed">
+                Права браузера:
+                {modalDevicePermission === 'unsupported' ? 'неизвестно' : modalDevicePermission}
+                | Подписка этого устройства:
+                {modalDeviceSubscriptionActive ? 'Активна' : 'Не создана'}
+              </div>
+            </div>
+          </div>
+
+          {/* Кнопка переподключения и результат */}
+          <div className="space-y-2">
+            <button
+              onClick={handleReconnectDevice}
+              disabled={modalReconnecting}
+              className={`w-full py-3 rounded-full text-[10px] px-4 flex items-center justify-center gap-1 text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 ${modalReconnecting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {modalReconnecting ? 'Переподключаем…' : '🔗 Переподключить это устройство'}
+            </button>
+            {modalReconnectResult && (
+              <p className={`text-xs px-2 ${modalReconnectResult.startsWith('✅') ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {modalReconnectResult}
+              </p>
+            )}
+          </div>
+
+          {/* Кнопка закрыть внизу */}
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <button
+              onClick={() => setIsPushDiagnosticOpen(false)}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 text-sm font-semibold transition-colors"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
   )
 }
