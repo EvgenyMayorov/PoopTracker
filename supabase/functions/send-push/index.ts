@@ -19,81 +19,105 @@ interface SendPushRequest {
 }
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
   }
 
   try {
     const body = (await req.json()) as SendPushRequest
     const { userId, title, body: notificationBody, data } = body
 
-    // Get the user's push subscription from the database
-    const { data: subscription, error: subError } = await supabase
+    const { data: subscriptions, error } = await supabase
       .from("push_subscriptions")
-      .select("*")
+      .select("id, endpoint, p256dh, auth")
       .eq("user_id", userId)
-      .single()
 
-    if (subError || !subscription) {
-      return new Response(
-        JSON.stringify({ error: "No push subscription found for user" }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      )
-    }
-
-    // Parse the subscription data
-    const pushSubscription = {
-      endpoint: subscription.endpoint,
-      keys: {
-        p256dh: subscription.p256dh,
-        auth: subscription.auth
-      }
-    }
-
-    // Send the push notification
-    const response = await webpush.sendNotification(
-      pushSubscription,
-      JSON.stringify({
-        title,
-        body,
-        data: data || {},
-        vibrate: [200, 100, 200],
-        icon: "/icon-192.png",
-        badge: "/icon-192.png",
-        tag: "poop-notification"
+    if (error) {
+      console.error("DB error fetching subscriptions:", error)
+      return new Response(JSON.stringify({ success: false, found: 0, sent: 0, failed: 0, errors: ["Database error: " + error.message] }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       })
-    )
+    }
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        statusCode: response.status 
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
-    )
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log("No push subscriptions found for user:", userId)
+      return new Response(JSON.stringify({ success: true, found: 0, sent: 0, failed: 0, errors: ["No active push subscriptions found in DB"] }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
 
-  } catch (error: any) {
-    console.error("Error sending push notification:", error)
-    
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!
+    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!
+    let vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:contact@pooptracker.app"
+
+    if (!vapidSubject.startsWith("mailto:") && !vapidSubject.startsWith("https://")) {
+      console.warn("Invalid VAPID_SUBJECT format, defaulting to mailto:")
+      vapidSubject = "mailto:admin@example.com"
+    }
+
+    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
+
+    const payload = JSON.stringify({ title, body: notificationBody, data: data || {} })
+
+    let sentCount = 0
+    let failedCount = 0
+    const errorDetails: string[] = []
+
+    for (const sub of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: {
+              p256dh: sub.p256dh,
+              auth: sub.auth,
+            },
+          },
+          payload
+        )
+        sentCount++
+      } catch (pushErr: any) {
+        failedCount++
+        const statusCode = pushErr.statusCode || "unknown"
+        const message = pushErr.message || String(pushErr)
+
+        console.error("Push send failed for subscription " + sub.id.substring(0, 8) + ":", { statusCode, message, endpoint: sub.endpoint.substring(0, 50) + "..." })
+
+        if (statusCode === 410 || statusCode === 404) {
+          try {
+            await supabase
+              .from("push_subscriptions")
+              .delete()
+              .eq("id", sub.id)
+            console.log("Deleted expired/invalid subscription " + sub.id)
+          } catch (delErr) {
+            console.error("Failed to delete subscription " + sub.id + ":", delErr)
+          }
+        }
+
+        errorDetails.push(statusCode + " - " + message)
       }
-    )
+    }
+
+    return new Response(JSON.stringify({ success: failedCount === 0, found: subscriptions.length, sent: sentCount, failed: failedCount, errors: errorDetails }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+  } catch (err: any) {
+    console.error("Push function error:", err)
+    return new Response(JSON.stringify({ success: false, found: 0, sent: 0, failed: 0, errors: ["Function error: " + (err.message || String(err))] }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
   }
 })

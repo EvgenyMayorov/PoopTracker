@@ -4,18 +4,9 @@ import { registerRoute } from 'workbox-routing'
 import { NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 
-precacheAndRoute([
-  { url: '/registerSW.js', revision: null },
-  { url: '/manifest.json', revision: null },
-  { url: '/logo.svg', revision: null },
-  { url: '/index.html', revision: null },
-  { url: '/icon-512.png', revision: null },
-  { url: '/icon-512-maskable.png', revision: null },
-  { url: '/icon-192.png', revision: null },
-  { url: '/favicon-32x32.png', revision: null },
-  { url: '/favicon-16x16.png', revision: null },
-  { url: '/apple-touch-icon.png', revision: null },
-])
+// Workbox injectManifest will replace self.__WB_MANIFEST with precache manifest
+// eslint-disable-next-line no-undef
+precacheAndRoute(self.__WB_MANIFEST)
 
 cleanupOutdatedCaches()
 
@@ -30,20 +21,38 @@ registerRoute(
 )
 
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {}
-  const title = data.title || 'PoopTrack'
-  const options = {
-    body: data.body || '',
+  let title = 'PoopTrack'
+  let options = {
+    body: '',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    tag: data.tag || 'poop-notification',
-    data: data.data || {},
+    tag: 'poop-notification',
+    data: {},
     vibrate: [200, 100, 200],
   }
 
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  )
+  if (event.data) {
+    event.waitUntil(
+      event.data.text().then((payloadText) => {
+        let parsed = {}
+        try {
+          parsed = JSON.parse(payloadText)
+        } catch {
+          parsed = { body: payloadText }
+        }
+
+        title = parsed.title || 'PoopTrack'
+        options.body = parsed.body || payloadText
+        options.tag = parsed.tag || 'poop-notification'
+        options.data = parsed.data || {}
+        options.vibrate = parsed.vibrate || [200, 100, 200]
+      }).then(() =>
+        self.registration.showNotification(title, options)
+      )
+    )
+  } else {
+    event.waitUntil(self.registration.showNotification(title, options))
+  }
 })
 
 self.addEventListener('notificationclick', (event) => {

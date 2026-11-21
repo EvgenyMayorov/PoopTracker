@@ -434,7 +434,26 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
     setTestResult(null)
 
     try {
-      // 1. Проверяем, есть ли подписка в БД
+      // 1. Убедиться, что подписка актуальна в БД (upsert текущей подписки браузера)
+      const registration = await navigator.serviceWorker.ready
+      const browserSub = await registration.pushManager.getSubscription()
+      if (browserSub && profile.id) {
+        const { error: upsertError } = await supabase
+          .from('push_subscriptions')
+          .upsert({
+            user_id: profile.id,
+            endpoint: browserSub.endpoint,
+            p256dh: arrayBufferToBase64(browserSub.getKey('p256dh')!),
+            auth: arrayBufferToBase64(browserSub.getKey('auth')!),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' })
+
+        if (upsertError) {
+          console.error('[Push] Upsert subscription error:', upsertError)
+        }
+      }
+
+      // 2. Проверяем, есть ли подписка в БД
       const { data: subData, error: subError } = await supabase
         .from('push_subscriptions')
         .select('*')
@@ -442,11 +461,11 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
         .single()
 
       if (subError || !subData) {
-        setTestResult('❌ Подписка на пуш-уведомления не найдена. Включите уведомления в настройках и попробуйте снова.')
+        setTestResult('❌ Подписка на пуш-уведомления не найдена в БД. Включите уведомления в настройках и попробуйте снова.')
         return
       }
 
-      // 2. Отправляем реальный серверный push через Edge Function send-push
+      // 3. Отправляем реальный серверный push через Edge Function send-push
       const { data, error } = await supabase.functions.invoke('send-push', {
         body: {
           userId: profile.id,
@@ -461,16 +480,24 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
         return
       }
 
-      setTestResult('✅ Серверное Push-уведомление отправлено!')
+      // 4. Честная оценка результата по данным из функции
+      const found = data?.found ?? 0
+      const sent = data?.sent ?? 0
+      const errors = data?.errors ?? []
+
+      if (sent > 0) {
+        setTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent})`)
+      } else if (found === 0) {
+        setTestResult(`❌ Подписка не найдена в БД. Включите уведомления в настройках и попробуйте снова.`)
+      } else if (errors.length > 0) {
+        setTestResult(`❌ Ошибка доставки: ${errors[0]}. Найдено подписок в БД: ${found}.`)
+      } else {
+        setTestResult(`❌ Уведомление не доставлено. Найдено подписок в БД: ${found}.`)
+      }
     } catch (err: any) {
       console.error('[Push] Test notification error:', err)
-      
-      // Extract detailed error info: message + stack trace / context
+
       let details = err?.message || 'Неизвестная ошибка'
-      if (err?.stack) {
-        const stackLines = err.stack ? err.stack.split('\n').slice(0, 5).join('\n') : ''
-        details += '\n' + stackLines
-      }
       setTestResult(`❌ Ошибка: ${details}`)
     } finally {
       setSendingTest(false)

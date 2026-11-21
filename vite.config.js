@@ -41,26 +41,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['logo.svg', 'manifest.json'],
       manifest: false,
+      strategies: 'injectManifest',
       srcDir: 'src',
-      filename: 'custom-sw.js',
-      workbox: {
+      filename: 'custom-sw.ts',
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 // 24 часа
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
+        swSrc: 'src/custom-sw.ts',
+        maximumFileSizeToCacheInBytes: 5000000,
       }
     }),
     versionJsonPlugin(),
