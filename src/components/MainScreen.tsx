@@ -492,7 +492,7 @@ export function MainScreen({ profile, onLogout }: Props) {
       )}
 
       {activeTab === 'home' && (
-        <div className="px-4 pt-4 space-y-4">
+        <div className="px-4 pt-5 space-y-4">
           <Header activeTab="home" profile={profile} />
 
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />

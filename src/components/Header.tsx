@@ -27,13 +27,12 @@ export function Header({ activeTab, profile }: HeaderProps) {
   }, [profile])
 
   return (
-    <header className="px-4 pt-4">
-      {/* Две колонки: «Сводка» + имя слева, аватар — у правого края (как на остальных экранах) */}
-      <div className="flex items-center justify-between gap-4 w-full">
+    <header className="w-full">
+      <div className="flex items-start justify-between gap-4 w-full">
         <div className="flex flex-col items-start text-left min-w-0">
-          <div className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none mb-1 truncate max-w-full">
+          <h1 className="text-[32px] font-extrabold tracking-tight text-slate-900 leading-none mb-2 truncate max-w-full">
             Сводка
-          </div>
+          </h1>
           <div className="text-xl sm:text-2xl font-bold text-slate-800 truncate max-w-full">
             {displayName}
           </div>

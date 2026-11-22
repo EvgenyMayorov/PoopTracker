@@ -673,12 +673,13 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
             </div>
           ) : (
             <div className="flex items-center justify-between gap-4">
-              <div className="flex flex-col text-left flex-1 min-w-0 gap-1">
-                <div className="text-2xl font-extrabold text-slate-900 truncate">{profileUsername}</div>
-                <div className="text-sm text-slate-500 truncate">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
+              <div className="flex flex-col items-start text-left flex-1 min-w-0 gap-1">
+                <div className="text-2xl font-extrabold text-slate-900 truncate max-w-full">{profileUsername}</div>
+                <div className="text-sm text-slate-500 truncate max-w-full">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
                 <button
+                  type="button"
                   onClick={() => setEditingUsername(true)}
-                  className="mt-1 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                  className="mt-2 self-start bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm transition-colors"
                 >
                   Изменить
                 </button>
