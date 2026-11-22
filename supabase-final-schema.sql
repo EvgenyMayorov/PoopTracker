@@ -12,18 +12,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- Добавляем колонку email, если её нет (для миграций существующих баз)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public'
-    AND table_name = 'profiles'
-    AND column_name = 'email'
-  ) THEN
-    ALTER TABLE public.profiles ADD COLUMN email TEXT;
-  END IF;
-END $$;
+-- Добавляем недостающие колонки, если их ещё нет (для миграций существующих баз)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT 'Panda';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW());
 
 -- 2. Создаём таблицу events
 CREATE TABLE IF NOT EXISTS public.events (
@@ -282,16 +275,37 @@ CREATE POLICY "Service role can read all push subscriptions"
 -- 17. Функция для автоматического создания профиля при регистрации
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  newUsername TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, username, avatar, email)
-  VALUES (NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || substr(NEW.id::text, 1, 8)),
-    'Panda',
-    LOWER(TRIM(COALESCE(NEW.email, '')))
+  -- Достаём имя: username -> name -> локальная часть email -> user_ + начало id
+  newUsername := COALESCE(
+    NEW.raw_user_meta_data->>'username',
+    NEW.raw_user_meta_data->>'name',
+    split_part(NEW.email, '@', 1),
+    'user_' || substr(NEW.id::text, 1, 8)
   );
+
+  -- Если такой username уже занят другим пользователем — добавляем короткий уникальный суффикс
+  IF EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE username = newUsername AND id <> NEW.id
+  ) THEN
+    newUsername := newUsername || '_' || substr(NEW.id::text, 1, 4);
+  END IF;
+
+  -- ON CONFLICT (id) DO UPDATE гарантирует, что вставка не падает при повторе
+  INSERT INTO public.profiles (id, username, avatar, email)
+  VALUES (NEW.id, newUsername, 'Panda', LOWER(TRIM(COALESCE(NEW.email, ''))))
+  ON CONFLICT (id) DO UPDATE
+    SET username = EXCLUDED.username,
+        avatar = 'Panda',
+        email = EXCLUDED.email,
+        updated_at = NOW();
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 18. Триггер для автоматического создания профиля
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

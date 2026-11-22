@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Profile } from '../lib/supabase'
 import { t } from '../i18n'
-import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl } from './UserAvatar'
+import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl, is3DAvatarKey } from './UserAvatar'
 import { usePush, PUSH_PERMISSION_HINT } from '../hooks/use-push'
 
 interface SettingsTabProps {
@@ -45,11 +45,11 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   const [avatar, setAvatar] = useState<string>(() => {
     // Если profile.avatar является ключом нового 3D-аватара — используем его напрямую,
     // иначе проверяем localStorage, а старые эмодзи или null дают дефолтный аватар.
-    if (profile?.avatar && AVATAR_3D_IDS.has(profile.avatar)) {
+    if (profile?.avatar && is3DAvatarKey(profile.avatar)) {
       return profile.avatar
     }
     const stored = localStorage.getItem('poop_avatar')
-    if (stored && AVATAR_3D_IDS.has(stored)) {
+    if (stored && is3DAvatarKey(stored)) {
       return stored
     }
     return stored || profile?.avatar || '💩'

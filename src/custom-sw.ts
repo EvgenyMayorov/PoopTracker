@@ -48,7 +48,7 @@ async function extractPushPayload(event) {
     return {
       title: json.title || DEFAULT_PUSH_TITLE,
       body: json.body || DEFAULT_PUSH_BODY,
-      tag: PUSH_TAG,
+      tag: json.tag || PUSH_TAG,
       data: json.data || {},
     }
   } catch {
@@ -70,14 +70,19 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     const payload = await extractPushPayload(event)
 
+    // Уникальный tag с timestamp: каждый пуш показывается как НОВОЕ системное
+    // уведомление, а не тихо заменяет предыдущее (важно для iOS/Android).
+    const uniqueTag = `${payload.tag || PUSH_TAG}-${Date.now()}`
+
     const options = {
       body: payload.body,
-      tag: PUSH_TAG,
+      tag: uniqueTag,
       renotify: true,
       data: payload.data,
       icon: './icon-192.png',
       badge: './icon-192.png',
       vibrate: [200, 100, 200],
+      timestamp: Date.now(),
     }
 
     try {
@@ -85,7 +90,12 @@ self.addEventListener('push', (event) => {
     } catch (err) {
       // iOS Safari may reject unknown options; retry without them
       try {
-        await self.registration.showNotification(payload.title, { body: payload.body, tag: PUSH_TAG, renotify: true, data: payload.data })
+        await self.registration.showNotification(payload.title, {
+          body: payload.body,
+          tag: uniqueTag,
+          renotify: true,
+          data: payload.data,
+        })
       } catch (err2) {
         console.error('[SW] Push notification failed:', err2)
       }

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Event } from '../hooks/types'
-import { getBristolDescription } from '../lib/bristol'
+import { getBristolDescription, getBristolShortLabel } from '../lib/bristol'
 import { UserAvatar } from './UserAvatar'
 
 interface EventCardProps {
@@ -48,10 +48,7 @@ export function EventCard({
   }
 
   const getBadgeLabel = (type?: number) => {
-    if (!type) return 'Запись'
-    if (type <= 2) return `Тип ${type}`
-    if (type <= 4) return 'Отлично!'
-    return `Тип ${type}`
+    return getBristolShortLabel(type)
   }
 
   return (

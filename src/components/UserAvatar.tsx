@@ -18,7 +18,17 @@ export const AVATARS_3D: Array<{ id: string; fileName: string; label: string }> 
 ]
 
 // Множество ключей 3D-аватаров для быстрой проверки
-export const AVATAR_3D_IDS = new Set(AVATARS_3D.map((a) => a.id))
+export const AVATAR_3D_IDS = new Set(AVATARS_3D.map((a) => normalizeAvatarId(a.id)))
+
+/**
+ * Нормализует ID 3D-аватара:
+ * - приводит к нижнему регистру (через toLowerCase);
+ * - убирает дефисы, чтобы 'lion-little' и 'LionLittle' / 'lionlittle' сходились.
+ */
+export function normalizeAvatarId(value: string | null | undefined): string {
+  if (!value) return ''
+  return value.trim().toLowerCase().replace(/-/g, '')
+}
 
 /**
  * Формирует полный URL картинки аватара с учётом base path Vite.
@@ -30,9 +40,10 @@ export function getAvatarUrl(fileName: string): string {
 
 /**
  * Проверяет, является ли переданное значение ключом 3D-аватара.
+ * Сопоставление полностью регистронезависимое и игнорирует дефисы в ID.
  */
 export function is3DAvatarKey(value: string | null | undefined): value is string {
-  return !!value && AVATAR_3D_IDS.has(value)
+  return !!value && AVATAR_3D_IDS.has(normalizeAvatarId(value))
 }
 
 /**
@@ -87,7 +98,8 @@ export function UserAvatar({ avatar, className, containerClassName, style }: Use
   const containerClass = resolveContainerClass(className, containerClassName)
 
   if (is3DAvatarKey(fallbackAvatar)) {
-    const avatarInfo = AVATARS_3D.find((a) => a.id === fallbackAvatar)
+    const normalized = normalizeAvatarId(fallbackAvatar)
+    const avatarInfo = AVATARS_3D.find((a) => normalizeAvatarId(a.id) === normalized)
     const fileName = avatarInfo ? avatarInfo.fileName : 'Dino.png'
 
     return (

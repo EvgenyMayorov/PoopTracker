@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, Profile } from '../lib/supabase'
 import { getDisplayName } from '../lib/displayName'
-import { getBristolDescription } from '../lib/bristol'
+import { getBristolDescription, getBristolShortLabel } from '../lib/bristol'
 import { t } from '../i18n'
 import { PWAInstallBanner } from './PWAInstallBanner'
 import { SuccessAnimation } from './SuccessAnimation'
@@ -249,8 +249,9 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Балластный сброс: НЕ создаёт запись в таблице events (не попадает в ленту друзей,
   // мою историю и счётчики Сегодня / Неделя / Всего).
-  // Лёгкий кулдаун защищает от двойного клика и спама пушами.
-  const BALLAST_COOLDOWN_MS = 2500
+  // Короткий кулдаун защищает от случайного двойного тапа, но не блокирует
+  // повторные нажатия после его истечения — пуш уходит каждый раз.
+  const BALLAST_COOLDOWN_MS = 1000
   const handleResetBallast = async () => {
     if (isSendingBallast) return
     setIsSendingBallast(true)
@@ -260,7 +261,8 @@ export function MainScreen({ profile, onLogout }: Props) {
         rawUsername && rawUsername.toLowerCase() !== 'unknown' ? rawUsername : 'Друг'
       const pushBody =
         'Внимание! Газовая атака, воздушный балласт успешно сброшен 💨'
-      // Подписчики текущего пользователя (строка friends, где user_id = текущий пользователь)
+      // Подписчики текущего пользователя (строка friends, где user_id = текущий пользователь) —
+      // актуальный список подтягивается из базы при каждом нажатии.
       const { data: followersData } = await supabase
         .from('friends')
         .select('follower_id')
@@ -279,7 +281,8 @@ export function MainScreen({ profile, onLogout }: Props) {
     } finally {
       // Баннер показывается всегда, даже если подписчиков нет
       setShowBallastToast(true)
-      // Кулдаун после отправки, чтобы не спамить пушами при случайном двойном тапе
+      // Кулдаун после отправки, чтобы не спамить пушами при случайном двойном тапе.
+      // Флаг гарантированно сбрасывается по истечении кулдауна.
       setTimeout(() => setIsSendingBallast(false), BALLAST_COOLDOWN_MS)
     }
   }
@@ -296,7 +299,30 @@ export function MainScreen({ profile, onLogout }: Props) {
     setEditingEventId(null)
   }
 
-  const handleBristolSkip = () => {
+  const handleBristolSkip = async () => {
+    // Если это новая запись (не редактирование) — отправляем push-уведомление подписчикам
+    // с текстом «У <имя> вышло!», чтобы пуш гарантированно приходил в обоих случаях.
+    if (currentEventId && !editingEventId) {
+      const rawUsername = (profile.username ?? '').trim()
+      const senderName =
+        rawUsername && rawUsername.toLowerCase() !== 'unknown' ? rawUsername : 'Друг'
+      const pushBody = `У ${senderName} вышло!`
+
+      try {
+        const { data: followersData } = await supabase
+          .from('friends')
+          .select('follower_id')
+          .eq('user_id', profile.id)
+        const followersList = (followersData || []) as any[]
+        for (const f of followersList) {
+          if (f.follower_id === profile.id) continue
+          await sendPushToUser(f.follower_id, 'PoopTrack', pushBody)
+        }
+      } catch (err) {
+        console.warn('[Push] Ошибка отправки подписчикам при пропуске:', err)
+      }
+    }
+
     setShowBristolModal(false)
     setCurrentEventId(null)
     setSelectedType(null)
@@ -493,9 +519,11 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</div>
                     </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
-                    {event.bristol_type ? `Тип ${event.bristol_type}` : 'Готово!'}
-                  </span>
+                  {getBristolShortLabel(event.bristol_type) && (
+                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
+                      {getBristolShortLabel(event.bristol_type)}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -584,11 +612,7 @@ export function MainScreen({ profile, onLogout }: Props) {
                     selectedType === type ? 'bg-indigo-50 ring-2 ring-indigo-500' : 'bg-slate-50 hover:bg-slate-100'
                   }`}
                 >
-                  <span
-                  className={`w-3.5 h-3.5 rounded-full shrink-0 ${
-                    type === 1 ? 'bg-amber-700' : type === 2 ? 'bg-amber-500' : type === 3 ? 'bg-emerald-500' : type === 4 ? 'bg-emerald-600' : type === 5 ? 'bg-orange-400' : type === 6 ? 'bg-orange-500' : 'bg-rose-500'
-                  }`}
-                />
+                  <span className="w-3.5 h-3.5 rounded-full shrink-0 bg-slate-900" />
                   <div>
                     <div className="font-bold text-sm text-[#111827]">
                       {type === 1 && 'Запор'}

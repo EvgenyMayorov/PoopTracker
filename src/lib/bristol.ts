@@ -32,3 +32,25 @@ export function getBristolTitle(type?: number | null): string {
   if (!isValidBristolType(type)) return ''
   return t(`bristolType${type}`)
 }
+
+/**
+ * Короткое название статуса стула по Бристольской шкале — для бейджей
+ * (без слова «Тип» и без длинного описания).
+ *
+ * 1 — Запор, 2 — Склонность к запору, 3 — Норма, 4 — Идеал,
+ * 5 — Склонность к диарее, 6 — Диарея, 7 — Сильная диарея.
+ */
+const BRISTOL_SHORT_LABELS: Record<number, string> = {
+  1: 'Запор',
+  2: 'Склонность к запору',
+  3: 'Норма',
+  4: 'Идеал',
+  5: 'Склонность к диарее',
+  6: 'Диарея',
+  7: 'Сильная диарея',
+}
+
+export function getBristolShortLabel(type?: number | null): string {
+  if (!isValidBristolType(type)) return ''
+  return BRISTOL_SHORT_LABELS[type] || ''
+}
