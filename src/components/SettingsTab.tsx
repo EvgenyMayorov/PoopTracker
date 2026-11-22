@@ -755,18 +755,6 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           <span>🔄</span>
           <span>Обновить версию приложения</span>
         </button>
-        <div className="pointer-events-auto flex items-center justify-between gap-3 text-slate-600 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
-          <div className="text-left leading-tight">
-            <div className="text-xs font-semibold text-slate-700">PoopTrack v{__APP_VERSION__}</div>
-            <div className="text-[10px] text-slate-600">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
-          </div>
-          <div className="pointer-events-auto flex flex-col items-end gap-1.5 shrink-0">
-            <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 transition-colors">
-              <span>↪</span>
-              <span>Выйти</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
 
