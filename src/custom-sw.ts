@@ -105,5 +105,38 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  event.waitUntil(self.clients.openWindow('/'))
+
+  // Базовый URL приложения вычисляется из области видимости Service Worker.
+  // Для GitHub Pages это https://evgenymayorov.github.io/PoopTracker/,
+  // для локальной разработки — http://localhost:3000/PoopTracker/.
+  const appUrl = new URL('./', self.registration.scope).href
+
+  let targetUrl = appUrl
+  const rawDataUrl = event.notification.data?.url
+  if (typeof rawDataUrl === 'string' && rawDataUrl) {
+    if (rawDataUrl.startsWith('/')) {
+      // Относительный путь без ведущего слэша → резолвим относительно scope SW.
+      targetUrl = new URL(rawDataUrl.replace(/^\/+/, ''), appUrl).href
+    } else {
+      targetUrl = new URL(rawDataUrl, appUrl).href
+    }
+  }
+
+  event.waitUntil(
+    (async () => {
+      // Если вкладка приложения уже открыта — фокусируем её.
+      const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      for (const client of clientList) {
+        if (client.url.startsWith(appUrl) && typeof client.focus === 'function') {
+          await client.focus()
+          return
+        }
+      }
+
+      // Иначе открываем новое окно с правильным URL.
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(targetUrl)
+      }
+    })()
+  )
 })

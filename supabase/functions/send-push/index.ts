@@ -65,7 +65,15 @@ Deno.serve(async (req) => {
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
 
-    const payload = JSON.stringify({ title, body: notificationBody, data: data || {} })
+    // Нормализуем data.url, чтобы клик по пушу не вёл в корень домена (404).
+    // Относительный путь './' резолвится от scope Service Worker, поэтому
+    // открывается именно приложение PoopTrack (например /PoopTracker/).
+    const pushData = data && typeof data === "object" ? { ...data } : {}
+    if (!pushData.url || pushData.url === "/") {
+      pushData.url = "./"
+    }
+
+    const payload = JSON.stringify({ title, body: notificationBody, data: pushData })
 
     let sentCount = 0
     let failedCount = 0
