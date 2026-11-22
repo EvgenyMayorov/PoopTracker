@@ -5,11 +5,32 @@ import { AuthScreen } from './components/AuthScreen'
 import { MainScreen } from './components/MainScreen'
 import { UserProfile } from './components/UserProfile'
 
+/**
+ * Проверяет URL на наличие параметров восстановления пароля Supabase.
+ * Supabase (implicit flow) кладёт токены в hash: #access_token=...&type=recovery,
+ * а в случае ошибки — #error=...&error_description=...
+ * Работает и с HashRouter, т.к. токены идут до маршрута.
+ */
+function detectRecoveryFromUrl(): boolean {
+  try {
+    const raw = `${window.location.hash}${window.location.search}`
+    if (!raw) return false
+    const normalized = raw.replace(/^#/, '').replace(/^\?/, '')
+    const params = new URLSearchParams(normalized)
+    return params.get('type') === 'recovery'
+  } catch {
+    return false
+  }
+}
+
 function App() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [warning, setWarning] = useState<string | null>(null)
+  // Режим восстановления пароля: пока true — показываем форму ввода нового пароля,
+  // даже если сессия восстановления уже активна.
+  const [passwordRecovery, setPasswordRecovery] = useState<boolean>(() => detectRecoveryFromUrl())
 
   useEffect(() => {
     console.log('[PoopTracker] Запуск приложения...')
@@ -20,6 +41,14 @@ function App() {
         console.log('[PoopTracker] Auth event:', event, 'User:', newSession?.user?.email || 'none')
         
         setSession(newSession)
+
+        // Обработка PASSWORD_RECOVERY: при событии восстановления пароля
+        // гарантированно открываем форму ввода нового пароля
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('[PoopTracker] PASSWORD_RECOVERY event — показываем форму ввода нового пароля')
+          setPasswordRecovery(true)
+          return
+        }
 
         if (newSession?.user) {
           console.log('[PoopTracker] Загрузка профиля для:', newSession.user.id)
@@ -276,12 +305,19 @@ function App() {
     )
   }
 
-  // Экран авторизации (нет сессии или нет профиля)
-  if (!session || !profile) {
+  // Экран авторизации (нет сессии, нет профиля, или режим восстановления пароля)
+  if (passwordRecovery || !session || !profile) {
     return (
       <HashRouter>
         <>
-          <AuthScreen />
+          <AuthScreen
+            recoveryMode={passwordRecovery}
+            onPasswordUpdated={() => {
+              setPasswordRecovery(false)
+              // Принудительно синхронизируем сессию/профиль после установки нового пароля
+              checkSession()
+            }}
+          />
           {warning && (
             <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto">
               <div className="bg-amber-500/90 backdrop-blur-lg border-2 border-amber-400 rounded-2xl p-4 shadow-xl">

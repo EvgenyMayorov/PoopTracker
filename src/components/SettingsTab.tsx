@@ -631,20 +631,24 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 text-center">
-              <UserAvatar
-                avatar={avatar}
-                containerClassName="w-24 h-24 !w-24 !h-24 overflow-hidden rounded-full shrink-0 mb-1"
-                className="text-4xl"
-              />
-              <div className="text-xl font-bold text-slate-900 truncate max-w-xs">{profileUsername}</div>
-              <div className="text-xs text-slate-400 truncate max-w-xs mt-0.5">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
-              <button
-                onClick={() => setEditingUsername(true)}
-                className="mt-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-4 py-2 rounded-full shrink-0 transition-colors"
-              >
-                Изменить
-              </button>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col text-left flex-1 min-w-0 gap-1">
+                <div className="text-2xl font-extrabold text-slate-900 truncate">{profileUsername}</div>
+                <div className="text-sm text-slate-500 truncate">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
+                <button
+                  onClick={() => setEditingUsername(true)}
+                  className="mt-1 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+                >
+                  Изменить
+                </button>
+              </div>
+              <div className="shrink-0">
+                <UserAvatar
+                  avatar={avatar}
+                  containerClassName="w-28 h-28 rounded-full overflow-hidden shrink-0"
+                  className="text-4xl"
+                />
+              </div>
             </div>
           )}
         </div>

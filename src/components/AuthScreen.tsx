@@ -1,10 +1,19 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function AuthScreen() {
-  const [mode, setMode] = useState<'login' | 'register' | 'reset'>('login')
+interface AuthScreenProps {
+  recoveryMode?: boolean
+  onPasswordUpdated?: () => void
+}
+
+export function AuthScreen({ recoveryMode = false, onPasswordUpdated }: AuthScreenProps) {
+  const [mode, setMode] = useState<'login' | 'register' | 'reset' | 'update-password'>(
+    recoveryMode ? 'update-password' : 'login'
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [username, setUsername] = useState('')
   const [usernameError, setUsernameError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -18,8 +27,6 @@ export function AuthScreen() {
     setMessage(null)
 
     try {
-      console.log('[Auth] Отправка формы...', { mode, email, username })
-
       if (mode === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) {
@@ -28,28 +35,23 @@ export function AuthScreen() {
         }
         console.log('[Auth] Успешный вход:', data)
         setMessage('✅ Вход выполнен! Загрузка...')
-} else if (mode === 'register') {
+      } else if (mode === 'register') {
         const trimmedUsername = username.trim()
         const trimmedEmail = email.trim().toLowerCase()
         if (!trimmedUsername) {
           setUsernameError('Введите никнейм')
           return
         }
-
-        // Проверяем, не занят ли никнейм другим пользователем (без учёта регистра)
         const { data: existingProfiles } = await supabase
           .from('profiles')
           .select('id')
           .ilike('username', trimmedUsername)
           .limit(1)
-
         if (existingProfiles && existingProfiles.length > 0) {
           setUsernameError('Этот никнейм уже занят, выберите другой')
           return
         }
-
         setUsernameError(null)
-
         console.log('[Auth] Регистрация...')
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
@@ -60,66 +62,60 @@ export function AuthScreen() {
           console.error('[Auth] Ошибка регистрации:', error)
           throw error
         }
-
         console.log('[Auth] Регистрация успешна:', data)
-
         if (data.user) {
-          console.log('[Auth] Создание профиля с retry-логикой...')
-          
           const MAX_RETRIES = 4
           const RETRY_DELAY = 500
           let profileCreated = false
           let lastError = null
-
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-            console.log(`[Auth] Попытка ${attempt}/${MAX_RETRIES} создания профиля...`)
-            
             const { error: profileError } = await supabase
               .from('profiles')
-              .insert({ 
-                id: data.user.id, 
-                username: trimmedUsername,
-                avatar: 'Panda',
-                email: trimmedEmail,
-                updated_at: new Date().toISOString()
-              })
-
+              .insert({ id: data.user.id, username: trimmedUsername, avatar: 'Panda', email: trimmedEmail, updated_at: new Date().toISOString() })
             if (profileError) {
               lastError = profileError
-              console.error(`[Auth] Ошибка создания профиля (попытка ${attempt}):`, profileError)
-              
-              if (profileError.code === '23505') {
-                console.log('[Auth] Профиль уже существует (создан триггером)')
-                profileCreated = true
-                break
-              }
-              
-              if (attempt < MAX_RETRIES) {
-                console.log(`[Auth] Ждём ${RETRY_DELAY}мс перед следующей попыткой...`)
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-              }
-            } else {
-              profileCreated = true
-              console.log(`[Auth] Профиль создан с попытки ${attempt}`)
-              break
-            }
+              console.error('[Auth] Ошибка создания профиля:', profileError)
+              if (profileError.code === '23505') { profileCreated = true; break }
+              if (attempt < MAX_RETRIES) { await new Promise(r => setTimeout(r, RETRY_DELAY)) }
+            } else { profileCreated = true; break }
           }
-
-          if (!profileCreated) {
-            console.error('[Auth] Не удалось создать профиль после всех попыток:', lastError)
-            throw new Error(`Не удалось создать профиль: ${lastError?.message || 'Неизвестная ошибка'}`)
-          }
+          if (!profileCreated) { throw lastError }
         }
-
-        setMessage('✅ Регистрация успешна! Загрузка...')
+        setMessage('✅ Аккаунт создан! Загрузка...')
       } else if (mode === 'reset') {
         console.log('[Auth] Восстановление пароля...')
-        const { error } = await supabase.auth.resetPasswordForEmail(email)
+        const trimmedEmail = email.trim()
+        console.log('[Auth] Отправка ссылки на сброс пароля на:', trimmedEmail)
+        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+          redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`
+        })
         if (error) {
           console.error('[Auth] Ошибка восстановления:', error)
+          setError(error.message || 'Неизвестная ошибка при отправке ссылки сброса пароля')
           throw error
         }
         setMessage('✅ Ссылка для сброса пароля отправлена на ваш email')
+      } else if (mode === 'update-password') {
+        const trimmedPassword = newPassword.trim()
+        const trimmedConfirm = confirmPassword.trim()
+        if (!trimmedPassword || trimmedPassword.length < 6) {
+          setError('Пароль должен быть не короче 6 символов')
+          return
+        }
+        if (trimmedPassword !== trimmedConfirm) {
+          setError('Пароли не совпадают')
+          return
+        }
+        console.log('[Auth] Установка нового пароля...')
+        const { error } = await supabase.auth.updateUser({ password: trimmedPassword })
+        if (error) {
+          console.error('[Auth] Ошибка установки пароля:', error)
+          setError(error.message || 'Не удалось установить новый пароль')
+          return
+        }
+        console.log('[Auth] Пароль успешно обновлён')
+        setMessage('✅ Пароль успешно обновлён! Загрузка...')
+        setTimeout(() => { onPasswordUpdated?.() }, 1000)
       }
     } catch (err: any) {
       console.error('[Auth] Критическая ошибка:', err)
@@ -132,7 +128,6 @@ export function AuthScreen() {
   return (
     <div className="mobile-container flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        {/* Logo and description */}
         <div className="text-center mb-6">
           <img src={import.meta.env.BASE_URL + 'logo.svg'} alt="PoopTrack" className="w-20 h-20 mx-auto mb-4" />
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
@@ -140,7 +135,6 @@ export function AuthScreen() {
           </h1>
         </div>
 
-        {/* Form card */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
@@ -165,21 +159,56 @@ export function AuthScreen() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-semibold mb-2 text-slate-900">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
-                required
-              />
-            </div>
+            {mode !== 'update-password' && (
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-slate-900">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                  required
+                />
+              </div>
+            )}
 
-            {mode !== 'reset' && (
+            {mode === 'update-password' && (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-slate-900">
+                    Новый пароль
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-slate-900">
+                    Подтвердите пароль
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </>
+            )}
+
+            {mode !== 'reset' && mode !== 'update-password' && (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-semibold mb-2 text-slate-900">
@@ -228,39 +257,41 @@ export function AuthScreen() {
               disabled={loading}
               className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Загрузка...' : 
-               mode === 'login' ? 'Войти' : 
-               mode === 'register' ? 'Создать аккаунт' : 
+              {loading ? 'Загрузка...' :
+               mode === 'login' ? 'Войти' :
+               mode === 'register' ? 'Создать аккаунт' :
+               mode === 'update-password' ? 'Установить новый пароль' :
                'Отправить ссылку для сброса'}
             </button>
           </form>
 
-          {/* Toggle */}
-          <div className="mt-4 text-center">
-            {mode === 'login' ? (
-              <button
-                onClick={() => {
-                  setMode('register')
-                  setError(null)
-                  setMessage(null)
-                }}
-                className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
-              >
-                Нет аккаунта? Зарегистрироваться
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setMode('login')
-                  setError(null)
-                  setMessage(null)
-                }}
-                className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
-              >
-                {mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Вернуться назад к входу'}
-              </button>
-            )}
-          </div>
+          {mode !== 'update-password' && (
+            <div className="mt-4 text-center">
+              {mode === 'login' ? (
+                <button
+                  onClick={() => {
+                    setMode('register')
+                    setError(null)
+                    setMessage(null)
+                  }}
+                  className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
+                >
+                  Нет аккаунта? Зарегистрироваться
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMode('login')
+                    setError(null)
+                    setMessage(null)
+                  }}
+                  className="text-sm font-medium hover:opacity-80 transition-opacity text-slate-600"
+                >
+                  {mode === 'register' ? 'Уже есть аккаунт? Войти' : 'Вернуться назад к входу'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
