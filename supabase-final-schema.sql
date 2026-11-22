@@ -278,9 +278,9 @@ RETURNS TRIGGER AS $$
 DECLARE
   newUsername TEXT;
 BEGIN
-  -- Достаём имя: username -> name -> локальная часть email -> user_ + начало id
+  -- Достаём имя: username (NULLIF для пустых строк) -> name -> локальная часть email -> user_ + начало id
   newUsername := COALESCE(
-    NEW.raw_user_meta_data->>'username',
+    NULLIF(TRIM(NEW.raw_user_meta_data->>'username'), ''),
     NEW.raw_user_meta_data->>'name',
     split_part(NEW.email, '@', 1),
     'user_' || substr(NEW.id::text, 1, 8)

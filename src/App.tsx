@@ -25,10 +25,27 @@ function App() {
           console.log('[PoopTracker] Загрузка профиля для:', newSession.user.id)
           await fetchProfile(newSession.user.id)
           // Синхронизируем email в профиле после регистрации/входа
-          const { data: profile } = await supabase.from('profiles').select('email').eq('id', newSession.user.id).maybeSingle()
+          const { data: profile } = await supabase.from('profiles').select('email, username').eq('id', newSession.user.id).maybeSingle()
           if (profile && !profile.email && newSession.user.email) {
             await supabase.from('profiles').update({ email: newSession.user.email.trim().toLowerCase() }).eq('id', newSession.user.id)
             console.log('[PoopTracker] Email синхронизирован в профиле:', newSession.user.email)
+          }
+          // Синхронизируем username из user_metadata при первой загрузке
+          if (profile && newSession.user.user_metadata?.username) {
+            const metaUsername = newSession.user.user_metadata.username.trim()
+            const currentUsername = profile.username?.trim() || ''
+            const emailPrefix = newSession.user.email?.split('@')[0] || ''
+            // Обновляем, если username пустой, равен email-префиксу или дефолтному значению
+            if (metaUsername &&
+                (!currentUsername ||
+                 currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
+                 currentUsername.toLowerCase() === 'unknown' ||
+                 currentUsername.startsWith('user_'))) {
+              await supabase.from('profiles').update({ username: metaUsername, updated_at: new Date().toISOString() }).eq('id', newSession.user.id)
+              console.log('[PoopTracker] Username синхронизирован из user_metadata:', metaUsername)
+              // Обновляем локальный state
+              setProfile(prev => prev ? { ...prev, username: metaUsername } : prev)
+            }
           }
         } else {
           console.log('[PoopTracker] Сессия отсутствует')
@@ -102,10 +119,25 @@ function App() {
         setSession(currentSession)
         await fetchProfile(currentSession.user.id)
         // Синхронизируем email в профиле
-        const { data: profile } = await supabase.from('profiles').select('email').eq('id', currentSession.user.id).maybeSingle()
+        const { data: profile } = await supabase.from('profiles').select('email, username').eq('id', currentSession.user.id).maybeSingle()
         if (profile && !profile.email && currentSession.user.email) {
           await supabase.from('profiles').update({ email: currentSession.user.email.trim().toLowerCase() }).eq('id', currentSession.user.id)
           console.log('[PoopTracker] Email синхронизирован в профиле при checkSession:', currentSession.user.email)
+        }
+        // Синхронизируем username из user_metadata при первой загрузке
+        if (profile && currentSession.user.user_metadata?.username) {
+          const metaUsername = currentSession.user.user_metadata.username.trim()
+          const currentUsername = profile.username?.trim() || ''
+          const emailPrefix = currentSession.user.email?.split('@')[0] || ''
+          if (metaUsername &&
+              (!currentUsername ||
+               currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
+               currentUsername.toLowerCase() === 'unknown' ||
+               currentUsername.startsWith('user_'))) {
+            await supabase.from('profiles').update({ username: metaUsername, updated_at: new Date().toISOString() }).eq('id', currentSession.user.id)
+            console.log('[PoopTracker] Username синхронизирован из user_metadata при checkSession:', metaUsername)
+            setProfile(prev => prev ? { ...prev, username: metaUsername } : prev)
+          }
         }
       } else if (!currentSession) {
         setLoading(false)

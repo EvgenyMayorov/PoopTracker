@@ -51,7 +51,11 @@ export function AuthScreen() {
         setUsernameError(null)
 
         console.log('[Auth] Регистрация...')
-        const { data, error } = await supabase.auth.signUp({ email: trimmedEmail, password })
+        const { data, error } = await supabase.auth.signUp({
+          email: trimmedEmail,
+          password,
+          options: { data: { username: trimmedUsername, name: trimmedUsername } }
+        })
         if (error) {
           console.error('[Auth] Ошибка регистрации:', error)
           throw error
