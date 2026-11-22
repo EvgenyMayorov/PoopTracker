@@ -237,7 +237,15 @@ export function usePush() {
     const permission = Notification.permission
     let subscriptionActive = false
     try {
-      const registration = await navigator.serviceWorker.getRegistration()
+      // Используем navigator.serviceWorker.ready — ждём готовности SW и проверяем
+      // актуальную подписку. getRegistration() может вернуть null раньше, чем SW
+      // успел активироваться, поэтому для корректного состояния используем ready.
+      const registration = (await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<ServiceWorkerRegistration | null>((resolve) =>
+          setTimeout(() => resolve(null), 10000)
+        ),
+      ])) as ServiceWorkerRegistration | null
       if (registration) {
         subscriptionActive = !!(await registration.pushManager.getSubscription())
       }

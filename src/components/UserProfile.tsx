@@ -757,6 +757,17 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           confirmClassName="bg-red-500 hover:bg-red-600 text-white"
         />
 
+        {/* Confirm Modal for Unfollow */}
+        <ConfirmModal
+          isOpen={showUnfollowConfirm}
+          title="Отписка"
+          message="Вы уверены, что хотите отписаться?"
+          confirmText="Отписаться"
+          cancelText="Отмена"
+          onConfirm={confirmUnfollow}
+          onCancel={() => setShowUnfollowConfirm(false)}
+          confirmClassName="bg-red-500 hover:bg-red-600 text-white"
+        />
         {/* Error Message Toast */}
         {errorMessage && (
           <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 sm:px-6">

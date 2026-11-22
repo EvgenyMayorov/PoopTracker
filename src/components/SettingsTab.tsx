@@ -82,6 +82,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   const [modalTestResult, setModalTestResult] = useState<string | null>(null)
   const [modalDevicePermission, setModalDevicePermission] = useState<NotificationPermission | 'unsupported'>(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
   const [modalDeviceSubscriptionActive, setModalDeviceSubscriptionActive] = useState(false)
+  const [modalCheckingDevice, setModalCheckingDevice] = useState(false)
   const [modalReconnecting, setModalReconnecting] = useState(false)
   const [modalReconnectResult, setModalReconnectResult] = useState<string | null>(null)
   const { requestPermissionAndSubscribe, getDeviceState: fetchDeviceState } = usePush()
@@ -277,6 +278,31 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
     updatePushStatus()
   }, [updatePushStatus])
 
+  // При открытии модалки диагностики Push-уведомлений асинхронно
+  // проверяем актуальное состояние подписки текущего устройства,
+  // чтобы корректно отображать «Активна»/«Проверка...»/«Не создана».
+  useEffect(() => {
+    if (!isPushDiagnosticOpen) return
+    let cancelled = false
+    const refreshDeviceState = async () => {
+      setModalCheckingDevice(true)
+      try {
+        const state = await fetchDeviceState()
+        if (cancelled) return
+        setModalDevicePermission(state.permission)
+        setModalDeviceSubscriptionActive(state.subscriptionActive)
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setModalCheckingDevice(false)
+      }
+    }
+    refreshDeviceState()
+    return () => {
+      cancelled = true
+    }
+  }, [isPushDiagnosticOpen, fetchDeviceState])
+
   const handleSaveUsername = async () => {
     const trimmedUsername = tempUsername.trim()
     if (!trimmedUsername) {
@@ -439,6 +465,18 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
     setModalSendingTest(true)
     setModalTestResult(null)
 
+    // Проверяем актуальное состояние подписки текущего устройства
+    try {
+      setModalCheckingDevice(true)
+      const state = await fetchDeviceState()
+      setModalDevicePermission(state.permission)
+      setModalDeviceSubscriptionActive(state.subscriptionActive)
+    } catch {
+      // ignore
+    } finally {
+      setModalCheckingDevice(false)
+    }
+
     try {
       // 1. Убедиться, что подписка актуальна в БД (upsert текущей подписки браузера)
       const registration = await navigator.serviceWorker.ready
@@ -493,6 +531,9 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
 
       if (sent > 0) {
         setModalTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent})`)
+        // После успешной отправки тестового пуша подписка считается активной
+        setModalDeviceSubscriptionActive(true)
+        setModalDevicePermission(Notification.permission)
       } else if (found === 0) {
         setModalTestResult(`❌ Подписка не найдена в БД. Включите уведомления в настройках и попробуйте снова.`)
       } else if (errors.length > 0) {
@@ -592,9 +633,9 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           ) : (
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
-                <UserAvatar avatar={avatar} containerClassName="w-36 h-36 overflow-hidden rounded-full shrink-0" className="w-full h-full object-cover rounded-full block" />
+                <UserAvatar avatar={avatar} containerClassName="w-28 h-28 overflow-hidden rounded-full shrink-0" className="w-full h-full object-cover rounded-full block" />
                 <div className="truncate">
-                  <div className="text-base font-bold text-[#111827] truncate">{profileUsername}</div>
+                  <div className="text-xl font-bold text-[#111827] truncate">{profileUsername}</div>
                   <div className="text-xs text-slate-400 truncate mt-0.5">{profile.email || `ID: ${profile.id.substring(0, 8)}`}</div>
                 </div>
               </div>
@@ -716,10 +757,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
             <div className="text-sm font-semibold text-slate-700">Состояние устройства</div>
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
               <div className="text-xs text-slate-500 leading-relaxed">
-                Права браузера:
-                {modalDevicePermission === 'unsupported' ? 'неизвестно' : modalDevicePermission}
-                | Подписка этого устройства:
-                {modalDeviceSubscriptionActive ? 'Активна' : 'Не создана'}
+                Права браузера: {modalDevicePermission === 'unsupported' ? 'неизвестно' : modalDevicePermission} | Подписка этого устройства: {modalDeviceSubscriptionActive ? 'Активна' : modalCheckingDevice ? 'Проверка...' : 'Не создана'}
               </div>
             </div>
           </div>

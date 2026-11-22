@@ -467,6 +467,13 @@ export function MainScreen({ profile, onLogout }: Props) {
 
       {activeTab === 'home' && (
         <div className="px-4 pt-4 space-y-4">
+          {/* Имя пользователя — по центру вверху */}
+          <div className="text-center">
+            <div className="text-xl font-extrabold text-slate-900 tracking-tight leading-tight truncate">
+              {profile?.username || 'Пользователь'}
+            </div>
+          </div>
+
           <Header activeTab="home" profile={profile} />
 
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />

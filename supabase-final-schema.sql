@@ -176,10 +176,14 @@ CREATE POLICY "Users can delete own events"
   USING (auth.uid() = user_id);
 
 -- 12. Политики для friends
+-- SELECT: любой авторизованный пользователь может читать связи друзей/подписок,
+-- чтобы видеть подписки и подписчиков в профиле любого пользователя.
 DROP POLICY IF EXISTS "Users can view own friends" ON public.friends;
-CREATE POLICY "Users can view own friends"
+DROP POLICY IF EXISTS "Users can view friends connections" ON public.friends;
+CREATE POLICY "Users can view friends connections"
   ON public.friends FOR SELECT
-  USING (auth.uid() = user_id OR auth.uid() = follower_id);
+  TO authenticated
+  USING (true);
 
 DROP POLICY IF EXISTS "Users can insert own subscriptions" ON public.friends;
 CREATE POLICY "Users can insert own subscriptions"
