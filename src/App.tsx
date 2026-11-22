@@ -60,20 +60,29 @@ function App() {
             console.log('[PoopTracker] Email синхронизирован в профиле:', newSession.user.email)
           }
           // Синхронизируем username из user_metadata при первой загрузке
-          if (profile && newSession.user.user_metadata?.username) {
-            const metaUsername = newSession.user.user_metadata.username.trim()
+          // Также используем pending-никнейм из localStorage (записывается в AuthScreen при регистрации),
+          // который является авторитетным источником введённого пользователем значения.
+          const pendingUsernameKey = `poop_pending_username_${newSession.user.id}`
+          const pendingUsername = (() => { try { return localStorage.getItem(pendingUsernameKey) } catch { return null } })()
+          const metaUsername = newSession.user.user_metadata?.username?.trim() || ''
+          const authoritativeUsername = metaUsername || pendingUsername || ''
+
+          if (profile && authoritativeUsername) {
             const currentUsername = profile.username?.trim() || ''
             const emailPrefix = newSession.user.email?.split('@')[0] || ''
             // Обновляем, если username пустой, равен email-префиксу или дефолтному значению
-            if (metaUsername &&
-                (!currentUsername ||
-                 currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
-                 currentUsername.toLowerCase() === 'unknown' ||
-                 currentUsername.startsWith('user_'))) {
-              await supabase.from('profiles').update({ username: metaUsername, updated_at: new Date().toISOString() }).eq('id', newSession.user.id)
-              console.log('[PoopTracker] Username синхронизирован из user_metadata:', metaUsername)
+            if (!currentUsername ||
+                currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
+                currentUsername.toLowerCase() === 'unknown' ||
+                currentUsername.startsWith('user_')) {
+              await supabase.from('profiles').update({ username: authoritativeUsername, updated_at: new Date().toISOString() }).eq('id', newSession.user.id)
+              console.log('[PoopTracker] Username синхронизирован (metadata/pending):', authoritativeUsername)
               // Обновляем локальный state
-              setProfile(prev => prev ? { ...prev, username: metaUsername } : prev)
+              setProfile(prev => prev ? { ...prev, username: authoritativeUsername } : prev)
+            }
+            // Удаляем pending-ключ — он отработал
+            if (pendingUsername) {
+              try { localStorage.removeItem(pendingUsernameKey) } catch { /* ignore */ }
             }
           }
         } else {
@@ -153,19 +162,24 @@ function App() {
           await supabase.from('profiles').update({ email: currentSession.user.email.trim().toLowerCase() }).eq('id', currentSession.user.id)
           console.log('[PoopTracker] Email синхронизирован в профиле при checkSession:', currentSession.user.email)
         }
-        // Синхронизируем username из user_metadata при первой загрузке
-        if (profile && currentSession.user.user_metadata?.username) {
-          const metaUsername = currentSession.user.user_metadata.username.trim()
+        // Синхронизируем username из user_metadata / pending при первой загрузке
+        const pendingUsernameKey = `poop_pending_username_${currentSession.user.id}`
+        const pendingUsername = (() => { try { return localStorage.getItem(pendingUsernameKey) } catch { return null } })()
+        const metaUsername = currentSession.user.user_metadata?.username?.trim() || ''
+        const authoritativeUsername = metaUsername || pendingUsername || ''
+        if (profile && authoritativeUsername) {
           const currentUsername = profile.username?.trim() || ''
           const emailPrefix = currentSession.user.email?.split('@')[0] || ''
-          if (metaUsername &&
-              (!currentUsername ||
-               currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
-               currentUsername.toLowerCase() === 'unknown' ||
-               currentUsername.startsWith('user_'))) {
-            await supabase.from('profiles').update({ username: metaUsername, updated_at: new Date().toISOString() }).eq('id', currentSession.user.id)
-            console.log('[PoopTracker] Username синхронизирован из user_metadata при checkSession:', metaUsername)
-            setProfile(prev => prev ? { ...prev, username: metaUsername } : prev)
+          if (!currentUsername ||
+              currentUsername.toLowerCase() === emailPrefix.toLowerCase() ||
+              currentUsername.toLowerCase() === 'unknown' ||
+              currentUsername.startsWith('user_')) {
+            await supabase.from('profiles').update({ username: authoritativeUsername, updated_at: new Date().toISOString() }).eq('id', currentSession.user.id)
+            console.log('[PoopTracker] Username синхронизирован (metadata/pending) при checkSession:', authoritativeUsername)
+            setProfile(prev => prev ? { ...prev, username: authoritativeUsername } : prev)
+          }
+          if (pendingUsername) {
+            try { localStorage.removeItem(pendingUsernameKey) } catch { /* ignore */ }
           }
         }
       } else if (!currentSession) {

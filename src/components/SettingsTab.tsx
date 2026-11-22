@@ -76,6 +76,47 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   const [pushStatus, setPushStatus] = useState<'loading' | 'enabled' | 'disabled' | 'blocked' | 'unsupported'>('loading')
   const [pushError, setPushError] = useState<string | null>(null)
 
+  // === Модалка удаления профиля ====
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const openDeleteModal = () => {
+    setDeleteError(null)
+    setIsDeleteModalOpen(true)
+  }
+
+  // Полное удаление профиля и аккаунта (включая запись в auth.users через RPC Supabase)
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      const { error } = await supabase.rpc('delete_user_account')
+      if (error) {
+        console.error('[Settings] Ошибка удаления аккаунта:', error)
+        setDeleteError(error.message || 'Не удалось удалить профиль')
+        return
+      }
+      // Очищаем локальное состояние
+      try {
+        localStorage.removeItem('poop_avatar')
+        localStorage.removeItem('poop_push_enabled')
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('poop_pending_username_')) localStorage.removeItem(key)
+        })
+      } catch { /* ignore */ }
+      setIsDeleteModalOpen(false)
+      // Выходим из аккаунта — App покажет экран входа/регистрации
+      await supabase.auth.signOut()
+      onLogout()
+    } catch (err: any) {
+      console.error('[Settings] Исключение при удалении аккаунта:', err)
+      setDeleteError(err?.message || 'Неизвестная ошибка при удалении аккаунта')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // === Модалка диагностики Push-уведомлений ===
   const [isPushDiagnosticOpen, setIsPushDiagnosticOpen] = useState(false)
   const [modalSendingTest, setModalSendingTest] = useState(false)
@@ -701,6 +742,25 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           <span>🔄</span>
           <span>Обновить версию приложения</span>
         </button>
+        <div className="pointer-events-auto flex items-center justify-between gap-3 text-slate-600 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">
+          <div className="text-left leading-tight">
+            <div className="text-xs font-semibold text-slate-700">PoopTrack v{__APP_VERSION__}</div>
+            <div className="text-[10px] text-slate-600">Made by Evgen. Powered by Supabase & GitHub, 2026.</div>
+          </div>
+          <div className="pointer-events-auto flex flex-col items-end gap-1.5 shrink-0">
+            <button onClick={onLogout} className="bg-rose-100/80 hover:bg-rose-200/80 text-rose-600 text-xs font-bold px-4 py-2 rounded-full flex items-center gap-1.5 transition-colors">
+              <span>↪</span>
+              <span>Выйти</span>
+            </button>
+            <button
+              onClick={openDeleteModal}
+              className="bg-transparent border border-rose-300 hover:bg-rose-100/60 text-rose-600 text-[11px] font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 transition-colors"
+            >
+              <span>🗑️</span>
+              <span>Удалить профиль</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -782,7 +842,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
             )}
           </div>
 
-          {/* Кнопка закрыть внизу */}
+
           <div className="mt-5 pt-4 border-t border-slate-100">
             <button
               onClick={() => setIsPushDiagnosticOpen(false)}
@@ -794,6 +854,54 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
         </div>
       </div>
     )}
+    {isDeleteModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => {
+        if (e.target === e.currentTarget && !isDeleting) setIsDeleteModalOpen(false)
+      }}>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-white rounded-[20px] p-5 shadow-2xl border border-slate-200 w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-slate-900">Удалить профиль</h2>
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+              aria-label="Закрыть"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Предупреждение */}
+          <div className="space-y-3 mb-5">
+            <div className="text-sm font-semibold text-slate-700">Удаление профиля?</div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Вы уверены, что хотите навсегда удалить свой профиль и все записи? Это действие необратимо.
+            </p>
+            {deleteError && (
+              <div className="mt-3 rounded-lg p-3 text-xs bg-red-50 border border-red-200 text-red-700">❌ {deleteError}</div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? 'Удаляем…' : 'Удалить навсегда'}
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={isDeleting}
+              className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-colors disabled:opacity-50"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
 
     </div>
   )

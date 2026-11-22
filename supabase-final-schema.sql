@@ -1,6 +1,6 @@
 -- ============================================
 -- PoopTracker Database Schema for Supabase
--- Final consolidated schema v1.1.0
+-- Final consolidated schema v1.6.1
 -- ============================================
 
 -- 1. Создаём таблицу profiles
@@ -312,6 +312,42 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
+-- 19. Безопасная RPC-функция полного удаления аккаунта
+-- Вызывается с фронтенда: await supabase.rpc('delete_user_account')
+-- Удаляет данные пользователя (если не настроено ON DELETE CASCADE)
+-- и выполняет DELETE FROM auth.users WHERE id = auth.uid();
+-- Выдает права GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
+-- ============================================
+CREATE OR REPLACE FUNCTION public.delete_user_account()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  uid UUID := auth.uid();
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Не авторизован: невозможно удалить аккаунт';
+  END IF;
+
+  -- Удаляем зависимые данные пользователя (на случай отсутствия ON DELETE CASCADE)
+  DELETE FROM public.comments          WHERE user_id = uid;
+  DELETE FROM public.reactions         WHERE user_id = uid;
+  DELETE FROM public.notifications     WHERE user_id = uid OR friend_id = uid;
+  DELETE FROM public.friends           WHERE user_id = uid OR follower_id = uid;
+  DELETE FROM public.push_subscriptions WHERE user_id = uid;
+  DELETE FROM public.events            WHERE user_id = uid;
+  DELETE FROM public.profiles          WHERE id = uid;
+
+  -- Полное удаление аккаунта из auth.users (каскадно чистит оставшееся)
+  DELETE FROM auth.users WHERE id = uid;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.delete_user_account() TO authenticated;
 
 -- ============================================
 -- Готово! Теперь можно тестировать регистрацию

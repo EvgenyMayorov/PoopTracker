@@ -69,15 +69,27 @@ export function AuthScreen({ recoveryMode = false, onPasswordUpdated }: AuthScre
           let profileCreated = false
           let lastError = null
           for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            // Используем UPSERT (а не INSERT), чтобы гарантированно перезаписать
+            // username, вычисленный триггером on_auth_user_created из metadata/email,
+            // и сохранить именно введённый пользователем никнейм.
             const { error: profileError } = await supabase
               .from('profiles')
-              .insert({ id: data.user.id, username: trimmedUsername, avatar: 'Panda', email: trimmedEmail, updated_at: new Date().toISOString() })
+              .upsert(
+                { id: data.user.id, username: trimmedUsername, avatar: 'Panda', email: trimmedEmail, updated_at: new Date().toISOString() },
+                { onConflict: 'id' }
+              )
             if (profileError) {
               lastError = profileError
               console.error('[Auth] Ошибка создания профиля:', profileError)
               if (profileError.code === '23505') { profileCreated = true; break }
               if (attempt < MAX_RETRIES) { await new Promise(r => setTimeout(r, RETRY_DELAY)) }
             } else { profileCreated = true; break }
+          }
+          // Сохраняем pending-никнейм для сценария, когда сессия/профиль ещё не успели создать (email-шаблона)
+          if (data.user && trimmedUsername) {
+            try {
+              localStorage.setItem(`poop_pending_username_${data.user.id}`, trimmedUsername)
+            } catch (e) { /* ignore */ }
           }
           if (!profileCreated) { throw lastError }
         }
