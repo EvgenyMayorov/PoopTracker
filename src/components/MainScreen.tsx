@@ -255,6 +255,11 @@ export function MainScreen({ profile, onLogout }: Props) {
   const handleResetBallast = async () => {
     if (isSendingBallast) return
     setIsSendingBallast(true)
+
+    // Optimistic UI: показываем модалку «Газовая атака» мгновенно,
+    // не дожидаясь сетевых запросов.
+    setShowBallastToast(true)
+
     try {
       const rawUsername = (profile.username ?? '').trim()
       const senderName =
@@ -268,19 +273,22 @@ export function MainScreen({ profile, onLogout }: Props) {
         .select('follower_id')
         .eq('user_id', profile.id)
       const followersList = (followersData || []) as Array<{ follower_id: string }>
-      for (const f of followersList) {
-        if (f.follower_id === profile.id) continue
-        await sendPushToUser(
-          f.follower_id,
-          `${senderName} объявляет газовую атаку!`,
-          pushBody
-        )
-      }
+
+      // Отправляем пуши всем подписчикам параллельно (не блокируем интерфейс),
+      // используем Promise.allSettled — не прерываем цикл при ошибке одного пуша.
+      await Promise.allSettled(
+        followersList.map(async (f) => {
+          if (f.follower_id === profile.id) return
+          await sendPushToUser(
+            f.follower_id,
+            `${senderName} объявляет газовую атаку!`,
+            pushBody
+          )
+        })
+      )
     } catch (err) {
       console.warn('[Ballast] Ошибка отправки push подписчикам:', err)
     } finally {
-      // Баннер показывается всегда, даже если подписчиков нет
-      setShowBallastToast(true)
       // Кулдаун после отправки, чтобы не спамить пушами при случайном двойном тапе.
       // Флаг гарантированно сбрасывается по истечении кулдауна.
       setTimeout(() => setIsSendingBallast(false), BALLAST_COOLDOWN_MS)

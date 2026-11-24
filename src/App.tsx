@@ -5,6 +5,37 @@ import { AuthScreen } from './components/AuthScreen'
 import { MainScreen } from './components/MainScreen'
 import { UserProfile } from './components/UserProfile'
 
+// Ключ для кэшированного профиля в localStorage
+const CACHED_PROFILE_KEY = 'poop_cached_profile'
+
+// Проверка валидности кэшированного профиля (структура + время жизни 7 дней)
+function getCachedProfile(): Profile | null {
+  try {
+    const raw = localStorage.getItem(CACHED_PROFILE_KEY)
+    if (!raw) return null
+    const { profile, timestamp } = JSON.parse(raw)
+    if (!profile?.id || !profile?.username) return null
+    const ageMs = Date.now() - (timestamp ?? 0)
+    const maxAgeMs = 7 * 24 * 60 * 60 * 1000 // 7 дней
+    if (ageMs > maxAgeMs) return null
+    return profile as Profile
+  } catch {
+    return null
+  }
+}
+
+function saveCachedProfile(profile: Profile | null) {
+  try {
+    if (profile) {
+      localStorage.setItem(CACHED_PROFILE_KEY, JSON.stringify({ profile, timestamp: Date.now() }))
+    } else {
+      localStorage.removeItem(CACHED_PROFILE_KEY)
+    }
+  } catch {
+    // ignore
+  }
+}
+
 /**
  * Проверяет URL на наличие параметров восстановления пароля Supabase.
  * Supabase (implicit flow) кладёт токены в hash: #access_token=...&type=recovery,
@@ -24,9 +55,17 @@ function detectRecoveryFromUrl(): boolean {
 }
 
 function App() {
+  // Инициализируем профиль из кэша localStorage при первом рендере (lazy init),
+  // чтобы пользователь мгновенно попал в интерфейс без ожидания сети.
   const [session, setSession] = useState<any>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    const cached = getCachedProfile()
+    if (cached) {
+      console.log('[PoopTracker] Загружен закэшированный профиль из localStorage')
+    }
+    return cached
+  })
+  const [loading, setLoading] = useState(() => !getCachedProfile())
   const [warning, setWarning] = useState<string | null>(null)
   // Режим восстановления пароля: пока true — показываем форму ввода нового пароля,
   // даже если сессия восстановления уже активна.
@@ -93,12 +132,19 @@ function App() {
       }
     )
 
-    // Получаем текущую сессию при старте
+    // Получаем текущую сессию при старте (в фоне — не блокирует интерфейс)
     checkSession()
+
+    // Защитный таймаут холодного старта: если кэша нет и интернет плохой,
+    // экран «Загрузка…» не должен зависать от сетевых запросов бесконечно.
+    const coldStartTimer = setTimeout(() => {
+      console.warn('[PoopTracker] Холодный старт: превышен таймаут 5 сек')
+    }, 5000)
 
     // Cleanup
     return () => {
       console.log('[PoopTracker] Отписка от auth listener')
+      clearTimeout(coldStartTimer)
       subscription.unsubscribe()
     }
   }, [])
@@ -249,6 +295,8 @@ function App() {
         console.log('[PoopTracker] Профиль успешно загружен:', profile.username)
         setProfile(profile)
         setWarning(null)
+        // Сохраняем профиль в кэш localStorage
+        saveCachedProfile(profile)
       } else {
         // Fallback: создаём профиль автоматически
         console.warn('[PoopTracker] Профиль не найден после всех попыток. Создаём автоматически...')
@@ -278,6 +326,8 @@ function App() {
           console.log('[PoopTracker] Fallback-профиль создан:', newProfile)
           setProfile(newProfile)
           setWarning(null)
+          // Сохраняем fallback-профиль в кэш
+          saveCachedProfile(newProfile)
         }
       }
     } catch (err: any) {
@@ -295,6 +345,8 @@ function App() {
       setSession(null)
       setProfile(null)
       setWarning(null)
+      // Очищаем кэш профиля при выходе из аккаунта
+      saveCachedProfile(null)
       console.log('[PoopTracker] Выход выполнен')
     } catch (err: any) {
       console.error('[PoopTracker] Ошибка выхода:', err)
@@ -319,8 +371,9 @@ function App() {
     )
   }
 
-  // Экран авторизации (нет сессии, нет профиля, или режим восстановления пароля)
-  if (passwordRecovery || !session || !profile) {
+  // Экран авторизации (нет сессии и нет профиля — ни из кэша, ни из сети),
+  // или режим восстановления пароля
+  if (passwordRecovery || (!session && !profile)) {
     return (
       <HashRouter>
         <>
@@ -359,10 +412,10 @@ function App() {
     <HashRouter>
       <div className="mobile-container">
         <Routes>
-          <Route path="/" element={<MainScreen profile={profile} onLogout={handleLogout} />} />
+          <Route path="/" element={<MainScreen profile={profile ?? { id: '', username: '', avatar: 'Panda', updated_at: '' }} onLogout={handleLogout} />} />
           <Route
             path="/user/:userId"
-            element={<UserProfile currentUserProfile={profile} onLogout={handleLogout} />}
+            element={<UserProfile currentUserProfile={profile ?? { id: '', username: '', avatar: 'Panda', updated_at: '' }} onLogout={handleLogout} />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
