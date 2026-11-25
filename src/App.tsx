@@ -395,6 +395,7 @@ function App() {
                   </div>
                   <button
                     onClick={dismissWarning}
+                    aria-label="Закрыть предупреждение"
                     className="text-amber-950 hover:text-amber-800 font-bold text-xl leading-none"
                   >
                     ×

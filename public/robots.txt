@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://evgenymayorov.github.io/PoopTracker/sitemap.xml

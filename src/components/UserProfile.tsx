@@ -442,7 +442,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         'bg-white border-2 border-blue-200'
       }`}>
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={handleGoBack} className="text-lg shrink-0">←</button>
+          <button onClick={handleGoBack} className="text-lg shrink-0" aria-label="Назад">←</button>
           <div className="w-14 h-14 rounded-full overflow-hidden shrink-0">
             <UserAvatar avatar={profile?.avatar || null} className="w-14 h-14 rounded-full overflow-hidden shrink-0" />
           </div>
