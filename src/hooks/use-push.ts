@@ -284,11 +284,30 @@ export function usePush() {
     async (eventId: string, reactionType: 'thumbs_up' | 'heart' | 'poop', actorProfile: Profile, currentReaction?: string) => {
       try {
         const { data: eventData } = await supabase.from('events').select('user_id').eq('id', eventId).single()
-        if (eventData && eventData.user_id && eventData.user_id !== actorProfile.id) {
+        // Push отправляется только при новой/заменяемой реакции на чужую запись
+        // currentReaction === reactionType  -> удаление реакции (повторный клик по той же)
+        if (eventData && eventData.user_id && eventData.user_id !== actorProfile.id && currentReaction !== reactionType) {
           const reactNames: Record<'thumbs_up' | 'heart' | 'poop', string> = { thumbs_up: '👍', heart: '❤️', poop: '💩' }
-          const actorName = getDisplayName(actorProfile)
-          const bodyText = `${actorName} ${currentReaction ? 'обновил' : 'поставил'} реакцию ${reactNames[reactionType]} под записью`
-          await sendPushToUser(eventData.user_id, 'Реакция на запись', bodyText)
+          const emoji = reactNames[reactionType]
+          const senderName = getDisplayName(actorProfile) || 'Друг'
+          const bodyText = `${senderName} отреагировал(а) ${emoji} на вашу запись`
+
+          // 1) Серверный Web Push (fire-and-forget, не блокирует UI)
+          sendPushToUser(eventData.user_id, 'PoopTrack', bodyText)
+
+          // 2) Создание уведомления в таблице notifications для колокольчика в приложении
+          try {
+            await supabase.from('notifications').insert({
+              user_id: eventData.user_id,
+              friend_id: actorProfile.id,
+              friend_username: senderName,
+              notification_type: 'reaction',
+              event_id: eventId,
+              reaction_type: reactionType,
+            })
+          } catch (notifErr) {
+            console.warn('[Push] Не удалось создать уведомление реакции:', notifErr)
+          }
         }
       } catch (err) {
         console.warn('[Push] Ошибка при отправке push реакции:', err)
@@ -301,10 +320,29 @@ export function usePush() {
     async (eventId: string, actorProfile: Profile, commentText: string) => {
       try {
         const { data: eventData } = await supabase.from('events').select('user_id').eq('id', eventId).single()
+        // Push отправляется только при комментарии к чужой записи
         if (eventData && eventData.user_id && eventData.user_id !== actorProfile.id) {
-          const actorName = getDisplayName(actorProfile)
-          const bodyText = `${actorName} прокомментировал: "${commentText.slice(0, 50)}${commentText.length > 50 ? '...' : ''}"`
-          await sendPushToUser(eventData.user_id, 'Комментарий к записи', bodyText)
+          const senderName = getDisplayName(actorProfile) || 'Друг'
+          const trimmed = commentText.trim()
+          const displayText = trimmed.length > 80 ? trimmed.slice(0, 80).trimEnd() + '...' : trimmed
+          const bodyText = `${senderName} прокомментировал(а) вашу запись: "${displayText}"`
+
+          // 1) Серверный Web Push (fire-and-forget, не блокирует UI)
+          sendPushToUser(eventData.user_id, 'PoopTrack', bodyText)
+
+          // 2) Создание уведомления в таблице notifications для колокольчика в приложении
+          try {
+            await supabase.from('notifications').insert({
+              user_id: eventData.user_id,
+              friend_id: actorProfile.id,
+              friend_username: senderName,
+              notification_type: 'comment',
+              event_id: eventId,
+              comment_text: displayText,
+            })
+          } catch (notifErr) {
+            console.warn('[Push] Не удалось создать уведомление комментария:', notifErr)
+          }
         }
       } catch (err) {
         console.warn('[Push] Ошибка при отправке push комментария:', err)

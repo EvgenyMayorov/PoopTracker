@@ -8,6 +8,7 @@ import { ConfirmModal } from './ConfirmModal'
 import { CommentInput } from './CommentInput'
 import { UserAvatar } from './UserAvatar'
 import { BottomNav } from './BottomNav'
+import { usePush } from '../hooks/use-push'
 
 type Props = {
   currentUserProfile: Profile
@@ -61,6 +62,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const [deleteConfirmEventId, setDeleteConfirmEventId] = useState<string | null>(null)
   const [isDeletingEvent, setIsDeletingEvent] = useState(false)
   const [mainTab, setMainTab] = useState<'home' | 'people' | 'feed' | 'settings'>('home')
+
+  // Push-уведомления для реакций и комментариев (от друга, по событию друга)
+  const { notifyReaction, notifyComment } = usePush()
 
   const weekData = useMemo(() => {
     const data: Array<{ day: string; count: number; isToday: boolean }> = []
@@ -340,6 +344,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       }
     }
     fetchReactions(eventId)
+    // Пуш на push-уведомление автору записи друга (фоновый вызов, не блокирует UI)
+    notifyReaction(eventId, reactionType, currentUserProfile, currentReaction)
   }
 
   const handleAddComment = async (eventId: string) => {
@@ -352,6 +358,8 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     })
     setNewComment(prev => ({ ...prev, [eventId]: '' }))
     fetchComments(eventId)
+    // Пуш автору записи друга (фоновый вызов, не блокирует UI)
+    notifyComment(eventId, currentUserProfile, text)
   }
 
   const handleGoBack = () => {
