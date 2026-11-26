@@ -16,6 +16,7 @@ import { useReactions } from '../hooks/use-reactions'
 import { useComments } from '../hooks/use-comments'
 import { useFriendsEvents } from '../hooks/use-friends-events'
 import { useWeekStats } from '../hooks/use-week-stats'
+import { useBallastStats } from '../hooks/use-ballast-stats'
 import { useTimeAgo } from '../hooks/use-time-ago'
 import { usePush } from '../hooks/use-push'
 import { useAppUpdate } from '../hooks/use-app-update'
@@ -72,6 +73,8 @@ export function MainScreen({ profile, onLogout }: Props) {
   const { formatTimeAgo } = useTimeAgo()
 
   const { weekData, todayCount, weekCount, maxCount } = useWeekStats(events)
+  const { ballastEvents, addBallastEvent } = useBallastStats(profile)
+  const { weekData: ballastWeekData, todayCount: todayBallastCount, weekCount: weekBallastCount, maxCount: maxBallastCount } = useWeekStats(ballastEvents)
 
   // Local UI state
   const [activeTab, setActiveTab] = useState<Tab>(() => {
@@ -255,6 +258,10 @@ export function MainScreen({ profile, onLogout }: Props) {
   const handleResetBallast = async () => {
     if (isSendingBallast) return
     setIsSendingBallast(true)
+
+    // Оптимистично добавляем событие сброса балласта в local state + localStorage.
+    // Фоновая вставка в Supabase выполняется внутри addBallastEvent не блокируя UI.
+    addBallastEvent()
 
     // Optimistic UI: показываем модалку «Газовая атака» мгновенно,
     // не дожидаясь сетевых запросов.
@@ -505,7 +512,11 @@ export function MainScreen({ profile, onLogout }: Props) {
 
           <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
           <WeekChart weekData={weekData} maxCount={maxCount} />
-          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} />
+          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showBallastButton={false} />
+
+          <StatsCards todayCount={todayBallastCount} weekCount={weekBallastCount} totalCount={ballastEvents.length} />
+          <WeekChart weekData={ballastWeekData} maxCount={maxBallastCount} />
+          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showPoopButton={false} />
 
           {events.length > 0 ? (
             <div className="space-y-2">
