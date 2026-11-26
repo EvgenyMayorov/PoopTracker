@@ -19,16 +19,18 @@ export function PoopButton({
   const navigate = useNavigate()
 
   return (
-    <div className="space-y-2.5 pt-1">
-      <button
-        onClick={() => {
-          onPoop()
-          navigate('/')
-        }}
-        className="w-full h-14 rounded-full bg-[#111827] hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-[15px] flex items-center justify-center shadow-md shadow-slate-900/10 transition-all"
-      >
-        У меня вышло!
-      </button>
+    <div className="flex flex-col">
+      {showPoopButton && (
+        <button
+          onClick={() => {
+            onPoop()
+            navigate('/')
+          }}
+          className={`w-full h-14 rounded-full bg-[#111827] hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-[15px] flex items-center justify-center shadow-md shadow-slate-900/10 transition-all ${showBallastButton ? 'mb-2.5' : ''}`}
+        >
+          У меня вышло!
+        </button>
+      )}
       {showBallastButton && (
         <button
           type="button"
