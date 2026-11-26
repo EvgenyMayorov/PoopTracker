@@ -507,43 +507,52 @@ export function MainScreen({ profile, onLogout }: Props) {
       )}
 
       {activeTab === 'home' && (
-        <div className="px-4 pt-5 space-y-4">
+        <div className="px-4 pt-5 space-y-5">
           <Header activeTab="home" profile={profile} />
 
-          <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
-          <WeekChart weekData={weekData} maxCount={maxCount} />
-          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showBallastButton={false} />
+          {/* Блок «Вышло» — стеклянный остров */}
+          <div className="glass-island animate-cascade-1">
+            <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
+            <WeekChart weekData={weekData} maxCount={maxCount} chartType="poop" />
+            <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showBallastButton={false} />
+          </div>
 
-          <StatsCards todayCount={todayBallastCount} weekCount={weekBallastCount} totalCount={ballastEvents.length} />
-          <WeekChart weekData={ballastWeekData} maxCount={maxBallastCount} />
-          <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showPoopButton={false} />
+          {/* Блок «Балласт» — стеклянный остров */}
+          <div className="glass-island animate-cascade-2">
+            <StatsCards todayCount={todayBallastCount} weekCount={weekBallastCount} totalCount={ballastEvents.length} />
+            <WeekChart weekData={ballastWeekData} maxCount={maxBallastCount} chartType="ballast" />
+            <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showPoopButton={false} />
+          </div>
 
-          {events.length > 0 ? (
-            <div className="space-y-2">
-              {events.slice(0, 7).map((event) => (
-                <div key={event.id} className="bg-white rounded-[20px] p-3.5 border border-slate-200/70 flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
-                      ✓
+          {/* Список последних записей — каскадная анимация с задержкой 180ms */}
+          <div className="animate-cascade-3">
+            {events.length > 0 ? (
+              <div className="space-y-2">
+                {events.slice(0, 7).map((event) => (
+                  <div key={event.id} className="bg-white rounded-[20px] p-3.5 border border-slate-200/70 flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0">
+                        ✓
+                      </div>
+                      <div className="truncate">
+                        <div className="text-sm font-bold text-[#111827]">Последняя запись</div>
+                        <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</div>
+                      </div>
                     </div>
-                    <div className="truncate">
-                      <div className="text-sm font-bold text-[#111827]">Последняя запись</div>
-                      <div className="text-xs text-slate-400 tabular-nums">{formatTimeAgo(event.created_at)}</div>
-                    </div>
+                    {getBristolShortLabel(event.bristol_type) && (
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
+                        {getBristolShortLabel(event.bristol_type)}
+                      </span>
+                    )}
                   </div>
-                  {getBristolShortLabel(event.bristol_type) && (
-                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold shrink-0">
-                      {getBristolShortLabel(event.bristol_type)}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-xs text-slate-400 py-4">
-              Записей пока нет. Нажмите «У меня вышло!»
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-xs text-slate-400 py-4">
+                Записей пока нет. Нажмите «У меня вышло!»
+              </div>
+            )}
+          </div>
         </div>
       )}
 

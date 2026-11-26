@@ -26,7 +26,7 @@ export function PoopButton({
             onPoop()
             navigate('/')
           }}
-          className={`w-full h-14 rounded-full bg-[#111827] hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-[15px] flex items-center justify-center shadow-md shadow-slate-900/10 transition-all ${showBallastButton ? 'mb-2.5' : ''}`}
+          className={`w-full h-14 rounded-full bg-[#111827] hover:bg-slate-800 active:scale-[0.96] text-white font-bold text-[15px] flex items-center justify-center shadow-md shadow-slate-900/10 transition-transform duration-150 ${showBallastButton ? 'mb-2.5' : ''}`}
         >
           У меня вышло!
         </button>
@@ -36,7 +36,7 @@ export function PoopButton({
           type="button"
           onClick={() => onResetBallast?.()}
           disabled={isSendingBallast}
-          className={`w-full h-12 rounded-full bg-white hover:bg-slate-50 active:scale-[0.99] text-slate-800 font-semibold text-sm flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(15,23,42,0.05)] border border-slate-100 transition-all ${isSendingBallast ? 'opacity-60' : ''}`}
+          className={`w-full h-12 rounded-full bg-white hover:bg-slate-50 active:scale-[0.96] text-slate-800 font-semibold text-sm flex items-center justify-center gap-1.5 shadow-[0_2px_10px_rgba(15,23,42,0.05)] border border-slate-100 transition-transform duration-150 ${isSendingBallast ? 'opacity-60' : ''}`}
         >
           <span>Сбросить балласт</span>
           <span className="text-base">💨</span>
