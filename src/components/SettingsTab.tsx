@@ -251,7 +251,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
                   p256dh: arrayBufferToBase64(browserSubscription!.getKey('p256dh')!),
                   auth: arrayBufferToBase64(browserSubscription!.getKey('auth')!),
                   updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' })
+                }, { onConflict: 'endpoint' })
             } catch (err) {
               console.warn('[Push] Tikhaya синхронизация push_subscriptions:', err)
             }
@@ -275,7 +275,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
                 p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
                 auth: arrayBufferToBase64(subscription.getKey('auth')!),
                 updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' })
+              }, { onConflict: 'endpoint' })
           } catch (err) {
             console.warn('[Push] Не удалось восстановить SW-подписку:', err)
           }
@@ -298,7 +298,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
                 p256dh: arrayBufferToBase64(newSubscription.getKey('p256dh')!),
                 auth: arrayBufferToBase64(newSubscription.getKey('auth')!),
                 updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' })
+              }, { onConflict: 'endpoint' })
           } catch (err) {
             console.warn('[Push] Auto-resubscribe failed:', err)
           }
@@ -487,7 +487,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       setPushStatus('enabled')
       setPushEnabled(true)
       cachePushStatus(true)
-      setModalReconnectResult('✅ Это устройство переподключено: подписка пересоздана и сохранена')
+      setModalReconnectResult('✅ Это устройство переподключено: новая подписка пересоздана и сохранена в push_subscriptions')
     } finally {
       setModalReconnecting(false)
     }
@@ -531,7 +531,7 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
             p256dh: arrayBufferToBase64(browserSub.getKey('p256dh')!),
             auth: arrayBufferToBase64(browserSub.getKey('auth')!),
             updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id' })
+          }, { onConflict: 'endpoint' })
 
         if (upsertError) {
           console.error('[Push] Upsert subscription error:', upsertError)
@@ -570,8 +570,15 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       const sent = data?.sent ?? 0
       const errors = data?.errors ?? []
 
+      // Формируем человекочитаемый статус по шагам для диагностики
+      const serverResp = error ? (error.message || 'Error') : `found=${found} sent=${sent} failed=${data?.failed ?? 0}`
+      const steps = [
+        '✅ Подписка сохранена в БД',
+        `🔎 Запрос к send-push отправлен: userId=${profile.id.slice(0, 8)}…`,
+        `📡 Ответ сервера: ${serverResp}`,
+      ]
       if (sent > 0) {
-        setModalTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent})`)
+        setModalTestResult(`✅ Серверное Push-уведомление отправлено! (доставлено: ${sent}) ${steps.join(' → ')}`)
         // После успешной отправки тестового пуша подписка считается активной
         setModalDeviceSubscriptionActive(true)
         setModalDevicePermission(Notification.permission)

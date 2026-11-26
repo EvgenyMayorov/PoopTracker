@@ -87,8 +87,30 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
-  UNIQUE(user_id)
+  UNIQUE(endpoint)
 );
+
+-- Миграция для существующих баз: заменяем ограничение уникальности с user_id на endpoint,
+-- чтобы одно устройство (endpoint) можно было привязать только к одному аккаунту,
+-- но на одном аккаунте могло быть несколько устройств.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'push_subscriptions_user_id_key'
+      AND conrelid = 'public.push_subscriptions'::regclass
+  ) THEN
+    ALTER TABLE public.push_subscriptions DROP CONSTRAINT push_subscriptions_user_id_key;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'push_subscriptions_endpoint_key'
+      AND conrelid = 'public.push_subscriptions'::regclass
+  ) THEN
+    ALTER TABLE public.push_subscriptions ADD CONSTRAINT push_subscriptions_endpoint_key UNIQUE (endpoint);
+  END IF;
+END $$;
 
 -- 8. Индексы для производительности
 CREATE INDEX IF NOT EXISTS idx_events_user_id ON public.events(user_id);
@@ -260,7 +282,8 @@ CREATE POLICY "Users can insert own push subscriptions"
 DROP POLICY IF EXISTS "Users can update own push subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can update own push subscriptions"
   ON public.push_subscriptions FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can delete own push subscriptions" ON public.push_subscriptions;
 CREATE POLICY "Users can delete own push subscriptions"

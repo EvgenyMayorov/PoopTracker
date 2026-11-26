@@ -186,7 +186,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
           auth: arrayBufferToBase64(subscription.getKey('auth')!),
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
+        }, { onConflict: 'endpoint' })
     } catch (err) {
       console.warn('[Push] Не удалось создать подписку при старте:', err)
     }

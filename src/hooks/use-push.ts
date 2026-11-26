@@ -72,6 +72,18 @@ async function saveSubscriptionToDb(userId: string, subscription: PushSubscripti
   if (!p256dhKey || !authKey) {
     throw new Error('Подписка не содержит ключей p256dh/auth')
   }
+  // 1) Чистим старые/битые подписки этого пользователя с этим endpoint,
+  //    чтобы не накапливались дубликаты (RLS разрешает удалять только свои строки).
+  try {
+    await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('endpoint', subscription.endpoint)
+  } catch (cleanupErr) {
+    console.warn('[Push] Не удалось очистить старые подписки (не критично):', cleanupErr)
+  }
+  // 2) Сохраняем актуальную подписку через upsert по endpoint
   const { error } = await supabase
     .from('push_subscriptions')
     .upsert({
@@ -80,7 +92,7 @@ async function saveSubscriptionToDb(userId: string, subscription: PushSubscripti
       p256dh: arrayBufferToBase64(p256dhKey),
       auth: arrayBufferToBase64(authKey),
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' })
+    }, { onConflict: 'endpoint' })
   if (error) throw new Error(error.message)
 }
 

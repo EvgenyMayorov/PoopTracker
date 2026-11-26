@@ -5,16 +5,11 @@ const supabaseUrl = Deno.env.get("VITE_SUPABASE_URL") || "https://iwfrojbhfihzui
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-webpush.setVapidDetails(
-  "mailto:contact@pooptracker.app",
-  Deno.env.get("VAPID_PUBLIC_KEY") || "",
-  Deno.env.get("VAPID_PRIVATE_KEY") || ""
-)
-
 interface SendPushRequest {
   userId: string
   title: string
   body: string
+  url?: string
   data?: any
 }
 
@@ -31,7 +26,14 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as SendPushRequest
-    const { userId, title, body: notificationBody, data } = body
+    const { userId, title, body: notificationBody, url, data } = body
+
+    if (!userId) {
+      return new Response(JSON.stringify({ success: false, found: 0, sent: 0, failed: 0, errors: ["userId is required"] }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
 
     const { data: subscriptions, error } = await supabase
       .from("push_subscriptions")
@@ -54,22 +56,29 @@ Deno.serve(async (req) => {
       })
     }
 
-    const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY")!
-    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY")!
-    let vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:contact@pooptracker.app"
+    const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:contact@pooptracker.app"
+    const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") || ""
+    const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") || ""
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.error("VAPID keys are not configured in Edge Function env vars")
+      return new Response(JSON.stringify({ success: false, found: subscriptions.length, sent: 0, failed: subscriptions.length, errors: ["VAPID keys not configured"] }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      })
+    }
 
     if (!vapidSubject.startsWith("mailto:") && !vapidSubject.startsWith("https://")) {
       console.warn("Invalid VAPID_SUBJECT format, defaulting to mailto:")
-      vapidSubject = "mailto:admin@example.com"
     }
 
     webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey)
 
     // Нормализуем data.url, чтобы клик по пушу не вёл в корень домена (404).
-    // Относительный путь './' резолвится от scope Service Worker, поэтому
-    // открывается именно приложение PoopTrack (например /PoopTracker/).
-    const pushData = data && typeof data === "object" ? { ...data } : {}
-    if (!pushData.url || pushData.url === "/") {
+    const pushData: Record<string, any> = data && typeof data === "object" ? { ...data } : {}
+    if (url && typeof url === "string") {
+      pushData.url = url
+    } else if (!pushData.url || pushData.url === "/") {
       pushData.url = "./"
     }
 
@@ -80,6 +89,7 @@ Deno.serve(async (req) => {
     const errorDetails: string[] = []
 
     for (const sub of subscriptions) {
+      const subId = String(sub.id ?? sub.endpoint)
       try {
         await webpush.sendNotification(
           {
@@ -97,7 +107,7 @@ Deno.serve(async (req) => {
         const statusCode = pushErr.statusCode || "unknown"
         const message = pushErr.message || String(pushErr)
 
-        console.error("Push send failed for subscription " + sub.id.substring(0, 8) + ":", { statusCode, message, endpoint: sub.endpoint.substring(0, 50) + "..." })
+        console.error("Push send failed for subscription " + subId.substring(0, 8) + ":", { statusCode, message, endpoint: sub.endpoint.substring(0, 50) + "..." })
 
         if (statusCode === 410 || statusCode === 404) {
           try {
@@ -105,9 +115,9 @@ Deno.serve(async (req) => {
               .from("push_subscriptions")
               .delete()
               .eq("id", sub.id)
-            console.log("Deleted expired/invalid subscription " + sub.id)
+            console.log("Deleted expired/invalid subscription " + subId)
           } catch (delErr) {
-            console.error("Failed to delete subscription " + sub.id + ":", delErr)
+            console.error("Failed to delete subscription " + subId + ":", delErr)
           }
         }
 

@@ -43,26 +43,32 @@ async function extractPushPayload(event) {
     return { title: DEFAULT_PUSH_TITLE, body: DEFAULT_PUSH_BODY, tag: PUSH_TAG, data: {} }
   }
 
+  // Пробуем распарсить JSON-полезную нагрузку (основной формат send-push)
   try {
     const json = await event.data.json()
-    return {
-      title: json.title || DEFAULT_PUSH_TITLE,
-      body: json.body || DEFAULT_PUSH_BODY,
-      tag: json.tag || PUSH_TAG,
-      data: json.data || {},
+    if (json && typeof json === 'object') {
+      return {
+        title: typeof json.title === 'string' && json.title ? json.title : DEFAULT_PUSH_TITLE,
+        body: typeof json.body === 'string' && json.body ? json.body : DEFAULT_PUSH_BODY,
+        tag: typeof json.tag === 'string' && json.tag ? json.tag : PUSH_TAG,
+        data: json.data && typeof json.data === 'object' ? json.data : {},
+      }
     }
   } catch {
-    try {
-      const text = await event.data.text()
-      return {
-        title: DEFAULT_PUSH_TITLE,
-        body: text || DEFAULT_PUSH_BODY,
-        tag: PUSH_TAG,
-        data: {},
-      }
-    } catch {
-      return { title: DEFAULT_PUSH_TITLE, body: DEFAULT_PUSH_BODY, tag: PUSH_TAG, data: {} }
+    // JSON-парсинг не удался — пробуем обычный текст
+  }
+
+  // Fallback: обычный текст (например, при ручной отправке)
+  try {
+    const text = await event.data.text()
+    return {
+      title: DEFAULT_PUSH_TITLE,
+      body: text && text.trim() ? text : DEFAULT_PUSH_BODY,
+      tag: PUSH_TAG,
+      data: {},
     }
+  } catch {
+    return { title: DEFAULT_PUSH_TITLE, body: DEFAULT_PUSH_BODY, tag: PUSH_TAG, data: {} }
   }
 }
 
