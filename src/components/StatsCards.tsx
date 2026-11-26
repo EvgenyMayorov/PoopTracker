@@ -1,32 +1,58 @@
 import React from 'react'
 
+type StatsVariant = 'poop' | 'ballast'
+
 interface StatsCardsProps {
   todayCount: number
   weekCount: number
   totalCount: number
+  variant: StatsVariant
 }
 
-export function StatsCards({ todayCount, weekCount, totalCount }: StatsCardsProps) {
+// Русское склонение слова «сброс» с учётом исключений 11–14.
+// 1 -> 'сброс', 2..4 -> 'сброса', 0, 5..20 (и 11–14) -> 'сбросов'
+function pluralizeReset(n: number): string {
+  const mod100 = n % 100
+  if (mod100 >= 11 && mod100 <= 14) return 'сбросов'
+  const mod10 = n % 10
+  if (mod10 === 1) return 'сброс'
+  if (mod10 >= 2 && mod10 <= 4) return 'сброса'
+  return 'сбросов'
+}
+
+function cellLabel(variant: StatsVariant, index: number, todayCount: number, weekCount: number, totalCount: number): string {
+  if (variant === 'poop') {
+    return ['Вышло сегодня', 'Вышло за неделю', 'Вышло всего'][index]
+  }
+
+  const count = index === 0 ? todayCount : index === 1 ? weekCount : totalCount
+  const word = pluralizeReset(count)
+
+  if (index === 0) {
+    // 1-я ячейка: «сброс балласта сегодня» для единицы, иначе «{склонение} сегодня»
+    return count === 1 ? 'сброс балласта сегодня' : `${word} сегодня`
+  }
+  if (index === 1) {
+    return `${word} за неделю`
+  }
+  return `${word} всего`
+}
+
+export function StatsCards({ todayCount, weekCount, totalCount, variant }: StatsCardsProps) {
+  const counts = [todayCount, weekCount, totalCount]
+
   return (
     <div className="bg-white rounded-[20px] py-4 px-2 grid grid-cols-3 divide-x divide-slate-100 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
-      <div className="flex flex-col items-center">
-        <div key={todayCount} className="text-2xl font-extrabold text-[#111827] tabular-nums animate-number-pop">
-          {todayCount}
+      {counts.map((count, index) => (
+        <div key={`${index}-${count}`} className="flex flex-col items-center">
+          <div className="text-2xl font-extrabold text-[#111827] tabular-nums animate-number-pop">
+            {count}
+          </div>
+          <div className="text-[11px] font-medium text-slate-400 mt-0.5 leading-tight text-center">
+            {cellLabel(variant, index, todayCount, weekCount, totalCount)}
+          </div>
         </div>
-        <div className="text-xs font-medium text-slate-400 mt-0.5">Сегодня</div>
-      </div>
-      <div className="flex flex-col items-center">
-        <div key={weekCount} className="text-2xl font-extrabold text-[#111827] tabular-nums animate-number-pop">
-          {weekCount}
-        </div>
-        <div className="text-xs font-medium text-slate-400 mt-0.5">Неделя</div>
-      </div>
-      <div className="flex flex-col items-center">
-        <div key={totalCount} className="text-2xl font-extrabold text-[#111827] tabular-nums animate-number-pop">
-          {totalCount}
-        </div>
-        <div className="text-xs font-medium text-slate-400 mt-0.5">Всего</div>
-      </div>
+      ))}
     </div>
   )
 }

@@ -512,14 +512,14 @@ export function MainScreen({ profile, onLogout }: Props) {
 
           {/* Блок «Вышло» — стеклянный остров */}
           <div className="glass-island animate-cascade-1">
-            <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} />
+            <StatsCards todayCount={todayCount} weekCount={weekCount} totalCount={events.length} variant="poop" />
             <WeekChart weekData={weekData} maxCount={maxCount} chartType="poop" />
             <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showBallastButton={false} />
           </div>
 
           {/* Блок «Балласт» — стеклянный остров */}
           <div className="glass-island animate-cascade-2">
-            <StatsCards todayCount={todayBallastCount} weekCount={weekBallastCount} totalCount={ballastEvents.length} />
+            <StatsCards todayCount={todayBallastCount} weekCount={weekBallastCount} totalCount={ballastEvents.length} variant="ballast" />
             <WeekChart weekData={ballastWeekData} maxCount={maxBallastCount} chartType="ballast" />
             <PoopButton onPoop={handlePoop} onResetBallast={handleResetBallast} isSendingBallast={isSendingBallast} showPoopButton={false} />
           </div>
