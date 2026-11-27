@@ -687,8 +687,8 @@ export function MainScreen({ profile, onLogout }: Props) {
                     className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
-                        <UserAvatar avatar={f.avatar || null} className="w-full h-full rounded-full object-cover" />
+                      <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden">
+                        <UserAvatar avatar={f.avatar || null} containerClassName="w-12 h-12 rounded-full overflow-hidden shrink-0" className="object-cover" />
                       </div>
                       <div className="truncate">
                         <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
@@ -832,8 +832,8 @@ export function MainScreen({ profile, onLogout }: Props) {
             {friendSearchResult && !friendSearchResult.error && (
               <div className="rounded-2xl p-4 mb-4 bg-slate-50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
-                    <UserAvatar avatar={friendSearchResult.avatar || null} className="w-[52px] h-[52px] rounded-full overflow-hidden" />
+                  <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden">
+                    <UserAvatar avatar={friendSearchResult.avatar || null} containerClassName="w-12 h-12 rounded-full overflow-hidden shrink-0" className="object-cover" />
                   </div>
                   <div className="truncate">
                     <div className="font-bold text-sm text-[#111827] truncate">{friendSearchResult.username}</div>

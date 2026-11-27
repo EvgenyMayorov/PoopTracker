@@ -3,6 +3,7 @@ import { supabase, Profile } from '../lib/supabase'
 import { t } from '../i18n'
 import { UserAvatar, AVATARS_3D, AVATAR_3D_IDS, getAvatarUrl, is3DAvatarKey } from './UserAvatar'
 import { usePush, PUSH_PERMISSION_HINT } from '../hooks/use-push'
+import { getDisplayName } from '../lib/displayName'
 
 interface SettingsTabProps {
   profile: Profile
@@ -186,8 +187,8 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           (profilesData || []).map((p) => ({
             id: p.id,
             user_id: p.id,
-            username: p.username || 'Друг',
-            avatar: p.avatar || null,
+            username: getDisplayName(p),
+            avatar: p.avatar || '💩',
           }))
         )
       } else {

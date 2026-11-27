@@ -18,14 +18,15 @@ export function useFriends(profile: Profile | null) {
   const [blockedUsers, setBlockedUsers] = useState<Friend[]>([])
   const [loading, setLoading] = useState(false)
 
-  const mapFriendRows = (rows: any[], profilesData: any[]): Friend[] =>
+  const mapFriendRows = (rows: any[], profilesData: any[], idKey: 'user_id' | 'follower_id'): Friend[] =>
     rows.map(f => {
-      const p = profilesData.find((p: any) => p.id === f.user_id)
+      const targetId = f[idKey]
+      const p = profilesData.find((p: any) => p.id === targetId)
       return {
         id: f.id,
         user_id: f.user_id,
         follower_id: f.follower_id,
-        username: p ? getDisplayName(p) : 'Unknown',
+        username: p ? getDisplayName(p) : '',
         avatar: p?.avatar || '💩',
         status: f.status || 'accepted',
       }
@@ -43,7 +44,7 @@ export function useFriends(profile: Profile | null) {
         .from('profiles')
         .select('id, username, email, avatar')
         .in('id', followerIds)
-      setFollowers(mapFriendRows(data, profilesData || []))
+      setFollowers(mapFriendRows(data, profilesData || [], 'follower_id'))
     } else {
       setFollowers([])
     }
@@ -61,7 +62,7 @@ export function useFriends(profile: Profile | null) {
         .from('profiles')
         .select('id, username, email, avatar')
         .in('id', userIds)
-      setFollowing(mapFriendRows(data, profilesData || []))
+      setFollowing(mapFriendRows(data, profilesData || [], 'user_id'))
     } else {
       setFollowing([])
     }
