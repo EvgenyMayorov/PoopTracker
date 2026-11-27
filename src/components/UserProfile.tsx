@@ -46,7 +46,6 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const [followers, setFollowers] = useState<Friend[]>([])
   const [following, setFollowing] = useState<Friend[]>([])
   const [isOwner, setIsOwner] = useState(false)
-  const [isFollowing, setIsFollowing] = useState(false)
   const [reactions, setReactions] = useState<Record<string, ReactionCounts>>({})
   const [comments, setComments] = useState<Record<string, Comment[]>>({})
   const [newComment, setNewComment] = useState<Record<string, string>>({})
@@ -67,7 +66,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'accepted'>('none')
 
   // Push-уведомления для реакций и комментариев (от друга, по событию друга)
-  const { notifyReaction, notifyComment } = usePush()
+  const { notifyReaction, notifyComment, sendPushToUser } = usePush()
 
   const weekData = useMemo(() => {
     const data: Array<{ day: string; count: number; isToday: boolean }> = []
@@ -213,6 +212,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     if (followStatus === 'accepted') {
       // Отписка
       setShowUnfollowConfirm(true)
+    } else if (followStatus === 'pending') {
+      // Повторный клик по «Запрос отправлен» — отменяем заявку
+      await cancelFollowRequest()
     } else {
       // Подписка (запрос — pending)
       await followUser()
@@ -232,11 +234,54 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         return
       }
       setFollowStatus('pending')
+
+      const senderName = getDisplayName(currentUserProfile) || 'Друг'
+
+      // 1) Серверный Web Push владельцу профиля (фоновый вызов, не блокирует UI)
+      sendPushToUser(userId, 'PoopTrack', `${senderName} хочет подписаться на вас`)
+
+      // 2) Уведомление в таблице notifications (для колокольчика и вкладки «Люди → Подписчики»)
+      supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          friend_id: currentUserProfile.id,
+          friend_username: senderName,
+          notification_type: 'follow_request',
+        })
+        .then(({ error: notifError }) => {
+          if (notifError) console.warn('[Follow] Не удалось создать уведомление:', notifError)
+        }, () => {})
+
       fetchFollowers()
       fetchFollowing()
     } catch (err: any) {
       console.error('[Follow] Исключение:', err)
       setErrorMessage(`Ошибка при отправке запроса: ${err.message || 'Неизвестная ошибка'}`)
+    }
+  }
+
+  const cancelFollowRequest = async () => {
+    if (!userId) return
+    setErrorMessage(null)
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('user_id', userId)
+        .eq('follower_id', currentUserProfile.id)
+        .eq('status', 'pending')
+      if (error) {
+        console.error('[CancelFollow] Ошибка:', error)
+        setErrorMessage(`Ошибка при отмене заявки: ${error.message || 'Неизвестная ошибка'}`)
+        return
+      }
+      setFollowStatus('none')
+      fetchFollowers()
+      fetchFollowing()
+    } catch (err: any) {
+      console.error('[CancelFollow] Исключение:', err)
+      setErrorMessage(`Ошибка при отмене заявки: ${err.message || 'Неизвестная ошибка'}`)
     }
   }
 
@@ -263,32 +308,6 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
       setErrorMessage(`Ошибка при отписке: ${err.message || 'Неизвестная ошибка'}`)
     } finally {
       setIsUnfollowing(false)
-    }
-  }
-
-  const handleFollow = async () => {
-    if (isOwner || !userId) return
-    setErrorMessage(null)
-    try {
-      const { error } = await supabase.from('friends').insert({
-        user_id: userId,
-        follower_id: currentUserProfile.id,
-      })
-      if (error) {
-        console.error('[Follow] Ошибка:', error)
-        if (error.code === '23505') {
-          setErrorMessage('Вы уже подписаны на этого пользователя')
-        } else {
-          setErrorMessage(`Ошибка при подписке: ${error.message || 'Неизвестная ошибка'}`)
-        }
-      } else {
-        setIsFollowing(true)
-        fetchFollowers()
-        fetchFollowing()
-      }
-    } catch (err: any) {
-      console.error('[Follow] Исключение:', err)
-      setErrorMessage(`Ошибка при подписке: ${err.message || 'Неизвестная ошибка'}`)
     }
   }
 
@@ -464,12 +483,32 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             Выйти
           </button>
         ) : (
-          <button
-            onClick={handleToggleFollow}
-            className={`shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold bg-red-50 border-2 border-red-200 text-red-600`}
-          >
-            {isFollowing ? 'Отписаться' : 'Подписаться'}
-          </button>
+          <>
+            {followStatus === 'none' && (
+              <button
+                onClick={handleToggleFollow}
+                className="shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold bg-red-50 border-2 border-red-200 text-red-600"
+              >
+                Подписаться
+              </button>
+            )}
+            {followStatus === 'pending' && (
+              <button
+                onClick={handleToggleFollow}
+                className="shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold bg-amber-100 text-amber-700 border-2 border-amber-200 text-xs font-bold px-4 py-2"
+              >
+                Запрос отправлен
+              </button>
+            )}
+            {followStatus === 'accepted' && (
+              <button
+                onClick={handleToggleFollow}
+                className="shrink-0 px-4 py-1.5 rounded-lg text-sm font-semibold bg-emerald-500 text-white border-2 border-emerald-200 text-xs font-bold px-4 py-2"
+              >
+                Отписаться
+              </button>
+            )}
+          </>
         )}
       </header>
 
@@ -536,14 +575,21 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
           {!isOwner && followStatus !== 'accepted' ? (
             <div className="bg-white border-2 border-blue-200 rounded-2xl p-8 text-center">
               <div className="text-4xl mb-3">🔒</div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">Профиль закрыт</h3>
-              <p className="text-xs text-slate-500 mb-4">Подпишитесь на этого пользователя, чтобы видеть его активность.</p>
-              {followStatus === 'none' && (
-                <button onClick={() => followUser()} className="bg-black text-white text-xs font-bold px-4 py-2 rounded-full">Подписаться</button>
-              )}
+              {followStatus === 'none' ? (
+                <>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Профиль закрыт</h3>
+                  <p className="text-xs text-slate-500 mb-4">Подпишитесь и дождитесь подтверждения, чтобы видеть записи пользователя</p>
+                  <button onClick={() => followUser()} className="bg-black text-white text-xs font-bold px-4 py-2 rounded-full">Подписаться</button>
+                </>
+              ) : followStatus === 'pending' ? (
+                <>
+                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Запрос на подписку отправлен</h3>
+                  <p className="text-xs text-slate-500 mb-4">Записи и статистика откроются сразу после того, как пользователь подтвердит вашу заявку</p>
+                </>
+              ) : null}
             </div>
           ) : null}
-          {events.length > 0 && (
+          {(isOwner || followStatus === 'accepted') && events.length > 0 && (
             <div className={`mb-6 p-4 rounded-2xl ${
               'bg-white border-2 border-gray-200'
             }`}>
@@ -582,7 +628,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
               </div>
             </div>
           )}
-          {events.length === 0 ? (
+          {events.length === 0 && (isOwner || followStatus === 'accepted') ? (
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
               <p className={`font-semibold ${'text-gray-600'}`}>
@@ -714,7 +760,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         </div>
       )}
 
-      {activeTab === 'following' && (
+      {(isOwner || followStatus === 'accepted') ? activeTab === 'following' && (
         <div>
           {following.length === 0 ? (
             <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
@@ -743,9 +789,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
-      {activeTab === 'followers' && (
+      {(isOwner || followStatus === 'accepted') ? activeTab === 'followers' && (
         <div>
           {followers.length === 0 ? (
             <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center">
@@ -774,7 +820,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             </div>
           )}
         </div>
-      )}
+      ) : null}
             {/* Confirm Modal for Delete Event */}
         <ConfirmModal
           isOpen={!!deleteConfirmEventId}

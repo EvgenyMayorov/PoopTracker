@@ -679,6 +679,7 @@ export function MainScreen({ profile, onLogout }: Props) {
           <div className="space-y-2.5">
             {(peopleTab === 'following' ? following : followers).map((f) => {
               const isPending = f.status === 'pending'
+              const isAccepted = f.status === 'accepted'
               const isFollowerManagement = peopleTab === 'followers'
               return (
                 <div key={f.id} className="relative">
@@ -693,13 +694,21 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className="truncate">
                         <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
                         <div className="text-xs text-slate-400">
-                          {isPending ? 'Запрос на подписку отправлен' : 'Открыть профиль'}
+                          {isPending
+                            ? 'Запрос на подписку отправлен'
+                            : isAccepted
+                              ? 'Вы подписаны'
+                              : 'Нажмите, чтобы подписаться'}
                         </div>
                       </div>
                     </div>
                     {(!isFollowerManagement || isPending) && (
-                      <span className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 ${isPending ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
-                        {isPending ? 'Запрос отправлен' : 'Профиль →'}
+                      <span className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 ${isPending ? 'bg-amber-100 text-amber-700' : isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {isPending
+                          ? 'Запрос отправлен'
+                          : isAccepted
+                            ? 'Вы подписаны'
+                            : 'Подписать'}
                       </span>
                     )}
                   </div>
