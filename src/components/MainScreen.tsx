@@ -681,11 +681,13 @@ export function MainScreen({ profile, onLogout }: Props) {
               const isPending = f.status === 'pending'
               const isAccepted = f.status === 'accepted'
               const isFollowerManagement = peopleTab === 'followers'
+              // Целевой ID собеседника: в «Подписках» это user_id, в «Подписчиках» — follower_id
+              const targetId = isFollowerManagement ? (f.follower_id ?? '') : f.user_id
               return (
                 <div key={f.id} className="relative">
                   <div
-                    onClick={() => navigate(`/user/${f.user_id}`)}
-                    className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
+                    onClick={() => navigate(`/user/${targetId}`)}
+                    className="bg-white rounded-[20px] p-3.5 flex items-center justify-between gap-3 shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden">
@@ -694,43 +696,46 @@ export function MainScreen({ profile, onLogout }: Props) {
                       <div className="truncate">
                         <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
                         <div className="text-xs text-slate-400">
-                          {isPending
-                            ? 'Запрос на подписку отправлен'
-                            : isAccepted
-                              ? 'Вы подписаны'
-                              : 'Нажмите, чтобы подписаться'}
+                          {isFollowerManagement
+                            ? isPending
+                              ? 'Хочет подписаться на вас'
+                              : isAccepted
+                                ? 'Подписан(а) на вас'
+                                : ''
+                            : isPending
+                              ? 'Запрос на подписку отправлен'
+                              : isAccepted
+                                ? 'Вы подписаны'
+                                : 'Нажмите, чтобы подписаться'}
                         </div>
+                        {!isFollowerManagement && (
+                          <span className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 ${isPending ? 'bg-amber-100 text-amber-700' : isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                            {isPending ? 'Запрос отправлен' : isAccepted ? 'Вы подписаны' : 'Подписать'}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    {(!isFollowerManagement || isPending) && (
-                      <span className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 ${isPending ? 'bg-amber-100 text-amber-700' : isAccepted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-                        {isPending
-                          ? 'Запрос отправлен'
-                          : isAccepted
-                            ? 'Вы подписаны'
-                            : 'Подписать'}
-                      </span>
+
+                    {/* Кнопки Принять/Отклонить внутри карточки для входящей заявки */}
+                    {isFollowerManagement && isPending && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleAcceptFollower(targetId) }}
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                        >
+                          Принять
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleRejectFollower(targetId) }}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                        >
+                          Отклонить
+                        </button>
+                      </div>
                     )}
                   </div>
-
-                  {isFollowerManagement && isPending && (
-                    <div className="flex items-center justify-end gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleAcceptFollower(f.user_id) }}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                      >
-                        Принять
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); handleRejectFollower(f.user_id) }}
-                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold px-4 py-2 rounded-full transition-colors"
-                      >
-                        Отклонить
-                      </button>
-                    </div>
-                  )}
 
                   {isFollowerManagement && !isPending && (
                     <div className="absolute top-3 right-3 z-10">
@@ -746,14 +751,14 @@ export function MainScreen({ profile, onLogout }: Props) {
                         <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl border border-slate-200 shadow-lg py-1.5 z-20">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'remove-follower', followerId: f.user_id, username: f.username }) }}
+                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'remove-follower', followerId: targetId, username: f.username }) }}
                             className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                           >
                             Удалить из подписчиков
                           </button>
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'block-user', userId: f.user_id, username: f.username }) }}
+                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'block-user', userId: targetId, username: f.username }) }}
                             className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
                           >
                             Заблокировать
