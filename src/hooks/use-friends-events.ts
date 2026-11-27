@@ -12,11 +12,17 @@ export function useFriendsEvents(profile: Profile | null, following: Friend[]) {
       return
     }
     setLoading(true)
-    const friendIds = following.map(f => f.user_id)
+    // Лента содержит записи только от пользователей с подтверждённой подпиской (status === 'accepted').
+    const acceptedIds = following.filter(f => f.status === 'accepted').map(f => f.user_id)
+    if (acceptedIds.length === 0) {
+      setFriendsEvents([])
+      setLoading(false)
+      return
+    }
     const { data: eventsData } = await supabase
       .from('events')
       .select('*')
-      .in('user_id', friendIds)
+      .in('user_id', acceptedIds)
       .order('created_at', { ascending: false })
       .limit(50)
 

@@ -27,15 +27,17 @@ function cellLabel(variant: StatsVariant, index: number, todayCount: number, wee
 
   const count = index === 0 ? todayCount : index === 1 ? weekCount : totalCount
   const word = pluralizeReset(count)
+  // Заглавная буква в начале подписи: «Сброс…», «Сброса…», «Сбросов…»
+  const capitalized = word.charAt(0).toUpperCase() + word.slice(1)
 
   if (index === 0) {
-    // 1-я ячейка: «сброс балласта сегодня» для единицы, иначе «{склонение} сегодня»
-    return count === 1 ? 'сброс балласта сегодня' : `${word} сегодня`
+    // 1-я ячейка: «Сброс балласта сегодня» для единицы, иначе «{склонение} сегодня»
+    return count === 1 ? 'Сброс балласта сегодня' : `${capitalized} сегодня`
   }
   if (index === 1) {
-    return `${word} за неделю`
+    return `${capitalized} за неделю`
   }
-  return `${word} всего`
+  return `${capitalized} всего`
 }
 
 export function StatsCards({ todayCount, weekCount, totalCount, variant }: StatsCardsProps) {

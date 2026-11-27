@@ -3,8 +3,10 @@ import { Profile } from '../lib/supabase'
 export interface Friend {
   id: string
   user_id: string
+  follower_id?: string
   username: string
   avatar: string
+  status: 'pending' | 'accepted'
 }
 
 export interface Notification {

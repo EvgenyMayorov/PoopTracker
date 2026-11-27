@@ -128,6 +128,10 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
   const [modalReconnectResult, setModalReconnectResult] = useState<string | null>(null)
   const { requestPermissionAndSubscribe, getDeviceState: fetchDeviceState } = usePush()
 
+  // === Заблокированные пользователи ===
+  const [blockedUsers, setBlockedUsers] = useState<Array<{ id: string; user_id: string; username: string; avatar: string | null }>>([])
+  const [isBlockedLoading, setIsBlockedLoading] = useState(false)
+
   // Ключи для кэширования состояния Push-уведомлений в localStorage.
   const PUSH_CACHE_KEY = 'poop_push_enabled'
   const PUSH_CACHE_TS_KEY = 'poop_push_cache_ts'
@@ -160,6 +164,60 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
       return registration as ServiceWorkerRegistration | null
     } catch {
       return null
+    }
+  }
+
+  // === Заблокированные пользователи ===
+  const fetchBlockedUsers = async () => {
+    if (!profile?.id) return
+    setIsBlockedLoading(true)
+    try {
+      const { data } = await supabase
+        .from('blocked_users')
+        .select('blocked_id, created_at')
+        .eq('blocker_id', profile.id)
+      if (data && data.length > 0) {
+        const blockedIds = data.map((d) => d.blocked_id)
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username, email, avatar')
+          .in('id', blockedIds)
+        setBlockedUsers(
+          (profilesData || []).map((p) => ({
+            id: p.id,
+            user_id: p.id,
+            username: p.username || 'Друг',
+            avatar: p.avatar || null,
+          }))
+        )
+      } else {
+        setBlockedUsers([])
+      }
+    } catch (err) {
+      console.error('[Settings] Ошибка загрузки заблокированных:', err)
+    } finally {
+      setIsBlockedLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBlockedUsers()
+  }, [fetchBlockedUsers])
+
+  const handleUnblock = async (blockedUserId: string) => {
+    try {
+      const { error } = await supabase
+        .from('blocked_users')
+        .delete()
+        .eq('blocker_id', profile.id)
+        .eq('blocked_id', blockedUserId)
+      if (error) {
+        console.error('[Settings] Ошибка разблокировки:', error)
+        return
+      }
+      setBlockedUsers((prev) => prev.filter((b) => b.user_id !== blockedUserId))
+    } catch (err) {
+      console.error('[Settings] Ошибка разблокировки:', err)
     }
   }
 
@@ -741,6 +799,39 @@ export function SettingsTab({ profile, onLogout, onApplyUpdate }: SettingsTabPro
           >
             <span className="w-6 h-6 rounded-full bg-white shadow-sm block" />
           </button>
+        </div>
+
+        <div className="bg-white rounded-[20px] p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-lg">🚫</span>
+            <div>
+              <div className="text-sm font-bold text-[#111827]">Заблокированные пользователи</div>
+              <div className="text-[11px] text-slate-400">Люди, которых вы заблокировали. Они не смогут подписываться на вас.</div>
+            </div>
+          </div>
+
+          {isBlockedLoading ? (
+            <div className="text-sm text-slate-400">Загрузка...</div>
+          ) : blockedUsers.length === 0 ? (
+            <div className="text-sm text-slate-400">Вы ни на кого не заблокировали</div>
+          ) : (
+            <div className="space-y-2.5">
+              {blockedUsers.map((b) => (
+                <div key={b.id} className="flex items-center justify-between gap-3 py-1.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar avatar={b.avatar || null} containerClassName="w-10 h-10 rounded-full overflow-hidden shrink-0" />
+                    <div className="text-sm font-semibold text-slate-900 truncate">{b.username}</div>
+                  </div>
+                  <button
+                    onClick={() => handleUnblock(b.user_id)}
+                    className="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                  >
+                    Разблокировать
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       <div className="space-y-2.5 pt-1">

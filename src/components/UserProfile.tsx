@@ -63,6 +63,9 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const [isDeletingEvent, setIsDeletingEvent] = useState(false)
   const [mainTab, setMainTab] = useState<'home' | 'people' | 'feed' | 'settings'>('home')
 
+  // Статус подписки: 'none' | 'pending' | 'accepted'
+  const [followStatus, setFollowStatus] = useState<'none' | 'pending' | 'accepted'>('none')
+
   // Push-уведомления для реакций и комментариев (от друга, по событию друга)
   const { notifyReaction, notifyComment } = usePush()
 
@@ -155,9 +158,12 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   }, [userId])
 
   const checkIsFollowing = useCallback(async () => {
-    if (!userId || isOwner) return
-    const { data } = await supabase.from('friends').select('*').eq('user_id', userId).eq('follower_id', currentUserProfile.id).maybeSingle()
-    setIsFollowing(!!data)
+    if (!userId || isOwner) {
+      setFollowStatus('none')
+      return
+    }
+    const { data } = await supabase.from('friends').select('status').eq('user_id', userId).eq('follower_id', currentUserProfile.id).maybeSingle()
+    setFollowStatus((data?.status as 'none' | 'pending' | 'accepted') ?? 'none')
   }, [userId, currentUserProfile.id, isOwner])
 
   const fetchReactions = async (eventId: string) => {
@@ -204,11 +210,11 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
   const handleToggleFollow = async () => {
     if (isOwner || !userId) return
 
-    if (isFollowing) {
+    if (followStatus === 'accepted') {
       // Отписка
       setShowUnfollowConfirm(true)
     } else {
-      // Подписка
+      // Подписка (запрос — pending)
       await followUser()
     }
   }
@@ -219,18 +225,18 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
     try {
       const { error } = await supabase
         .from('friends')
-        .insert({ user_id: userId, follower_id: currentUserProfile.id })
+        .insert({ user_id: userId, follower_id: currentUserProfile.id, status: 'pending' })
       if (error) {
         console.error('[Follow] Ошибка:', error)
-        setErrorMessage(`Ошибка при подписке: ${error.message || 'Неизвестная ошибка'}`)
+        setErrorMessage(`Ошибка при отправке запроса: ${error.message || 'Неизвестная ошибка'}`)
         return
       }
-      setIsFollowing(true)
+      setFollowStatus('pending')
       fetchFollowers()
       fetchFollowing()
     } catch (err: any) {
       console.error('[Follow] Исключение:', err)
-      setErrorMessage(`Ошибка при подписке: ${err.message || 'Неизвестная ошибка'}`)
+      setErrorMessage(`Ошибка при отправке запроса: ${err.message || 'Неизвестная ошибка'}`)
     }
   }
 
@@ -248,7 +254,7 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
         setErrorMessage(`Ошибка при отписке: ${error.message || 'Неизвестная ошибка'}`)
         return
       }
-      setIsFollowing(false)
+      setFollowStatus('none')
       setShowUnfollowConfirm(false)
       fetchFollowers()
       fetchFollowing()
@@ -527,6 +533,16 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
 
       {activeTab === 'activity' && (
         <div>
+          {!isOwner && followStatus !== 'accepted' ? (
+            <div className="bg-white border-2 border-blue-200 rounded-2xl p-8 text-center">
+              <div className="text-4xl mb-3">🔒</div>
+              <h3 className="text-sm font-semibold text-slate-900 mb-2">Профиль закрыт</h3>
+              <p className="text-xs text-slate-500 mb-4">Подпишитесь на этого пользователя, чтобы видеть его активность.</p>
+              {followStatus === 'none' && (
+                <button onClick={() => followUser()} className="bg-black text-white text-xs font-bold px-4 py-2 rounded-full">Подписаться</button>
+              )}
+            </div>
+          ) : null}
           {events.length > 0 && (
             <div className={`mb-6 p-4 rounded-2xl ${
               'bg-white border-2 border-gray-200'
@@ -570,7 +586,13 @@ export function UserProfile({ currentUserProfile, onLogout }: Props) {
             <div className="text-center py-12">
               <div className="text-5xl mb-3">💩</div>
               <p className={`font-semibold ${'text-gray-600'}`}>
-                {isOwner ? 'Вы ещё не нажимали кнопку 💩' : 'У этого пользователя пока нет записей'}
+                {isOwner
+                  ? 'Вы ещё не нажимали кнопку 💩'
+                  : followStatus === 'accepted'
+                  ? 'У этого пользователя пока нет записей'
+                  : followStatus === 'pending'
+                  ? 'Запрос на подписку отправлен. Ожидайте подтверждения.'
+                  : 'Профиль закрыт. Подпишитесь, чтобы увидеть активность.'}
               </p>
             </div>
           ) : (

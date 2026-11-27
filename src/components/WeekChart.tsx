@@ -38,8 +38,14 @@ export function WeekChart({ weekData, maxCount, chartType }: WeekChartProps) {
                 isEmpty
                   ? emptyDayStyle[chartType ?? 'poop']
                   : chartGradients[chartType ?? 'poop']
-              }`}
-            />
+              } ${isEmpty ? '' : 'min-h-[24px] flex flex-col justify-end items-center pb-1.5'}`}
+            >
+              {!isEmpty && (
+                <span className="text-[10px] font-bold text-white/90 leading-none">
+                  {dayData.count}
+                </span>
+              )}
+            </div>
             <span className="text-xs mt-2 whitespace-nowrap font-semibold text-slate-900">
               {dayData.day}
             </span>

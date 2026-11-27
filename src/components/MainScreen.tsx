@@ -65,7 +65,7 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   // Hooks
   const { events, fetchEvents, addEvent, updateEventBristol, deleteEvent } = useMyEvents(profile)
-  const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser, searchUserByEmail } = useFriends(profile)
+  const { followers, following, fetchFollowers, fetchFollowing, followUser, unfollowUser, cancelRequest, acceptFollower, rejectFollower, removeFollower, blockUser, unblockUser, fetchBlockedUsers, searchUserByEmail, isFollowing, isPendingRequest, isBlocked } = useFriends(profile)
   const { friendsEvents, fetchFriendsEvents } = useFriendsEvents(profile, following)
   const { reactions, fetchReactions, handleReaction } = useReactions(profile)
   const { comments, newComment, setNewComment, fetchComments, handleAddComment } = useComments(profile)
@@ -129,6 +129,14 @@ export function MainScreen({ profile, onLogout }: Props) {
   const [isDeletingEvent, setIsDeletingEvent] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isFollowingProfile, setIsFollowingProfile] = useState(false)
+  const [followerMenuId, setFollowerMenuId] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'remove-follower' | 'block-user'
+    followerId?: string
+    userId?: string
+    username?: string
+  } | null>(null)
+  const [isProcessingAction, setIsProcessingAction] = useState(false)
 
   // Fetch initial data
   useEffect(() => {
@@ -368,11 +376,88 @@ export function MainScreen({ profile, onLogout }: Props) {
 
   const handleFollowFriend = async (friendId: string, username: string) => {
     try {
+      if (isPendingRequest(friendId)) {
+        // Повторный клик по «Запрос отправлен» — отменяем заявку
+        await cancelRequest(friendId)
+        setFriendSearchResult(null)
+        setFriendEmail('')
+        return
+      }
       await followUser(friendId)
       setFriendSearchResult(null)
       setFriendEmail('')
     } catch (error) {
       console.error('[Follow] Ошибка:', error)
+    }
+  }
+
+  const handleAcceptFollower = async (followerUserId: string) => {
+    setIsProcessingAction(true)
+    try {
+      await acceptFollower(followerUserId)
+    } catch (error) {
+      console.error('[AcceptFollower] Ошибка:', error)
+    } finally {
+      setIsProcessingAction(false)
+    }
+  }
+
+  const handleRejectFollower = async (followerUserId: string) => {
+    setIsProcessingAction(true)
+    try {
+      await rejectFollower(followerUserId)
+    } catch (error) {
+      console.error('[RejectFollower] Ошибка:', error)
+    } finally {
+      setIsProcessingAction(false)
+    }
+  }
+
+  const handleRemoveFollower = async (followerUserId: string) => {
+    setIsProcessingAction(true)
+    try {
+      await removeFollower(followerUserId)
+    } catch (error) {
+      console.error('[RemoveFollower] Ошибка:', error)
+    } finally {
+      setIsProcessingAction(false)
+    }
+  }
+
+  const handleBlockUser = async (userId: string) => {
+    setIsProcessingAction(true)
+    try {
+      await blockUser(userId)
+    } catch (error) {
+      console.error('[BlockUser] Ошибка:', error)
+    } finally {
+      setIsProcessingAction(false)
+    }
+  }
+
+  const handleUnblockUser = async (userId: string) => {
+    setIsProcessingAction(true)
+    try {
+      await unblockUser(userId)
+      await fetchBlockedUsers()
+    } catch (error) {
+      console.error('[UnblockUser] Ошибка:', error)
+    } finally {
+      setIsProcessingAction(false)
+    }
+  }
+
+  const handleConfirmAction = async () => {
+    if (!confirmAction) return
+    if (confirmAction.type === 'remove-follower' && confirmAction.followerId) {
+      await handleRemoveFollower(confirmAction.followerId)
+      setConfirmAction(null)
+      return
+    }
+    if (confirmAction.type === 'block-user' && confirmAction.userId) {
+      await handleBlockUser(confirmAction.userId)
+      setConfirmAction(null)
+      return
     }
   }
 
@@ -592,26 +677,85 @@ export function MainScreen({ profile, onLogout }: Props) {
           </div>
 
           <div className="space-y-2.5">
-            {(peopleTab === 'following' ? following : followers).map((f) => (
-              <div
-                key={f.id}
-                onClick={() => navigate(`/user/${f.user_id}`)}
-                className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
-                    <UserAvatar avatar={f.avatar || null} className="w-full h-full rounded-full object-cover" />
+            {(peopleTab === 'following' ? following : followers).map((f) => {
+              const isPending = f.status === 'pending'
+              const isFollowerManagement = peopleTab === 'followers'
+              return (
+                <div key={f.id} className="relative">
+                  <div
+                    onClick={() => navigate(`/user/${f.user_id}`)}
+                    className="bg-white rounded-[20px] p-3.5 flex items-center justify-between shadow-[0_2px_12px_rgba(15,23,42,0.04)] cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-[52px] h-[52px] rounded-full overflow-hidden shrink-0">
+                        <UserAvatar avatar={f.avatar || null} className="w-full h-full rounded-full object-cover" />
+                      </div>
+                      <div className="truncate">
+                        <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
+                        <div className="text-xs text-slate-400">
+                          {isPending ? 'Запрос на подписку отправлен' : 'Открыть профиль'}
+                        </div>
+                      </div>
+                    </div>
+                    {(!isFollowerManagement || isPending) && (
+                      <span className={`text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0 ${isPending ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {isPending ? 'Запрос отправлен' : 'Профиль →'}
+                      </span>
+                    )}
                   </div>
-                  <div className="truncate">
-                    <div className="text-sm font-bold text-[#111827] truncate">{f.username}</div>
-                    <div className="text-xs text-slate-400">Открыть профиль</div>
-                  </div>
+
+                  {isFollowerManagement && isPending && (
+                    <div className="flex items-center justify-end gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleAcceptFollower(f.user_id) }}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                      >
+                        Принять
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleRejectFollower(f.user_id) }}
+                        className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold px-4 py-2 rounded-full transition-colors"
+                      >
+                        Отклонить
+                      </button>
+                    </div>
+                  )}
+
+                  {isFollowerManagement && !isPending && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFollowerMenuId(followerMenuId === f.id ? null : f.id) }}
+                        className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold transition-colors"
+                        aria-label="Действия"
+                      >
+                        ⋯
+                      </button>
+                      {followerMenuId === f.id && (
+                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl border border-slate-200 shadow-lg py-1.5 z-20">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'remove-follower', followerId: f.user_id, username: f.username }) }}
+                            className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            Удалить из подписчиков
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'block-user', userId: f.user_id, username: f.username }) }}
+                            className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                          >
+                            Заблокировать
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-3.5 py-1.5 rounded-full shrink-0">
-                  Профиль →
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
